@@ -2,10 +2,20 @@
 % Please edit documentation in R/power.R
 \name{power.eqtl}
 \alias{power.eqtl}
-\title{Power calculation for an eQTL study}
+\title{Power calculation for an eQTL gene}
 \usage{
-power.eqtl(heritability, sig.level, n)
+power.eqtl(heritability, sig.level, nSamples)
+}
+\arguments{
+\item{heritability}{Heritability of the trait}
+
+\item{sig.level}{Significane threshold}
+
+\item{nSamples}{Sample size}
+}
+\value{
+Power to detect the eQTL gene
 }
 \description{
-This function ...
+This function calculates the power to detect an eQTL gene.
 }

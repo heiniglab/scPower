@@ -6,8 +6,9 @@
 \usage{
 power.general.withDoublets(nSamples, nCells, readDepth, ct.freq, type,
   ref.study, ref.study.name, personsPerLane, read.umi.fit,
-  gamma.mixed.fits, multipletRate, multipletFactor, min.UMI.counts = 10,
-  perc.indiv.expr = 0.5)
+  gamma.mixed.fits, ct, disp.fun.param, multipletRate = 7.67e-06,
+  multipletFactor = 1.82, min.UMI.counts = 10, perc.indiv.expr = 0.5,
+  nGenes = 21000)
 }
 \arguments{
 \item{nSamples}{Sample size}
@@ -25,10 +26,26 @@ power.general.withDoublets(nSamples, nCells, readDepth, ct.freq, type,
 \item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
 
 \item{personsPerLane}{Maximal number of persons per 10X lane}
+
+\item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )}
+
+\item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type (required columns: )}
+
+\item{ct}{Cell type of interest (name from the gamma mixed models)}
+
+\item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean (required columns:)}
+
+\item{multipletRate}{Expected increase in multiplets for additional cell in the lane}
+
+\item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
+
+\item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 }
 \value{
 Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 }
 \description{
-This function ...
+This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study
+in a single cell RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
+per person and read depth
 }

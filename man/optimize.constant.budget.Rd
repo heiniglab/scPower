@@ -2,9 +2,50 @@
 % Please edit documentation in R/power.R
 \name{optimize.constant.budget}
 \alias{optimize.constant.budget}
-\title{Power calculation for a DE study}
+\title{Optimizing cost parameters to maximize detection power for a given budget}
 \usage{
-optimize.constant.budget()
+optimize.constant.budget(totalBudget, readDepthRange, cellPersRange,
+  costKit, costFlowCell, readsPerFlowcell, ct.freq, type, ref.study,
+  ref.study.name, personsPerLane, read.umi.fit, gamma.mixed.fits, ct,
+  disp.fun.param, multipletRate = 7.67e-06, multipletFactor = 1.82,
+  min.UMI.counts = 10, perc.indiv.expr = 0.5)
+}
+\arguments{
+\item{totalBudget}{Overall experimental budget}
+
+\item{readDepthRange}{Range of read depth values that should be tested (vector)}
+
+\item{cellPersRange}{Range of cells per person that should be tested (vector)}
+
+\item{costKit}{Cost for one 10X kit}
+
+\item{costFlowCell}{Cost of one flow cells for sequencing}
+
+\item{readsPerFlowcell}{Number reads that can be sequenced with one flow cell}
+
+\item{ct.freq}{Frequency of the cell type of interest}
+
+\item{type}{(eqtl/de) study}
+
+\item{ref.study}{Data frame with reference studies to be used for effect sizes and ranks (required columns:)}
+
+\item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
+
+\item{personsPerLane}{Maximal number of persons per 10X lane}
+
+\item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )}
+
+\item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type (required columns: )}
+
+\item{ct}{Cell type of interest (name from the gamma mixed models)}
+
+\item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean (required columns:)}
+
+\item{multipletRate}{Expected increase in multiplets for additional cell in the lane}
+
+\item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
+
+\item{totalCost}{Experimental budget}
 }
 \description{
 This function ...

@@ -51,19 +51,28 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' @param personsPerLane Maximal number of persons per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
-#' @param multipletRate
-#' @param multipletFactor
-#'
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param multipletRate Expected increase in multiplets for additional cell in the lane
+#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
+#' @import mixR
+#'
 #' @export
+#'
 power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      type,ref.study,ref.study.name,
                                      personsPerLane,
-                                     read.umi.fit,gamma.mixed.fits,
-                                     multipletRate,multipletFactor,
-                                     min.UMI.counts=10,perc.indiv.expr=0.5){
+                                     read.umi.fit,gamma.mixed.fits,ct,
+                                     disp.fun.param,
+                                     multipletRate=7.67e-06,multipletFactor=1.82,
+                                     min.UMI.counts=10,perc.indiv.expr=0.5,
+                                     nGenes=21000){
+
+  require(mixR)
 
   #Estimate multiplet rate and "real read depth"
   #Estimate multiplet fraction dependent on cells per lane
@@ -105,7 +114,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   #Calculate for each gene the expression probability with the definition
   #expressed in 50% of the individuals with count > 10
   sim.genes$exp.probs<-estimate.gene.counts(sim.genes$mean,1/sim.genes$disp,ctCells,
-                                            min.counts=min.UMI.counts,num.indivs=nSamples,perc.indiv=perc.indiv.expr)
+                                            min.counts=min.UMI.counts,num.indivs=nSamples,
+                                            perc.indiv=perc.indiv.expr)
 
   #Calculate the expected number of expressed genes
   exp.genes<-round(sum(sim.genes$exp.probs))
@@ -114,7 +124,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   ranks<-ref.study$rank[ref.study$name==ref.study.name]
 
   #Set all DE with rank > 21000 to 21000 (expression anyway nearly 0)
-  ranks[ranks>21000]<-21000
+  ranks[ranks>nGenes]<-nGenes
 
   #Calculate alpha parameter corrected for multiple testing
   alpha<-0.05/exp.genes
@@ -149,20 +159,18 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   #Calculate total probability as the DE power times the expression probability
   foundSignGenes$combined.prob<-foundSignGenes$power*foundSignGenes$exp.probs
 
-  power.study<-data.table(name=ref.study.name,powerDetect=foundSignGenes$combined.prob,
-                          exp.probs=foundSignGenes$exp.probs,power=foundSignGenes$power)
-  power.study<-power.study[,.(powerDetect=mean(powerDetect),
-                              expProb=mean(exp.probs),
-                              power=mean(power)),by=.(name)]
-  #Get parameters
-  power.study$sampleSize<-nSamples
-  power.study$totalCells<-nCells
-  power.study$usableCells<-usableCells
-  power.study$multipletFraction<-multipletFraction
-  power.study$ctCells<-ctCells
-  power.study$readDepth<-readDepth
-  power.study$readDepthSinglet<-readDepthSinglet
-  power.study$expressedGenes<-exp.genes
+  power.study<-data.frame(name=ref.study.name,
+                          powerDetect=mean(foundSignGenes$combined.prob),
+                          exp.probs=mean(foundSignGenes$exp.probs),
+                          power=mean(foundSignGenes$power),
+                          sampleSize=nSamples,
+                          totalCells=nCells,
+                          usableCells=usableCells,
+                          multipletFraction=multipletFraction,
+                          ctCells=ctCells,
+                          readDepth=readDepth,
+                          readDepthSinglet=readDepthSinglet,
+                          expressedGenes=exp.genes)
 
   return(power.study)
 }
@@ -171,8 +179,69 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #'
 #' This function ...
 #'
-optimize.constant.budget<-function(totalBudget, readDepthRange, cellPropRange){
+#' @param totalBudget Overall experimental budget
+#' @param readDepthRange Range of read depth values that should be tested (vector)
+#' @param cellPersRange Range of cells per person that should be tested (vector)
+#' @param totalCost Experimental budget
+#' @param costKit Cost for one 10X kit
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param ct.freq Frequency of the cell type of interest
+#' @param type (eqtl/de) study
+#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks (required columns:)
+#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
+#' @param personsPerLane Maximal number of persons per 10X lane
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param multipletRate Expected increase in multiplets for additional cell in the lane
+#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#'
+#' @export
+optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
+                                   costKit,costFlowCell,readsPerFlowcell,
+                                   ct.freq,type,ref.study,ref.study.name,
+                                   personsPerLane,
+                                   read.umi.fit,gamma.mixed.fits,ct,
+                                   disp.fun.param,
+                                   multipletRate=7.67e-06,multipletFactor=1.82,
+                                   min.UMI.counts=10,perc.indiv.expr=0.5){
 
+  #Build a frame of all possible combinations
+  param.combis<-expand.grid(cellPersRange,readDepthRange)
+  colnames(param.combis)<-c("cellsPerPerson","readDepth")
+
+  #Sample size dependent on the budget
+  param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
+                                            function(i)floor(sampleSizeBudgetCalculation(param.combis$cellsPerPerson[i],
+                                                                            param.combis$readDepth[i],
+                                                                            totalBudget,
+                                                                            costKit,personsPerLane,
+                                                                            costFlowCell,readsPerFlowcell)))
+
+  power.study<-mapply(power.general.withDoublets,
+                      param.combis$estimated.sampleSize,
+                      param.combis$cellsPerPerson,
+                      param.combis$readDepth,
+                      MoreArgs=list(ct.freq=ct.freq,
+                                    multipletRate=multipletRate,
+                                    multipletFactor=multipletFactor,
+                                    type=type,
+                                    ref.study=ref.study,
+                                    ref.study.name=ref.study.name,
+                                    personsPerLane=personsPerLane,
+                                    read.umi.fit=read.umi.fit,
+                                    gamma.mixed.fits=gamma.mixed.fits,
+                                    ct=ct,
+                                    disp.fun.param=disp.fun.param,
+                                    min.UMI.counts=min.UMI.counts,
+                                    perc.indiv.expr=perc.indiv.expr))
+
+  power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
+  power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
+
+  return(power.study)
 }
 
 #' Power calculation for an eQTL gene
@@ -217,4 +286,22 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
   calc<-power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,theta=theta, ssize.ratio=ssize.ratio,
                       sig.level=sig.level,alternative="two.sided",approach=approach)
   return(calc$power)
+}
+
+#' Required sample size
+#'
+#' @param cellsPerPerson Cells per person
+#' @param readDepth Read depth per cell
+#' @param totalCost Experimental budget
+#' @param costKit Cost for one 10X kit
+#' @param personsPerLane Number of persons sequenced per lane
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Number of samples that can be sampled with this budget and other parameters
+sampleSizeBudgetCalculation<-function(cellsPerPerson,readDepth,totalCost,
+                                      costKit,personsPerLane,
+                                      costFlowCell,readsPerFlowcell){
+  totalCost / (costKit/(6*personsPerLane) +
+                 cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell)
 }

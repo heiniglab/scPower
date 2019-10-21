@@ -5,7 +5,7 @@
 \title{Cell sample size calculation for cell type identification}
 \usage{
 number.cells.detect.celltype(prob.cutoff, min.num.cells, cell.type.frac,
-  num.indivs)
+  nSamples)
 }
 \arguments{
 \item{prob.cutoff}{Target power to detect the cell type}
@@ -14,13 +14,13 @@ number.cells.detect.celltype(prob.cutoff, min.num.cells, cell.type.frac,
 
 \item{cell.type.frac}{Frequency of the cell type of interest}
 
-\item{num.indivs}{Sample size (number of individuals)}
+\item{nSamples}{Sample size (number of individuals)}
 }
 \value{
 Required number of cells per person to reach the target power
 }
 \description{
 Calculate required number of cells per person to detect at least min.num.cells of a cell type
-with class frequency cell.type.frac for each of num.indivs individual
+with class frequency cell.type.frac for each of nSamples individual
 with a probability of prob.cutoff
 }

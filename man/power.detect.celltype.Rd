@@ -4,22 +4,22 @@
 \alias{power.detect.celltype}
 \title{Power calculation for cell type identification}
 \usage{
-power.detect.celltype(num.cells, min.num.cells, cell.type.frac, num.indivs)
+power.detect.celltype(nCells, min.num.cells, cell.type.frac, nSamples)
 }
 \arguments{
-\item{num.cells}{Number of cells measured for each individuum}
+\item{nCells}{Number of cells measured for each individuum}
 
 \item{min.num.cells}{Minimal number of the cells for the cell type of interest that should be detected}
 
 \item{cell.type.frac}{Frequency of the cell type of interest}
 
-\item{num.indivs}{Sample size}
+\item{nSamples}{Sample size}
 }
 \value{
 Power to detect the cell type of interest
 }
 \description{
 Calculate probability to detect at least min.num.cells of a cell type
-with class frequency cell.type.frac in a sample of size num.cells
-for each of num.indivs individual
+with class frequency cell.type.frac in a sample of size nCells
+for each of nSamples individual
 }

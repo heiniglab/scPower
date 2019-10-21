@@ -2,5 +2,12 @@
 
 export(estimate.gene.counts)
 export(number.cells.detect.celltype)
+export(optimize.constant.budget)
 export(power.detect.celltype)
 export(power.general.withDoublets)
+export(runShiny)
+import(MKmisc)
+import(ggplot2)
+import(mixR)
+import(plotly)
+import(shiny)
