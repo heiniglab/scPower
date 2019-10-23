@@ -58,11 +58,14 @@ shinyServer(
       perc.indiv.expr<-input$percIndiv
 
       #TODO: Load the current required data fits (need to be chanced for a different version ...)
-      path<-"/Users/katharina.schmid/Documents/singleCellPilotProject/powerScPop/data/"
+      # path<-"/Users/katharina.schmid/Documents/singleCellPilotProject/powerScPop/data/"
+      path <- system.file("data/", package = "powerScPop")
       read.umi.fit<-readRDS(paste0(path,"readDepthUmiFit.RDS"))
       gamma.mixed.fits<-readRDS(paste0(path,"gamma_umi_fits.RDS"))
       ref.study<-readRDS(paste0(path,"eQTL_ranks_her.RDS"))
-      disp.fun.param<-read.csv(paste0(path,"dispFunParams_medianEstimate.csv"))
+      #TODO: this file should be a RDS?
+      # disp.fun.param<-read.csv(paste0(path,"dispFunParams_medianEstimate.csv"))
+      disp.fun.param<-readRDS(paste0(path,"dispFunParams_medianEstimate.RDS"))
 
       #Set a name
       ref.study$name<-paste0("Blueprint (",ref.study$cellType,")")
