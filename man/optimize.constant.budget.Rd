@@ -48,5 +48,9 @@ optimize.constant.budget(totalBudget, readDepthRange, cellPersRange,
 \item{totalCost}{Experimental budget}
 }
 \description{
-This function ...
+This function determines the optimal parameter combination for a given budget.
+The optimal combination is thereby the one with the highest detection power.
+The parameters are checked for a range of read depths and cells per person values,
+while the sample size is defined uniquely given the other two parameters and
+the overall budget.
 }

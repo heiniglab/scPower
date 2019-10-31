@@ -4,13 +4,26 @@
 \alias{estimate.gene.counts}
 \title{Estimate gene expression probability}
 \usage{
-estimate.gene.counts(mu, size, cells.per.person, min.counts = 10,
-  num.indivs = 14, perc.indiv = 0.5)
+estimate.gene.counts(mu, size, cells.per.person, num.indivs,
+  min.counts = 10, perc.indiv = 0.5)
 }
 \arguments{
-\item{mu}{Estimated mean value in sc data}
+\item{mu}{Estimated mean value in sc data per gene (vector)}
+
+\item{size}{Estimated size parameter in sc data from the negative binomial fit (1/dispersion parameter), also per gene (vector)}
+
+\item{cells.per.person}{Mean number of cells per person and cell type}
+
+\item{num.indivs}{Total sample size}
+
+\item{min.counts}{More than is number of UMI counts for each gene per person and cell type is required to defined it as expressed in one individual}
+
+\item{perc.indiv}{Percentage of individuals that need to have this gene expressed to define it as globally expressed}
+}
+\value{
+Vector with expression probabilites for each gene
 }
 \description{
 This function estimates the expression probability of each gene in pseudobulk
-with a certain cutoff.
+with a certain cutoff of more than min.counts UMI counts
 }

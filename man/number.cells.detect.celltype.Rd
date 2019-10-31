@@ -21,6 +21,6 @@ Required number of cells per person to reach the target power
 }
 \description{
 Calculate required number of cells per person to detect at least min.num.cells of a cell type
-with class frequency cell.type.frac for each of nSamples individual
+with class frequency cell.type.frac for each of nSamples individual.
 with a probability of prob.cutoff
 }

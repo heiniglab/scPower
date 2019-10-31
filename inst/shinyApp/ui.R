@@ -1,6 +1,8 @@
 library(shiny)
 library(plotly)
 
+options(width = 250)
+
 shinyUI(
   navbarPage('Single cell design help',
     tabPanel("Power to detect cell types",
@@ -15,7 +17,8 @@ shinyUI(
                        value = 0.95,step=0.05),
           sliderInput("cellsCT", label = "Minimal number of cells", min = 1,
                       max = 100, value = c(10, 50)),
-          hr()
+          hr(),
+          width = 3
         ),
         mainPanel(
           h3("Power to detect rare cell types"),
@@ -39,8 +42,7 @@ shinyUI(
                       choices = list("DE study" = "de", "eQTL study" = "eqtl"),
                       selected = "eqtl"),
          selectInput("celltype", label = "Target cell type",
-                     choices = list("CD4 T cells", "CD14+ Monocytes", "TODO"),
-                     selected = "CD4 T cells"),
+                     choices = list()),
          numericInput("ct.freq", label = "Cell type frequency",
                       value = 0.25,step=0.05,min=0,max=1),
          selectInput("ref.study", label = "Reference study",
@@ -75,16 +77,19 @@ shinyUI(
          numericInput("minUMI", label = "Minimal number of UMI per gene",
                       value = 10, step=1,min=1),
          numericInput("percIndiv", label = "Fraction of individuals",
-                      value = 0.5,step=0.05,min=0,max=1)
+                      value = 0.5,step=0.05,min=0,max=1),
+         width = 3
        ),
        mainPanel(
          h3("Power to detect DE/eQTL genes"),
          plotlyOutput("powerPlot"),
          br(),
-         div("The figure ...")
+         div("The figure ..."),
+         h4("Click on a specific point in the plot to visualize the exact trace:"),
+         br(),
+         plotlyOutput("readPlot")
        )
-
-      )
+       )
     )
   )
 )

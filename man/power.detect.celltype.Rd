@@ -20,6 +20,6 @@ Power to detect the cell type of interest
 }
 \description{
 Calculate probability to detect at least min.num.cells of a cell type
-with class frequency cell.type.frac in a sample of size nCells
+with class frequency cell.type.frac in a sample of size nCells.
 for each of nSamples individual
 }

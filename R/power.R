@@ -5,7 +5,7 @@
 #' Power calculation for cell type identification
 #'
 #' Calculate probability to detect at least min.num.cells of a cell type
-#' with class frequency cell.type.frac in a sample of size nCells
+#' with class frequency cell.type.frac in a sample of size nCells.
 #' for each of nSamples individual
 #' @param nCells Number of cells measured for each individuum
 #' @param min.num.cells Minimal number of the cells for the cell type of interest that should be detected
@@ -22,7 +22,7 @@ power.detect.celltype<-function(nCells,min.num.cells,cell.type.frac,nSamples){
 #' Cell sample size calculation for cell type identification
 #'
 #' Calculate required number of cells per person to detect at least min.num.cells of a cell type
-#' with class frequency cell.type.frac for each of nSamples individual
+#' with class frequency cell.type.frac for each of nSamples individual.
 #' with a probability of prob.cutoff
 #' @param prob.cutoff Target power to detect the cell type
 #' @param min.num.cells Minimal number of the cells for the cell type of interest that should be detected
@@ -40,7 +40,8 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #'
 #' This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study
 #' in a single cell RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
-#' per person and read depth
+#' per person and read depth.
+#'
 #' @param nSamples Sample size
 #' @param nCells Number of cells per person
 #' @param readDepth Target read depth per cell
@@ -59,8 +60,6 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
-#' @import mixR
-#'
 #' @export
 #'
 power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
@@ -71,8 +70,6 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      multipletRate=7.67e-06,multipletFactor=1.82,
                                      min.UMI.counts=10,perc.indiv.expr=0.5,
                                      nGenes=21000){
-
-  require(mixR)
 
   #Estimate multiplet rate and "real read depth"
   #Estimate multiplet fraction dependent on cells per lane
@@ -90,17 +87,18 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
 
-  #Sample means of 21,000 genes
-  gene.means<-rmixgamma(nGenes,
-                        pi=c(0.95,0.05),
-                        mu=c(gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
-                             gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"]),
-                        sd=c(gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
-                             gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"]))
+  gamma.parameters<-data.frame(pi.c1=0.95,
+                              pi.c2=0.05,
+                              mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
+                              mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
+                              sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
+                              sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
 
-  #Fitted dispersion parameter
-  gene.disps<-disp.fun.param$asymptDisp[disp.fun.param$ct==ct]+
-    disp.fun.param$extraPois[disp.fun.param$ct==ct]/gene.means
+  #Sample means values
+  gene.means<-sample.mean.values(gamma.parameters,nGenes)
+
+  #Fit dispersion parameter dependent on mean parameter
+  gene.disps<-sample.disp.values(gene.means,disp.fun.param)
 
   sim.genes<-data.frame(mean=gene.means, disp=gene.disps)
 
@@ -114,7 +112,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   #Calculate for each gene the expression probability with the definition
   #expressed in 50% of the individuals with count > 10
   sim.genes$exp.probs<-estimate.gene.counts(sim.genes$mean,1/sim.genes$disp,ctCells,
-                                            min.counts=min.UMI.counts,num.indivs=nSamples,
+                                            num.indivs=nSamples,min.counts=min.UMI.counts,
                                             perc.indiv=perc.indiv.expr)
 
   #Calculate the expected number of expressed genes
@@ -177,7 +175,11 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 
 #' Optimizing cost parameters to maximize detection power for a given budget
 #'
-#' This function ...
+#' This function determines the optimal parameter combination for a given budget.
+#' The optimal combination is thereby the one with the highest detection power.
+#' The parameters are checked for a range of read depths and cells per person values,
+#' while the sample size is defined uniquely given the other two parameters and
+#' the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
 #' @param readDepthRange Range of read depth values that should be tested (vector)
@@ -302,6 +304,6 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 sampleSizeBudgetCalculation<-function(cellsPerPerson,readDepth,totalCost,
                                       costKit,personsPerLane,
                                       costFlowCell,readsPerFlowcell){
-  totalCost / (costKit/(6*personsPerLane) +
-                 cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell)
+  return(totalCost / (costKit/(6*personsPerLane) +
+                 cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell))
 }

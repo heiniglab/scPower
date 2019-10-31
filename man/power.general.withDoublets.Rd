@@ -47,5 +47,5 @@ Power to detect the DE/eQTL genes from the reference study in a single cell expe
 \description{
 This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study
 in a single cell RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
-per person and read depth
+per person and read depth.
 }

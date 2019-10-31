@@ -1,9 +1,15 @@
 library(shiny)
 library(plotly)
 library(ggplot2)
+library(gridExtra)
+library(reshape)
 
 shinyServer(
   function(input, output, session) {
+
+    ###############################
+    # Power to detect rare cell type
+
     output$freqPlot<-renderPlotly({
 
       #Get parameter from GUI
@@ -24,24 +30,53 @@ shinyServer(
                                                   parameter.combinations$cell.type.frac,
                                                   parameter.combinations$num.indivs)
 
-      #Create plotly plot
-      p<-ggplot(parameter.combinations,aes(x=min.num.cells,y=sample.size))+
-        geom_line(color="#003E6E")+geom_point(color="#003E6E")+
-        xlab("Minimal number of cells from target cell type per individuum")+ylab("Cells per individuum")+
-        theme_bw()
-
-      ggplotly(p)
+      plot_ly(parameter.combinations, x = ~min.num.cells, y = ~sample.size,
+              type = 'scatter', mode = 'lines+markers',
+              hoverinfo = 'text',
+              text = ~paste('Minimal number cells per celltype: ',min.num.cells,
+                            '<br> Cells per individuum: ', sample.size))%>%
+        layout(xaxis = list(title="Minimal number of cells from target cell type per individuum"),
+               yaxis = list(title="Cells per individuum"))
 
     })
 
-    output$powerPlot<-renderPlotly({
+    ###############################
+    # Power to detect DE/eQTL genes
+
+    #Set the cell types correctly
+    observe({
+      data(gammaUmiFits)
+      celltypes<-as.character(unique(gamma.mixed.fits$ct))
+      choices<-setNames(celltypes,celltypes)
+      updateSelectInput(session, "celltype", label = "Target cell type",
+                        choices = choices)
+    })
+
+    #Set the accessible prior studies correctly (dependent on eQTL/DE)
+    observe({
+      if(input$study=="eqtl"){
+        data(eQTLRefStudy)
+        studies<-as.character(unique(eqtl.ref.study$name))
+      } else {
+        data(DERefStudy)
+        studies<-as.character(unique(de.ref.study$name))
+      }
+      choices<-setNames(studies,studies)
+      updateSelectInput(session,"ref.study", label = "Reference study",
+                        choices = choices)
+    })
+
+    #Calculate power grid for the current version of
+    powerFrame <- reactive({
+
+      message("Detection power for the current parameter combination is calculated, please wait.")
 
       #Get the parameters
       totalBudget<-input$budget
       readDepthRange<-round(seq(input$rangeReads[1],input$rangeReads[2],
-                          length.out = 10))
-      cellPersRange<-round(seq(input$rangeCells[1],input$rangeCells[2],
                                 length.out = 10))
+      cellPersRange<-round(seq(input$rangeCells[1],input$rangeCells[2],
+                               length.out = 10))
       type<-input$study
       ref.study.name<-input$ref.study
       ct.freq<-input$ct.freq
@@ -57,39 +92,154 @@ shinyServer(
       min.UMI.counts<-input$minUMI
       perc.indiv.expr<-input$percIndiv
 
-      #TODO: Load the current required data fits (need to be chanced for a different version ...)
-      path<-"/Users/katharina.schmid/Documents/singleCellPilotProject/powerScPop/data/"
-      read.umi.fit<-readRDS(paste0(path,"readDepthUmiFit.RDS"))
-      gamma.mixed.fits<-readRDS(paste0(path,"gamma_umi_fits.RDS"))
-      ref.study<-readRDS(paste0(path,"eQTL_ranks_her.RDS"))
-      disp.fun.param<-read.csv(paste0(path,"dispFunParams_medianEstimate.csv"))
+      #Load required data sets
+      data(readDepthUmiFit) #Relation between reads and UMI
+      data(gammaUmiFits) #Relation between UMI and gamma parameters
+      data(dispFunParam) #Parameters of mean-dispersion curve
 
-      #Set a name
-      ref.study$name<-paste0("Blueprint (",ref.study$cellType,")")
+      #Select priors dependent on study type
+      if(type=="eqtl"){
+        data(eQTLRefStudy)
+        ref.study<-eqtl.ref.study
+      } else {
+        data(DERefStudy)
+        ref.study<-de.ref.study
+      }
 
       power.study.plot<-optimize.constant.budget(totalBudget, readDepthRange, cellPersRange,
-                                 costKit,costFlowCell,readsPerFlowcell,
-                                 ct.freq,type,ref.study,ref.study.name,
-                                 personsPerLane,
-                                 read.umi.fit,gamma.mixed.fits,ct,
-                                 disp.fun.param,
-                                 multipletRate,multipletFactor,
-                                 min.UMI.counts,perc.indiv.expr)
+                                                 costKit,costFlowCell,readsPerFlowcell,
+                                                 ct.freq,type,ref.study,ref.study.name,
+                                                 personsPerLane,
+                                                 read.umi.fit,gamma.mixed.fits,ct,
+                                                 disp.fun.param,
+                                                 multipletRate,multipletFactor,
+                                                 min.UMI.counts,perc.indiv.expr)
+
+      message("Calculation finished.")
+
+      return(power.study.plot)
+    })
+
+    output$powerPlot<-renderPlotly({
+
+      power.study.plot<-powerFrame()
 
       power.study.plot$totalCells<-as.factor(power.study.plot$totalCells)
       power.study.plot$readDepth<-as.factor(power.study.plot$readDepth)
-      ggplot(power.study.plot,aes(x=readDepth,y=totalCells,fill=powerDetect))+
-        geom_tile()+
-        ggtitle("Detection power (text shows detection power)")+
-        geom_text(aes(label=round(powerDetect,2),color=powerDetect>0.15))+
-        scale_colour_manual(values=c("white", "black"))+
-        guides(colour=FALSE)
 
-      p<-ggplot(power.study.plot,aes(x=readDepth,y=totalCells,fill=powerDetect))+
-        geom_tile()
+      #Round value to not display to many digits
+      power.study.plot$powerDetect<-round(power.study.plot$powerDetect,3)
 
-      ggplotly(p)
+      #Highlight one point
+      s <- event_data("plotly_click", source = "powerMap")
+      if (length(s)) {
+
+        #Select study of interest dependent on the click
+        max.study<-power.study.plot[power.study.plot$totalCells==s[["y"]] & power.study.plot$readDepth==s[["x"]],]
+
+      } else {
+        max.study<-power.study.plot[which.max(power.study.plot$powerDetect),]
+      }
+
+      colnames(power.study.plot)[2]<-"Detection.power"
+      plot_ly(power.study.plot, x=~readDepth,y=~totalCells,z=~Detection.power,type = "heatmap",
+              source="powerMap", hoverinfo = 'text',
+              text = ~paste('Read depth: ',readDepth,
+                            '<br> Cells per individuum: ',totalCells,
+                            '<br> Sample size: ', sampleSize,
+                            '<br> Detection power: ', Detection.power))%>%
+        layout(annotations =  list(showarrow=TRUE, x = max.study$readDepth,
+                                   y = max.study$totalCells,text = "Selected <br> study"),
+               xaxis = list(title="Read depth"), yaxis = list(title="Cells per individuum"),
+               legend=list(title="Detection power"))
 
     })
+
+
+    output$readPlot<-renderPlotly({
+      s <- event_data("plotly_click", source = "powerMap")
+
+      power.study<-powerFrame()
+
+      #Get the parameters
+      totalBudget<-input$budget
+      costKit<-input$costKit
+      costFlowCell<-input$costFlowCell
+      readsPerFlowcell<-input$readsPerFlowcell
+      personsPerLane<-input$personsLane
+
+      if (length(s)) {
+
+        #Select study of interest dependent on the click
+        max.study<-power.study[power.study$totalCells==s[["y"]] & power.study$readDepth==s[["x"]],]
+
+      } else {
+        #Select study with the maximal values
+        max.study<-power.study[which.max(power.study$powerDetect),]
+      }
+
+      #Get study type
+      if(input$study=="eqtl"){
+        powerName<-"eQTL power"
+      } else {
+        powerName<-"DE power"
+      }
+
+      ##############
+      #Plot cells per person
+      power.study.plot<-power.study[power.study$readDepth==max.study$readDepth,]
+
+      #Replace column names
+      colnames(power.study.plot)[2:4]<-c("Detection power","Expression probability",powerName)
+
+      power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","readDepth","totalCells",
+                                                        "usableCells","multipletFraction",
+                                                        "ctCells","readDepthSinglet","expressedGenes"))
+
+      #Round value to not display to many digits
+      power.study.plot$value<-round(power.study.plot$value,3)
+
+      p.cp <- plot_ly(power.study.plot, x = ~totalCells, y = ~value,
+                      color=~variable, type = 'scatter', mode = 'lines+markers',
+                      legendgroup = ~variable,
+                      hoverinfo = 'text',
+                      text = ~paste('Cells per individuum: ',totalCells,
+                                    '<br> Sample size: ', sampleSize,
+                                    '<br>',variable,': ',value))%>%
+        layout(xaxis = list(title="Cells per individuum"), yaxis = list(title="Probability"),
+               legend=list(x=-.1, y=1.2,orientation = 'h'),
+               shapes=list(type='line', x0= max.study$totalCells, x1= max.study$totalCells,
+                           y0=0, y1=1, line=list(dash='dot', width=1)))
+
+      ##########
+      #Plot read depth
+      power.study.plot<-power.study[power.study$totalCells==max.study$totalCells,]
+
+      #Replace column names
+      colnames(power.study.plot)[2:4]<-c("Detection power","Expression probability",powerName)
+
+      power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
+                                                        "usableCells","multipletFraction",
+                                                        "ctCells","readDepth","readDepthSinglet","expressedGenes"))
+
+      #Round value to not display to many digits
+      power.study.plot$value<-round(power.study.plot$value,3)
+
+      p.rd <- plot_ly(power.study.plot, x = ~readDepth, y = ~value,
+                      color=~variable, type = 'scatter', mode = 'lines+markers',
+                      legendgroup = ~variable, showlegend=FALSE,
+                      hoverinfo = 'text',
+                      text = ~paste('Read depth: ',readDepth,
+                                    '<br> Sample size: ', sampleSize,
+                                    '<br>',variable,': ',value))%>%
+        layout(xaxis = list(title="Read depth"), yaxis = list(title="Probability"),
+               shapes=list(type='line', x0= max.study$readDepth, x1= max.study$readDepth,
+                           y0=0, y1=1, line=list(dash='dot', width=1)))
+
+      subplot(p.cp,p.rd,shareY=TRUE,titleX=TRUE)
+
+    })
+
+
   }
 )
