@@ -62,6 +62,10 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #'
 #' @export
 #'
+#' @examples
+#' power.general.withDoublets(83,1000,1000,0.2,"de",de.ref.study, "Blueprint (CLL) iCLL-mCLL",
+#' 8,read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
+#'
 power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      type,ref.study,ref.study.name,
                                      personsPerLane,
@@ -201,6 +205,12 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #'
 #' @export
+#'
+#' @examples
+#' optimize.constant.budget(10000,seq(1000,10000,by=1000),seq(1000,10000,by=1000),
+#' 5600,14032,4100*10^6,0.2,"de",de.ref.study,"Blueprint (CLL) iCLL-mCLL",8,
+#' read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
+#'
 optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                    costKit,costFlowCell,readsPerFlowcell,
                                    ct.freq,type,ref.study,ref.study.name,

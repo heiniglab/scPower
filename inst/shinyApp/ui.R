@@ -38,6 +38,8 @@ shinyUI(
        sidebarPanel(
 
          h3("Study parameters"),
+         actionButton("recalc", "Calculate"),
+         h4("Comparsion type"),
          radioButtons("study", label = "Study type",
                       choices = list("DE study" = "de", "eQTL study" = "eqtl"),
                       selected = "eqtl"),

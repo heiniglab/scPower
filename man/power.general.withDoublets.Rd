@@ -49,3 +49,8 @@ This function to calculate the detection power for a DE or eQTL study, given DE/
 in a single cell RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
 per person and read depth.
 }
+\examples{
+power.general.withDoublets(83,1000,1000,0.2,"de",de.ref.study, "Blueprint (CLL) iCLL-mCLL",
+8,read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
+
+}

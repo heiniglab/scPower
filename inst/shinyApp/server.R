@@ -5,6 +5,7 @@ library(gridExtra)
 library(reshape)
 
 shinyServer(
+
   function(input, output, session) {
 
     ###############################
@@ -67,9 +68,12 @@ shinyServer(
     })
 
     #Calculate power grid for the current version of
-    powerFrame <- reactive({
+    powerFrame <- eventReactive(input$recalc, {
 
       message("Detection power for the current parameter combination is calculated, please wait.")
+
+      #Reset data of the click event
+      session$userData$plotlyInputStore[["plotly_click-powerMap"]]<-NULL
 
       #Get the parameters
       totalBudget<-input$budget
@@ -101,6 +105,7 @@ shinyServer(
       if(type=="eqtl"){
         data(eQTLRefStudy)
         ref.study<-eqtl.ref.study
+
       } else {
         data(DERefStudy)
         ref.study<-de.ref.study
@@ -131,9 +136,8 @@ shinyServer(
       power.study.plot$powerDetect<-round(power.study.plot$powerDetect,3)
 
       #Highlight one point
-      s <- event_data("plotly_click", source = "powerMap")
-      if (length(s)) {
-
+      s<-event_data("plotly_click", source = "powerMap")
+      if (! is.null(s)) {
         #Select study of interest dependent on the click
         max.study<-power.study.plot[power.study.plot$totalCells==s[["y"]] & power.study.plot$readDepth==s[["x"]],]
 
@@ -142,6 +146,8 @@ shinyServer(
       }
 
       colnames(power.study.plot)[2]<-"Detection.power"
+
+
       plot_ly(power.study.plot, x=~readDepth,y=~totalCells,z=~Detection.power,type = "heatmap",
               source="powerMap", hoverinfo = 'text',
               text = ~paste('Read depth: ',readDepth,
@@ -157,8 +163,6 @@ shinyServer(
 
 
     output$readPlot<-renderPlotly({
-      s <- event_data("plotly_click", source = "powerMap")
-
       power.study<-powerFrame()
 
       #Get the parameters
@@ -168,6 +172,7 @@ shinyServer(
       readsPerFlowcell<-input$readsPerFlowcell
       personsPerLane<-input$personsLane
 
+      s<-event_data("plotly_click", source = "powerMap")
       if (length(s)) {
 
         #Select study of interest dependent on the click
