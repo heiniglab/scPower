@@ -8,3 +8,11 @@ License: What license is it under?
 Encoding: UTF-8
 LazyData: true
 RoxygenNote: 6.1.1
+Suggests: 
+    knitr,
+    rmarkdown,
+    ggplot2,
+    ggpubr,
+    data.table,
+    viridis
+VignetteBuilder: knitr

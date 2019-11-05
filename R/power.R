@@ -54,9 +54,15 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
 #' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
+#' gene per person and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
+#' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -71,21 +77,25 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      personsPerLane,
                                      read.umi.fit,gamma.mixed.fits,ct,
                                      disp.fun.param,
+                                     mappingEfficiency=0.8,
                                      multipletRate=7.67e-06,multipletFactor=1.82,
                                      min.UMI.counts=10,perc.indiv.expr=0.5,
-                                     nGenes=21000){
+                                     nGenes=21000,samplingMethod="quantiles"){
 
-  #Estimate multiplet rate and "real read depth"
   #Estimate multiplet fraction dependent on cells per lane
   multipletFraction<-multipletRate*nCells*personsPerLane
   usableCells<-round((1-multipletFraction)*nCells)
+  #Estimate multiplet rate and "real read depth"
   readDepthSinglet<-readDepth*nCells/(usableCells+multipletFactor*(nCells-usableCells))
+
+  #Estimate fraction of correctly mapped reads
+  mappedReadDepth<-readDepthSinglet*mappingEfficiency
 
   #Get the fraction of cell type cells
   ctCells<-round(usableCells*ct.freq)
 
   #Get mean umi dependent on read depth
-  umiCounts<-read.umi.fit$intercept+read.umi.fit$reads*log(readDepthSinglet)
+  umiCounts<-read.umi.fit$intercept+read.umi.fit$reads*log(mappedReadDepth)
 
   #Get gamma values dependent on mean umi
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
@@ -99,7 +109,12 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                               sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
 
   #Sample means values
-  gene.means<-sample.mean.values(gamma.parameters,nGenes)
+  if(samplingMethod=="random"){
+    gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
+  } else if (samplingMethod=="quantiles"){
+    gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
+  }
+
 
   #Fit dispersion parameter dependent on mean parameter
   gene.disps<-sample.disp.values(gene.means,disp.fun.param)
@@ -172,6 +187,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                           ctCells=ctCells,
                           readDepth=readDepth,
                           readDepthSinglet=readDepthSinglet,
+                          mappedReadDepth=mappedReadDepth,
                           expressedGenes=exp.genes)
 
   return(power.study)
@@ -201,8 +217,15 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
 #' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
+#' gene per person and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
+#' to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #'
 #' @export
 #'
@@ -217,8 +240,10 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                    personsPerLane,
                                    read.umi.fit,gamma.mixed.fits,ct,
                                    disp.fun.param,
+                                   mappingEfficiency=0.8,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
-                                   min.UMI.counts=10,perc.indiv.expr=0.5){
+                                   min.UMI.counts=10,perc.indiv.expr=0.5,
+                                   nGenes=21000,samplingMethod="quantiles"){
 
   #Build a frame of all possible combinations
   param.combis<-expand.grid(cellPersRange,readDepthRange)
@@ -247,8 +272,11 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                     gamma.mixed.fits=gamma.mixed.fits,
                                     ct=ct,
                                     disp.fun.param=disp.fun.param,
+                                    mappingEfficiency=mappingEfficiency,
                                     min.UMI.counts=min.UMI.counts,
-                                    perc.indiv.expr=perc.indiv.expr))
+                                    perc.indiv.expr=perc.indiv.expr,
+                                    nGenes=nGenes,
+                                    samplingMethod=samplingMethod))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -311,6 +339,8 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #'
 #' @return Number of samples that can be sampled with this budget and other parameters
+#'
+#' @export
 sampleSizeBudgetCalculation<-function(cellsPerPerson,readDepth,totalCost,
                                       costKit,personsPerLane,
                                       costFlowCell,readsPerFlowcell){

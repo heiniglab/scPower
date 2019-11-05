@@ -7,8 +7,9 @@
 optimize.constant.budget(totalBudget, readDepthRange, cellPersRange,
   costKit, costFlowCell, readsPerFlowcell, ct.freq, type, ref.study,
   ref.study.name, personsPerLane, read.umi.fit, gamma.mixed.fits, ct,
-  disp.fun.param, multipletRate = 7.67e-06, multipletFactor = 1.82,
-  min.UMI.counts = 10, perc.indiv.expr = 0.5)
+  disp.fun.param, mappingEfficiency = 0.8, multipletRate = 7.67e-06,
+  multipletFactor = 1.82, min.UMI.counts = 10, perc.indiv.expr = 0.5,
+  nGenes = 21000, samplingMethod = "quantiles")
 }
 \arguments{
 \item{totalBudget}{Overall experimental budget}
@@ -41,9 +42,21 @@ optimize.constant.budget(totalBudget, readDepthRange, cellPersRange,
 
 \item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean (required columns:)}
 
+\item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)}
+
 \item{multipletRate}{Expected increase in multiplets for additional cell in the lane}
 
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
+
+\item{min.UMI.counts}{Expression defition parameter: more than is number of UMI counts for each
+gene per person and cell type is required to defined it as expressed in one individual}
+
+\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals that need to have this gene expressed
+to define it as globally expressed}
+
+\item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
+
+\item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
 
 \item{totalCost}{Experimental budget}
 }

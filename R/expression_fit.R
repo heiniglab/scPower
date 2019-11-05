@@ -227,7 +227,7 @@ mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000){
   return(gamma.mixed.fits)
 }
 
-#' Sample the mean values using a gamma mixed distribution
+#' Randomly sample the mean values using a gamma mixed distribution
 #'
 #' WARNING: The used package might be changed later
 #'
@@ -241,7 +241,7 @@ mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000){
 #'
 #' @export
 #'
-sample.mean.values<-function(gamma.parameters, nGenes=21000){
+sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
 
   require(mixR)
 
@@ -250,6 +250,43 @@ sample.mean.values<-function(gamma.parameters, nGenes=21000){
                        pi=c(gamma.parameters$pi.c1,gamma.parameters$pi.c2),
                        mu=c(gamma.parameters$mu.c1,gamma.parameters$mu.c2),
                        sd=c(gamma.parameters$sd.c1,gamma.parameters$sd.c2))
+  return(mean.vals)
+}
+
+#' Draw the mean values using the two quantile distributions of the gamma mixed distribution
+#'
+#' @param gamma.parameters Data frame with gamma parameters
+#' (fitted using mixed.gamma.estimation)
+#' @param nGenes Number of genes to sample
+#'
+#' @return Vector with simulated mean values
+#'
+#' @export
+#'
+sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
+
+  #Distribution of genes between the quantiles
+  nGenes.c1<-round(nGenes*gamma.parameters$pi.c1)
+  nGenes.c2<-nGenes-nGenes.c1
+
+  #Reformate the gamma parameters
+  gamma.parameters$rate.c1<-gamma.parameters$mu.c1/gamma.parameters$sd.c1^2
+  gamma.parameters$shape.c1<-gamma.parameters$mu.c1*gamma.parameters$rate.c1
+  gamma.parameters$rate.c2<-gamma.parameters$mu.c2/gamma.parameters$sd.c2^2
+  gamma.parameters$shape.c2<-gamma.parameters$mu.c2*gamma.parameters$rate.c2
+
+  #Calculate which quantile values should be checked to get the total number of genes
+  quantiles.c1<-seq(0,1-1/nGenes.c1,by=1/nGenes.c1)
+  quantiles.c2<-seq(0,1-1/nGenes.c2,by=1/nGenes.c2)
+
+  #Sample from each component the quantiles
+  means.c1<-qgamma(quantiles.c1,shape=gamma.parameters$shape.c1,
+                   rate=gamma.parameters$rate.c1)
+  means.c2<-qgamma(quantiles.c2,shape=gamma.parameters$shape.c2,
+                   rate=gamma.parameters$rate.c2)
+
+  mean.vals<-c(means.c1,means.c2)
+
   return(mean.vals)
 }
 

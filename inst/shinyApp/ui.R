@@ -39,6 +39,8 @@ shinyUI(
 
          h3("Study parameters"),
          actionButton("recalc", "Calculate"),
+         hr(),
+
          h4("Comparsion type"),
          radioButtons("study", label = "Study type",
                       choices = list("DE study" = "de", "eQTL study" = "eqtl"),
@@ -50,7 +52,7 @@ shinyUI(
          selectInput("ref.study", label = "Reference study",
                      choices = list("Blueprint (Monocytes)", "TODO"),
                      selected = "Blueprint (Monocytes)"),
-         numericInput("budget", label = "Total budget", value = 10000, step=1000,min=0),
+         numericInput("budget", label = "Total budget", value = 30000, step=1000,min=0),
          sliderInput("rangeReads", "Read depth",
                      min = 0, max = 50000,
                      value = c(2000,50000)),
@@ -69,7 +71,9 @@ shinyUI(
          numericInput("personsLane", label = "Persons per lane", value = 8,
                       step=1,min=1),
 
-         h4("Multiplet estimation"),
+         h4("Mapping and Multiplet estimation"),
+         numericInput("map.eff", label = "Mapping efficiency",
+                      value = 0.8,step=0.05,min=0,max=1),
          numericInput("multipletRate", label = "Multiplet rate",
                       value = 7.67e-06,step=1e-6,min=0),
          numericInput("multipletFactor", label = "Multiplet factor",

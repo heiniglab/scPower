@@ -91,6 +91,7 @@ shinyServer(
       readsPerFlowcell<-input$readsPerFlowcell
       personsPerLane<-input$personsLane
 
+      mappingEfficiency<-input$map.eff
       multipletRate<-input$multipletRate
       multipletFactor<-input$multipletFactor
       min.UMI.counts<-input$minUMI
@@ -116,9 +117,10 @@ shinyServer(
                                                  ct.freq,type,ref.study,ref.study.name,
                                                  personsPerLane,
                                                  read.umi.fit,gamma.mixed.fits,ct,
-                                                 disp.fun.param,
+                                                 disp.fun.param,mappingEfficiency,
                                                  multipletRate,multipletFactor,
-                                                 min.UMI.counts,perc.indiv.expr)
+                                                 min.UMI.counts,perc.indiv.expr,
+                                                 samplingMethod="quantiles")
 
       message("Calculation finished.")
 
@@ -199,7 +201,8 @@ shinyServer(
 
       power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","readDepth","totalCells",
                                                         "usableCells","multipletFraction",
-                                                        "ctCells","readDepthSinglet","expressedGenes"))
+                                                        "ctCells","readDepthSinglet",
+                                                        "mappedReadDepth","expressedGenes"))
 
       #Round value to not display to many digits
       power.study.plot$value<-round(power.study.plot$value,3)
@@ -225,7 +228,8 @@ shinyServer(
 
       power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
                                                         "usableCells","multipletFraction",
-                                                        "ctCells","readDepth","readDepthSinglet","expressedGenes"))
+                                                        "ctCells","readDepth","readDepthSinglet",
+                                                        "mappedReadDepth","expressedGenes"))
 
       #Round value to not display to many digits
       power.study.plot$value<-round(power.study.plot$value,3)
