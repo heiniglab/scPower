@@ -1,0 +1,330 @@
+---
+title: "Reproduce paper plots with powerScPop"
+author: "Matthias Heinig, Katharina Schmid"
+date:  "`r format(Sys.time(), '%d %B, %Y')`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{reproduce-paper-plots}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(powerScPop)
+library(ggplot2)
+library(data.table)
+library(viridis)
+library(ggpubr)
+library(RColorBrewer)
+```
+
+This vignette shows how the plots of the paper "" can be reproduce using this package.
+
+```{r}
+#Color specifications (taken from Ines)
+
+HMGU.blue <- "#003E6E"
+mygray <- "#C6DDEA"
+col.paired <- brewer.pal(n = 12, "Paired")
+col.set <- col.paired[c(2,8,9)]
+col.set2 <- col.paired[c(9,5,7,3,8,2)]
+col.set3 <- brewer.pal(n = 11, "PRGn")[c(4,6,8)]
+col.set3 <- c(col.set[3], "#F7F7F7", col.set[1])
+col.set4 <- c(col.set[1], col.set[3])
+col.set5<-col.paired[seq(2,12,2)]
+
+
+```
+
+## Figure 2: Power to detect rare cell types
+
+## Figure 3: Gene curve fits using our gamma mixed models parameterized over UMI counts per cell
+
+## Figure 4: Expression probability, power and detection power
+
+```{r, fig.width=8,fig.height=6}
+#General parameters
+transcriptome.mapped.reads<-20000
+nGenes<-21000
+ct<-"CD4 T cells"
+ct.freq<-1
+personsPerLane<-8
+
+########
+# DE subplot
+cellsPerCelltype<-c(50,100,150,200,300)
+sampleSize<-c(6,8,10,20,30,50)
+ref.study.name<-"Blueprint (CLL) iCLL-mCLL"
+  
+#Build a frame of all possible combinations
+param.combis<-expand.grid(cellsPerCelltype,sampleSize)
+colnames(param.combis)<-c("cellsPerCelltype","sampleSize")
+
+#Test results for each parameter combination
+res<-lapply(1:nrow(param.combis),function(i)
+  power.general.withDoublets(param.combis$sampleSize[i],
+                             param.combis$cellsPerCelltype[i],
+                             transcriptome.mapped.reads,
+                             ct.freq, "de",de.ref.study,ref.study.name,
+                             personsPerLane,read.umi.fit,gamma.mixed.fits,ct,
+                             disp.fun.param,mappingEfficiency = 1,
+                             multipletRate=0,multipletFactor=1,
+                             nGenes=21000))
+
+power.DE.study<-rbindlist(res)
+
+#Plot DE results
+power.DE.study<-melt(power.DE.study,id.vars=c("name","sampleSize","totalCells","usableCells",
+                                              "multipletFraction","ctCells","readDepth",
+                                              "readDepthSinglet","mappedReadDepth",
+                                              "expressedGenes"))
+power.DE.study$variable<-factor(power.DE.study$variable,levels=c("exp.probs","power","powerDetect"))
+
+var.labs<-c("Expression probability", "DE power", 
+            "Detection power")
+names(var.labs)<-c("exp.probs","power","powerDetect")
+
+power.DE.study$ctCells<-as.factor(power.DE.study$ctCells)
+power.DE.study$sampleSize<-as.factor(power.DE.study$sampleSize)
+g.DE<-ggplot(power.DE.study,aes(x=ctCells,y=sampleSize,fill=value))+
+  geom_tile()+facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
+  xlab("Number of measured cells per cell type and individual")+ylab("Total sample size")+
+  scale_fill_viridis("Probability")+
+  theme_bw()+
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=8),
+        legend.title=element_text(size=8),
+        legend.text=element_text(size=8))
+
+########
+# eQTL subplot
+cellsPerCelltype<-c(50,100,150,200,300)
+sampleSize<-c(50,100,150,200)
+ref.study.name<-"Blueprint (Tcells)"
+  
+#Build a frame of all possible combinations
+param.combis<-expand.grid(cellsPerCelltype,sampleSize)
+colnames(param.combis)<-c("cellsPerCelltype","sampleSize")
+
+#Test results for each parameter combination
+res<-lapply(1:nrow(param.combis),function(i)
+  power.general.withDoublets(param.combis$sampleSize[i],
+                             param.combis$cellsPerCelltype[i],
+                             transcriptome.mapped.reads,
+                             ct.freq, "eqtl",eqtl.ref.study,ref.study.name,
+                             personsPerLane,read.umi.fit,gamma.mixed.fits,ct,
+                             disp.fun.param,mappingEfficiency = 1,
+                             multipletRate=0,multipletFactor=1,
+                             nGenes=21000))
+
+power.eqtl.study<-rbindlist(res)
+
+#Plot eQTL results
+power.eqtl.study<-melt(power.eqtl.study,id.vars=c("name","sampleSize","totalCells","usableCells",
+                                              "multipletFraction","ctCells","readDepth",
+                                              "readDepthSinglet","mappedReadDepth",
+                                              "expressedGenes"))
+power.eqtl.study$variable<-factor(power.eqtl.study$variable,levels=c("exp.probs","power","powerDetect"))
+
+var.labs<-c("Expression probability", "eQTL power", 
+            "Detection power")
+names(var.labs)<-c("exp.probs","power","powerDetect")
+
+power.eqtl.study$ctCells<-as.factor(power.eqtl.study$ctCells)
+power.eqtl.study$sampleSize<-as.factor(power.eqtl.study$sampleSize)
+g.eqtl<-ggplot(power.eqtl.study,aes(x=ctCells,y=sampleSize,fill=value))+
+  geom_tile()+facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
+  xlab("Number of measured cells per cell type and individual")+ylab("Total sample size")+
+  scale_fill_viridis("Probability")+
+  theme_bw()+
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=8),
+        legend.title=element_text(size=8),
+        legend.text=element_text(size=8))
+
+g<-ggarrange(g.DE,g.eqtl,ncol=1,nrow=2,labels=c("A","B"),
+          align="hv",common.legend=TRUE,legend="right")
+
+print(g)
+
+```
+
+## Figure 5: Optimized parameter to maximize detection power
+
+```{r,fig.width=8,fig.height=8}
+
+costKit<-5600
+costFlowCell<-14032
+readsPerFlowcell<-4100*10^6
+personsPerLane<-5
+ct<-"CD4 T cells"
+ct.freq<-0.25
+mappingEfficiency<-0.8
+########
+# DE subplot
+
+comp.type<-"de"
+ref.study.name<-"Blueprint (CLL) iCLL-mCLL"
+readDepth<-c(2000,5000,10000,15000,20000,30000,50000,70000)
+cellsPerPerson<-c(100,200,500,700,seq(1000,12000,500))
+totalBudget<-5000
+
+power.study<-optimize.constant.budget(totalBudget,readDepth,cellsPerPerson,costKit,
+                              costFlowCell,readsPerFlowcell,ct.freq,comp.type,
+                              de.ref.study,ref.study.name,personsPerLane,
+                              read.umi.fit,gamma.mixed.fits,ct,disp.fun.param,
+                              mappingEfficiency=mappingEfficiency)
+
+#Print maximal combination of values
+max.study<-power.study[which.max(power.study$powerDetect),]
+
+#Replace subsampling
+colnames(power.study)[2:4]<-c("Detection power","Expression probability","DE power")
+
+#Show two-dimensional plots with always one parameter fixed
+#Fixed read depths
+power.study.plot<-power.study[power.study$readDepth==max.study$readDepth,]
+power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
+                                             "usableCells","multipletFraction",
+                                             "ctCells","readDepth","readDepthSinglet",
+                                             "mappedReadDepth","expressedGenes"))
+power.study.plot$variable<-factor(power.study.plot$variable,
+                                  levels=c("Expression probability","DE power","Detection power"))
+
+g.rd<-ggplot(power.study.plot,aes(totalCells,value,color=variable))+geom_line()
+labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
+
+g.rd<-g.rd + scale_x_continuous("Cells per person",sec.axis=sec_axis(~., breaks=labels,
+                                                                    labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(c,max.study$readDepth,
+    totalBudget, costKit, personsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
+  geom_vline(xintercept = max.study$totalCells)+
+  ylab("Probability")+
+  scale_color_manual("",values=col.set)+
+  ylim(0,1)+
+  theme_bw() +
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=8),
+        legend.position=c(0.85,0.3),
+        legend.title=element_blank(),
+        legend.text=element_text(size=8))
+
+#Fixed number of cells
+power.study.plot<-power.study[power.study$totalCells==max.study$totalCells,]
+power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
+                                             "usableCells","multipletFraction",
+                                             "ctCells","readDepth","readDepthSinglet",
+                                             "mappedReadDepth","expressedGenes"))
+power.study.plot$variable<-factor(power.study.plot$variable,
+                                  levels=c("Expression probability","DE power","Detection power"))
+
+g.cp<-ggplot(power.study.plot,aes(readDepth,value,color=variable))+geom_line()
+labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
+
+g.cp <- g.cp + scale_x_continuous("Read depth",sec.axis=sec_axis(~., breaks=labels,
+                                                      labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
+    c,totalBudget, costKit, personsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
+  geom_vline(xintercept = max.study$readDepth)+
+  ylab("Probability")+
+  scale_color_manual("",values=col.set)+
+  ylim(0,1)+
+  theme_bw() +
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=8),
+        legend.position=c(0.85,0.3),
+        legend.title=element_blank(),
+        legend.text=element_text(size=8))
+
+g.a<-ggarrange(g.rd,g.cp,ncol=2,nrow=1,labels=c("A","B"),
+          align="hv",common.legend=TRUE,legend="bottom")
+
+########
+# eQTL subplot
+
+comp.type<-"eqtl"
+ref.study.name<-"Blueprint (Tcells)"
+readDepth<-c(2000,5000,10000,15000,20000,30000,50000)
+cellsPerPerson<-c(100,200,500,700,seq(1000,9000,500))
+totalBudget<-30000
+
+power.study<-optimize.constant.budget(totalBudget,readDepth,cellsPerPerson,costKit,
+                              costFlowCell,readsPerFlowcell,ct.freq,comp.type,
+                              eqtl.ref.study,ref.study.name,personsPerLane,
+                              read.umi.fit,gamma.mixed.fits,ct,disp.fun.param,
+                              mappingEfficiency=mappingEfficiency)
+
+#Print maximal combination of values
+max.study<-power.study[which.max(power.study$powerDetect),]
+
+#Replace subsampling
+colnames(power.study)[2:4]<-c("Detection power","Expression probability","eQTL power")
+
+#Show two-dimensional plots with always one parameter fixed
+#Fixed read depths
+power.study.plot<-power.study[power.study$readDepth==max.study$readDepth,]
+power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
+                                             "usableCells","multipletFraction",
+                                             "ctCells","readDepth","readDepthSinglet",
+                                             "mappedReadDepth","expressedGenes"))
+power.study.plot$variable<-factor(power.study.plot$variable,
+                                  levels=c("Expression probability","eQTL power","Detection power"))
+
+g.rd<-ggplot(power.study.plot,aes(totalCells,value,color=variable))+geom_line()
+labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
+
+g.rd<-g.rd + scale_x_continuous("Cells per person",sec.axis=sec_axis(~., breaks=labels,
+                                                                    labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
+    c,totalBudget, costKit, personsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
+  geom_vline(xintercept = max.study$totalCells)+
+  ylab("Probability")+
+  scale_color_manual("",values=col.set)+
+  ylim(0,1)+
+  theme_bw() +
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=8),
+        legend.position=c(0.85,0.3),
+        legend.title=element_blank(),
+        legend.text=element_text(size=8))
+
+#Fixed number of cells
+power.study.plot<-power.study[power.study$totalCells==max.study$totalCells,]
+power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
+                                             "usableCells","multipletFraction",
+                                             "ctCells","readDepth","readDepthSinglet",
+                                             "mappedReadDepth","expressedGenes"))
+power.study.plot$variable<-factor(power.study.plot$variable,
+                                  levels=c("Expression probability","eQTL power","Detection power"))
+
+g.cp<-ggplot(power.study.plot,aes(readDepth,value,color=variable))+geom_line()
+labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
+
+g.cp <- g.cp + scale_x_continuous("Read depth",sec.axis=sec_axis(~., breaks=labels,
+                                                      labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
+    c,totalBudget, costKit, personsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
+  geom_vline(xintercept = max.study$readDepth)+
+  scale_color_manual("",values=col.set)+
+  ylab("Probability")+
+  ylim(0,1)+
+  theme_bw() +
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=8),
+        legend.position=c(0.85,0.3),
+        legend.title=element_blank(),
+        legend.text=element_text(size=8))
+
+g.b<-ggarrange(g.rd,g.cp,ncol=2,nrow=1,labels=c("C","D"),
+          align="hv",common.legend=TRUE,legend="bottom")
+
+g<-ggarrange(g.a,g.b,ncol=1,nrow=2)
+
+print(g)
+
+```
+
+## Supplementary figures
