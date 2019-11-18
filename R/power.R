@@ -47,7 +47,8 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' @param readDepth Target read depth per cell
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
-#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks (required columns:)
+#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
+#' (required columns: rank, FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param personsPerLane Maximal number of persons per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
@@ -113,6 +114,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
   } else if (samplingMethod=="quantiles"){
     gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
+  } else {
+    stop("No known sampling method. Use the parameters 'random' or 'quantiles'.")
   }
 
 
@@ -257,6 +260,13 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                                                             costKit,personsPerLane,
                                                                             costFlowCell,readsPerFlowcell)))
 
+  #Remove all combinations with a sample size of 0
+  if(any(param.combis$estimated.sampleSize==0)){
+    warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
+    param.combis<-param.combis[param.combis$estimated.sampleSize>0,]
+  }
+
+
   power.study<-mapply(power.general.withDoublets,
                       param.combis$estimated.sampleSize,
                       param.combis$cellsPerPerson,
@@ -330,6 +340,8 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 
 #' Required sample size
 #'
+#' A balanced design with two classes is assumed for the sample size calculation.
+#'
 #' @param cellsPerPerson Cells per person
 #' @param readDepth Read depth per cell
 #' @param totalCost Experimental budget
@@ -344,6 +356,11 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 sampleSizeBudgetCalculation<-function(cellsPerPerson,readDepth,totalCost,
                                       costKit,personsPerLane,
                                       costFlowCell,readsPerFlowcell){
-  return(totalCost / (costKit/(6*personsPerLane) +
-                 cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell))
+
+  #Estimate the maximal sample size dependent on the cost for the other parameter
+  samples <- totalCost / (costKit/(6*personsPerLane) +
+                 cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell)
+
+  #Return only even sample sizes (due to the balanced design)
+  return(floor(samples / 2) * 2)
 }

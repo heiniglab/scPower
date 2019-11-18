@@ -22,7 +22,8 @@ power.general.withDoublets(nSamples, nCells, readDepth, ct.freq, type,
 
 \item{type}{(eqtl/de) study}
 
-\item{ref.study}{Data frame with reference studies to be used for effect sizes and ranks (required columns:)}
+\item{ref.study}{Data frame with reference studies to be used for expression ranks and effect sizes
+(required columns: rank, FoldChange (DE study) /Rsq (eQTL study))}
 
 \item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
 

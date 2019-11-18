@@ -26,5 +26,5 @@ sampleSizeBudgetCalculation(cellsPerPerson, readDepth, totalCost, costKit,
 Number of samples that can be sampled with this budget and other parameters
 }
 \description{
-Required sample size
+A balanced design with two classes is assumed for the sample size calculation.
 }
