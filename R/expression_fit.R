@@ -15,6 +15,8 @@
 create.pseudobulk<-function(expr.singlets, annotation, colName="cell.type"){
   #Get dimensions
   individuals<-unique(annotation$individual)
+  #Convert annotation column to factor as it makes handling of missing cts per person easier
+  annotation[,colName]<-as.factor(annotation[,colName])
   celltypes<-levels(annotation[,colName])
 
   expr.array<-array(0, dim=c(nrow(expr.singlets),length(individuals),
@@ -184,6 +186,8 @@ sizeFactorsPosCounts<-function(counts){
 #'
 #' @param mean.vals Vector with all normalized mean values (estimated using nbinom.estimation)
 #' @param num.genes.kept Total number of genes used for the fit (remove additional genes with a mean of 0)
+#' @param default.zero.val Zero values can not be fitted with gamma curves,
+#' therefore all zero values are replaced by a very small value
 #'
 #' @return Data frame with the six parameters describing the gamma mixed distributions
 #'
@@ -191,7 +195,8 @@ sizeFactorsPosCounts<-function(counts){
 #'
 #' @export
 #'
-mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000){
+mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000,
+                                 default.zero.val=1e-5){
 
   require(mixR)
 
@@ -205,7 +210,7 @@ mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000){
   mean.vals<-mean.vals[!zeroGenes]
 
   #Set zero values to a very small number because zero values can not be fitted ...
-  mean.vals[mean.vals==0]<-1e-5
+  mean.vals[mean.vals==0]<-default.zero.val
 
   #Split value to speed up the fitting procedure
   split.value<<-0.95
@@ -276,8 +281,8 @@ sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
   gamma.parameters$shape.c2<-gamma.parameters$mu.c2*gamma.parameters$rate.c2
 
   #Calculate which quantile values should be checked to get the total number of genes
-  quantiles.c1<-seq(0,1-1/nGenes.c1,by=1/nGenes.c1)
-  quantiles.c2<-seq(0,1-1/nGenes.c2,by=1/nGenes.c2)
+  quantiles.c1<-seq(1/(nGenes.c1+1),1-1/(nGenes.c1+1),by=1/(nGenes.c1+1))
+  quantiles.c2<-seq(1/(nGenes.c2+1),1-1/(nGenes.c2+1),by=1/(nGenes.c2+1))
 
   #Sample from each component the quantiles
   means.c1<-qgamma(quantiles.c1,shape=gamma.parameters$shape.c1,

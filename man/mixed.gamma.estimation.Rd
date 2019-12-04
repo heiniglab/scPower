@@ -4,12 +4,19 @@
 \alias{mixed.gamma.estimation}
 \title{Estimate the mixed gamma distribution of the mean values}
 \usage{
-mixed.gamma.estimation(mean.vals, num.genes.kept = 21000)
+mixed.gamma.estimation(
+  mean.vals,
+  num.genes.kept = 21000,
+  default.zero.val = 1e-05
+)
 }
 \arguments{
 \item{mean.vals}{Vector with all normalized mean values (estimated using nbinom.estimation)}
 
 \item{num.genes.kept}{Total number of genes used for the fit (remove additional genes with a mean of 0)}
+
+\item{default.zero.val}{Zero values can not be fitted with gamma curves,
+therefore all zero values are replaced by a very small value}
 }
 \value{
 Data frame with the six parameters describing the gamma mixed distributions

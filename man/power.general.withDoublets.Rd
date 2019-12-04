@@ -2,14 +2,29 @@
 % Please edit documentation in R/power.R
 \name{power.general.withDoublets}
 \alias{power.general.withDoublets}
-\title{Power calculation for a DE/eQTL study}
+\title{Power calculation for a DE/eQTL study (with a restricted number of persons per lane)}
 \usage{
-power.general.withDoublets(nSamples, nCells, readDepth, ct.freq, type,
-  ref.study, ref.study.name, personsPerLane, read.umi.fit,
-  gamma.mixed.fits, ct, disp.fun.param, mappingEfficiency = 0.8,
-  multipletRate = 7.67e-06, multipletFactor = 1.82,
-  min.UMI.counts = 10, perc.indiv.expr = 0.5, nGenes = 21000,
-  samplingMethod = "quantiles")
+power.general.withDoublets(
+  nSamples,
+  nCells,
+  readDepth,
+  ct.freq,
+  type,
+  ref.study,
+  ref.study.name,
+  personsPerLane,
+  read.umi.fit,
+  gamma.mixed.fits,
+  ct,
+  disp.fun.param,
+  mappingEfficiency = 0.8,
+  multipletRate = 7.67e-06,
+  multipletFactor = 1.82,
+  min.UMI.counts = 10,
+  perc.indiv.expr = 0.5,
+  nGenes = 21000,
+  samplingMethod = "quantiles"
+)
 }
 \arguments{
 \item{nSamples}{Sample size}

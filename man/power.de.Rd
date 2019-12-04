@@ -4,8 +4,15 @@
 \alias{power.de}
 \title{Power calculation for a DE gene}
 \usage{
-power.de(nSamples.group0, mu.group0, RR, theta, sig.level, approach = 3,
-  ssize.ratio = 1)
+power.de(
+  nSamples.group0,
+  mu.group0,
+  RR,
+  theta,
+  sig.level,
+  approach = 3,
+  ssize.ratio = 1
+)
 }
 \arguments{
 \item{nSamples.group0}{Sample size for group 0}

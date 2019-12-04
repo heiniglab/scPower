@@ -4,8 +4,14 @@
 \alias{estimate.gene.counts}
 \title{Estimate gene expression probability}
 \usage{
-estimate.gene.counts(mu, size, cells.per.person, num.indivs,
-  min.counts = 10, perc.indiv = 0.5)
+estimate.gene.counts(
+  mu,
+  size,
+  cells.per.person,
+  num.indivs,
+  min.counts = 10,
+  perc.indiv = 0.5
+)
 }
 \arguments{
 \item{mu}{Estimated mean value in sc data per gene (vector)}

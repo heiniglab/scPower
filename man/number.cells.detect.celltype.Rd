@@ -4,8 +4,12 @@
 \alias{number.cells.detect.celltype}
 \title{Cell sample size calculation for cell type identification}
 \usage{
-number.cells.detect.celltype(prob.cutoff, min.num.cells, cell.type.frac,
-  nSamples)
+number.cells.detect.celltype(
+  prob.cutoff,
+  min.num.cells,
+  cell.type.frac,
+  nSamples
+)
 }
 \arguments{
 \item{prob.cutoff}{Target power to detect the cell type}
