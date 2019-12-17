@@ -2,7 +2,7 @@
 % Please edit documentation in R/power.R
 \name{power.general.restrictedDoublets}
 \alias{power.general.restrictedDoublets}
-\title{Power calculation for a DE/eQTL study (with a restricted number of cells per lane)}
+\title{Power calculation for a DE/eQTL study with 10X design (with a restricted number of cells per lane)}
 \usage{
 power.general.restrictedDoublets(
   nSamples,

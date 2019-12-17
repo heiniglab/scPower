@@ -36,10 +36,10 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
   return(qnbinom(prob.cutoff^(1/nSamples),min.num.cells,cell.type.frac)+min.num.cells)
 }
 
-#' Power calculation for a DE/eQTL study (with a restricted number of persons per lane)
+#' Power calculation for a DE/eQTL study  with 10X design (with a restricted number of persons per lane)
 #'
-#' This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study
-#' in a single cell RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
+#' This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study,
+#' in a single cell 10X RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
 #' per person and read depth.
 #'
 #' @param nSamples Sample size
@@ -128,9 +128,9 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     stop("No known sampling method. Use the parameters 'random' or 'quantiles'.")
   }
 
-
   #Fit dispersion parameter dependent on mean parameter
-  gene.disps<-sample.disp.values(gene.means,disp.fun.param)
+  disp.fun<-disp.fun.param[disp.fun.param$ct==ct,]
+  gene.disps<-sample.disp.values(gene.means,disp.fun)
 
   sim.genes<-data.frame(mean=gene.means, disp=gene.disps)
 
@@ -206,7 +206,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   return(power.study)
 }
 
-#' Power calculation for a DE/eQTL study (with a restricted number of cells per lane)
+#' Power calculation for a DE/eQTL study with 10X design (with a restricted number of cells per lane)
 #'
 #' This function is a variant of power.general.withDoublets, where not the number of personsPerLane is given as an
 #' parameter, but instead the individuals are distributed over the lanes in a way that restricts the total number of
@@ -266,7 +266,161 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                              nGenes,samplingMethod))
 }
 
-#' Optimizing cost parameters to maximize detection power for a given budget
+#' Power calculation for a DE/eQTL study  with Smart-seq design
+#'
+#' This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study,
+#' in a single cell Smart-seq RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
+#' per person and read depth.
+#'
+#' @param nSamples Sample size
+#' @param nCells Number of cells per person
+#' @param readDepth Target read depth per cell
+#' @param ct.freq Frequency of the cell type of interest
+#' @param type (eqtl/de) study
+#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
+#' (required columns: rank, FoldChange (DE study) /Rsq (eQTL study))
+#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
+#' @param multipletFraction Multiplet fraction in the experiment as a constant factor
+#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#' @param min.norm.count Expression defition parameter: more than is number of counts per kilobase transcript for each
+#' gene per person and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
+#' to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#'
+#' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
+#'
+#' @export
+power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
+                         type,ref.study,ref.study.name,
+                         gamma.mixed.fits,ct,
+                         disp.fun.param,
+                         mappingEfficiency=0.8,
+                         multipletFraction=0,multipletFactor=1.82,
+                         min.norm.count=10,perc.indiv.expr=0.5,
+                         nGenes=21000,samplingMethod="quantiles"){
+
+  usableCells<-round((1-multipletFraction)*nCells)
+  #Estimate multiplet rate and "real read depth"
+  readDepthSinglet<-readDepth*nCells/(usableCells+multipletFactor*(nCells-usableCells))
+
+  #Estimate fraction of correctly mapped reads
+  mappedReadDepth<-readDepth*mappingEfficiency
+
+  ctCells<-usableCells*ct.freq
+
+  #Get gamma values dependent on mean umi
+  gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
+  gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanReads*mappedReadDepth
+
+  gamma.parameters<-data.frame(pi.c1=0.95,
+                               pi.c2=0.05,
+                               mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
+                               mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
+                               sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
+                               sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
+
+  #Sample means values
+  if(samplingMethod=="random"){
+    gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
+  } else if (samplingMethod=="quantiles"){
+    gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
+  } else {
+    stop("No known sampling method. Use the parameters 'random' or 'quantiles'.")
+  }
+
+  sim.genes<-data.frame(mean=gene.means)
+
+  #Calculate the mean per cell type for each individuum
+  sim.genes$mean.sum<-sim.genes$mean*ctCells
+
+  #Sort simulated genes by mean expression
+  sim.genes<-sim.genes[order(sim.genes$mean, decreasing = TRUE),]
+
+  #Assign a gene length for each gene (default 5000), for known DE genes the real value
+  sim.genes$geneLength<-5000
+  temp.ranks<-ref.study[ref.study$rank<nGenes & ref.study$name==ref.study.name,]
+  sim.genes$geneLength[temp.ranks$rank]<-temp.ranks$geneLength
+
+  #Fit dispersion parameter dependent on mean parameter
+  sim.genes$mean.length.transformed<-sim.genes$mean*sim.genes$geneLength/1000
+  sim.genes$disp<-sample.disp.values(sim.genes$mean.length.transformed,disp.fun.param)
+  sim.genes$disp.sum<-sim.genes$disp/ctCells
+
+  #Fit also length transformed sum
+  sim.genes$mean.length.sum<-sim.genes$mean.length.transformed*ctCells
+
+  #Calculate for each gene the expression probability with the definition
+  #expressed in 50% of the individuals with count > 10
+  sim.genes$exp.probs<-estimate.gene.counts(sim.genes$mean,1/sim.genes$disp,ctCells,
+                                            num.indivs=nSamples,min.counts=min.norm.count,
+                                            perc.indiv=perc.indiv.expr)
+
+  #Calculate the expected number of expressed genes
+  exp.genes<-round(sum(sim.genes$exp.probs))
+
+  #Set the simulated DE genes as the genes at the same rank position as the original DE genes
+  ranks<-ref.study$rank[ref.study$name==ref.study.name]
+
+  #Set all DE with rank > 21000 to 21000 (expression anyway nearly 0)
+  ranks[ranks>nGenes]<-nGenes
+
+  #Calculate alpha parameter corrected for multiple testing
+  alpha<-0.05/exp.genes
+
+  #Choose the DE genes according to the rank
+  foundSignGenes<-sim.genes[ranks,]
+
+  #Calculate power
+  if(type=="eqtl"){
+
+    #Set the Rsq respectively
+    foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
+
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.eqtl(foundSignGenes$Rsq[i],
+                                                                                            alpha,
+                                                                                            nSamples))
+  } else if (type=="de") {
+
+    #Set the fold change respectively
+    foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
+
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) powerScPop:::power.de(
+      floor(nSamples/2),
+      foundSignGenes$mean.length.sum[i],
+      foundSignGenes$FoldChange[i],
+      1/foundSignGenes$disp.sum[i],
+      alpha,3,ssize.ratio=1))
+  } else  {
+    print('For type parameter only "eqtl" or "de" possible!')
+  }
+
+  #Calculate total probability as the DE power times the expression probability
+  foundSignGenes$combined.prob<-foundSignGenes$power*foundSignGenes$exp.probs
+
+  power.study<-data.frame(name=ref.study.name,
+                          powerDetect=mean(foundSignGenes$combined.prob),
+                          exp.probs=mean(foundSignGenes$exp.probs),
+                          power=mean(foundSignGenes$power),
+                          sampleSize=nSamples,
+                          totalCells=nCells,
+                          usableCells=usableCells,
+                          multipletFraction=multipletFraction,
+                          ctCells=ctCells,
+                          readDepth=readDepth,
+                          readDepthSinglet=readDepthSinglet,
+                          mappedReadDepth=mappedReadDepth,
+                          expressedGenes=exp.genes)
+
+  return(power.study)
+}
+
+#' Optimizing cost parameters to maximize detection power for a given budget and 10X design
 #'
 #' This function determines the optimal parameter combination for a given budget.
 #' The optimal combination is thereby the one with the highest detection power.
@@ -364,7 +518,7 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
   return(power.study)
 }
 
-#' Optimizing cost parameters to maximize detection power for a given budget
+#' Optimizing cost parameters to maximize detection power for a given budget and 10X design
 #'
 #' This function determines the optimal parameter combination for a given budget.
 #' The optimal combination is thereby the one with the highest detection power.
@@ -461,6 +615,100 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
   return(power.study)
 }
 
+#' Optimizing cost parameters to maximize detection power for a given budget and Smart-seq design
+#'
+#' This function determines the optimal parameter combination for a given budget.
+#' The optimal combination is thereby the one with the highest detection power.
+#' The parameters are checked for a range of read depths and cells per person values,
+#' while the sample size is defined uniquely given the other two parameters and
+#' the overall budget.
+#'
+#' @param totalBudget Overall experimental budget
+#' @param readDepthRange Range of read depth values that should be tested (vector)
+#' @param cellPersRange Range of cells per person that should be tested (vector)
+#' @param totalCost Experimental budget
+#' @param prepCostCell Library preparation costs per cell
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param ct.freq Frequency of the cell type of interest
+#' @param type (eqtl/de) study
+#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks (required columns:)
+#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
+#' @param personsPerLane Maximal number of persons per 10X lane
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
+#' @param multipletFraction Multiplet fraction in the experiment as a constant factor
+#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#' @param min.norm.count Expression defition parameter: more than is number of counts per kilobase transcript for each
+#' gene per person and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
+#' to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#'
+#' @export
+#'
+#' @examples
+#' optimize.constant.budget(10000,seq(1000,10000,by=1000),seq(1000,10000,by=1000),
+#' 5600,14032,4100*10^6,0.2,"de",de.ref.study,"Blueprint (CLL) iCLL-mCLL",8,
+#' read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
+#'
+optimize.constant.budget.smartseq<-function(totalBudget, readDepthRange, cellPersRange,
+                                   prepCostCell,costFlowCell,readsPerFlowcell,
+                                   ct.freq,type,ref.study,ref.study.name,
+                                   gamma.mixed.fits,ct,
+                                   disp.fun.param,
+                                   mappingEfficiency=0.8,
+                                   multipletFraction=0,multipletFactor=1.82,
+                                   min.norm.count=10,perc.indiv.expr=0.5,
+                                   nGenes=21000,samplingMethod="quantiles"){
+
+  #Build a frame of all possible combinations
+  param.combis<-expand.grid(cellPersRange,readDepthRange)
+  colnames(param.combis)<-c("cellsPerPerson","readDepth")
+
+  #Sample size dependent on the budget
+  param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
+                                            function(i)floor(sampleSizeBudgetCalculation.smartseq(param.combis$cellsPerPerson[i],
+                                                                                         param.combis$readDepth[i],
+                                                                                         totalBudget,
+                                                                                         prepCostCell,
+                                                                                         costFlowCell,readsPerFlowcell)))
+
+  #Remove all combinations with a sample size of 0
+  if(any(param.combis$estimated.sampleSize==0)){
+    warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
+    param.combis<-param.combis[param.combis$estimated.sampleSize>0,]
+  }
+
+  power.study<-mapply(power.smartseq,
+                      param.combis$estimated.sampleSize,
+                      param.combis$cellsPerPerson,
+                      param.combis$readDepth,
+                      MoreArgs=list(ct.freq=ct.freq,
+                                    multipletFraction=multipletFraction,
+                                    multipletFactor=multipletFactor,
+                                    type=type,
+                                    ref.study=ref.study,
+                                    ref.study.name=ref.study.name,
+                                    gamma.mixed.fits=gamma.mixed.fits,
+                                    ct=ct,
+                                    disp.fun.param=disp.fun.param,
+                                    mappingEfficiency=mappingEfficiency,
+                                    min.norm.count=min.norm.count,
+                                    perc.indiv.expr=perc.indiv.expr,
+                                    nGenes=nGenes,
+                                    samplingMethod=samplingMethod))
+
+  power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
+  power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
+
+  return(power.study)
+}
+
 #' Power calculation for an eQTL gene
 #'
 #' This function calculates the power to detect an eQTL gene.
@@ -505,7 +753,7 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
   return(calc$power)
 }
 
-#' Estimate possible sample size depending on the total cost and the other parameters
+#' Estimate possible sample size depending on the total cost and the other parameters for 10X design
 #'
 #' A balanced design with two classes is assumed for the sample size calculation.
 #'
@@ -593,4 +841,30 @@ budgetCalculation<-function(cellsPerPerson,readDepth,sampleSize,
   }
   return(totalBudget)
 
+}
+
+#' Estimate possible sample size depending on the total cost and the other parameters for Smart-seq design
+#'
+#' A balanced design with two classes is assumed for the sample size calculation.
+#'
+#' @param cellsPerPerson Cells per person
+#' @param readDepth Read depth per cell
+#' @param totalCost Experimental budget
+#' @param prepCostCell Library preparation costs per cell
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Number of samples that can be sampled with this budget and other parameters
+#'
+#' @export
+sampleSizeBudgetCalculation.smartseq<-function(cellsPerPerson,readDepth,totalCost,
+                                               prepCostCell,
+                                               costFlowCell,readsPerFlowcell){
+
+  #Estimate the maximal sample size dependent on the cost for the other parameter
+  samples <- totalCost / (prepCostCell * cellsPerPerson +
+                            cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell)
+
+  #Return only even sample sizes (due to the balanced design)
+  return(floor(samples / 2) * 2)
 }

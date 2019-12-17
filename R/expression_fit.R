@@ -134,7 +134,7 @@ nbinom.estimation<-function(counts.ct){
   sizeFactors(cds)<-sizeFactorsPosCounts(counts(cds,normalize=FALSE))
 
   #Estimate dispersion curves
-  cds <- estimateDispersions(cds, sharingMode="gene-est-only")
+  cds <- suppressWarnings(estimateDispersions(cds, sharingMode="gene-est-only"))
 
   #Get normalized mean
   norm.mean.ct<-rowMeans(counts(cds,normalized=TRUE))

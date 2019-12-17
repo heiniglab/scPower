@@ -174,7 +174,7 @@ comp.type<-"de"
 ref.study.name<-"Blueprint (CLL) iCLL-mCLL"
 readDepth<-c(2000,5000,10000,15000,20000,30000,50000,70000)
 cellsPerPerson<-c(100,200,500,700,seq(1000,12000,500))
-totalBudget<-5000
+totalBudget<-10000
 
 power.study<-optimize.constant.budget(totalBudget,readDepth,cellsPerPerson,costKit,
                               costFlowCell,readsPerFlowcell,ct.freq,comp.type,

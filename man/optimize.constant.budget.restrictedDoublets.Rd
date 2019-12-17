@@ -2,7 +2,7 @@
 % Please edit documentation in R/power.R
 \name{optimize.constant.budget.restrictedDoublets}
 \alias{optimize.constant.budget.restrictedDoublets}
-\title{Optimizing cost parameters to maximize detection power for a given budget}
+\title{Optimizing cost parameters to maximize detection power for a given budget and 10X design}
 \usage{
 optimize.constant.budget.restrictedDoublets(
   totalBudget,
