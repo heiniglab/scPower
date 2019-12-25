@@ -2,7 +2,7 @@
 % Please edit documentation in R/power.R
 \name{power.eqtl}
 \alias{power.eqtl}
-\title{Power calculation for an eQTL gene}
+\title{Power calculation for an eQTL gene using the F-test}
 \usage{
 power.eqtl(heritability, sig.level, nSamples)
 }

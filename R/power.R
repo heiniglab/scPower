@@ -709,24 +709,42 @@ optimize.constant.budget.smartseq<-function(totalBudget, readDepthRange, cellPer
   return(power.study)
 }
 
-#' Power calculation for an eQTL gene
+#' Power calculation for an eQTL gene using the F-test
 #'
 #' This function calculates the power to detect an eQTL gene.
 #' @param heritability Heritability of the trait
 #' @param sig.level Significane threshold
 #' @param nSamples Sample size
 #'
+#' @import pwr
+#'
 #' @return Power to detect the eQTL gene
-power.eqtl <- function(heritability, sig.level, nSamples) {
-  ## determine the rejection area under the null model (standard normal)
-  reject <- qnorm(1 - sig.level)
-  ## determine the non-centrality paramter
-  z <- sqrt((nSamples * heritability) / (1 - heritability))
-  ## get the probability to be in the rejection area given that alternative is true
-  ## P(reject H0 | H1 true) = P(Z > reject | H1 true)
-  power <- pnorm(reject, lower.tail=FALSE, mean=z)
+power.eqtl<-function(heritability, sig.level, nSamples) {
+  require(pwr)
+
+  #A sample size larger than 2 is required for the power analysis
+  if(nSamples<3){
+    return(NA)
+  }
+
+  f2 <- heritability / (1 - heritability)
+  df.num <- 1 ## dfs of the full model
+  df.denom <- nSamples - df.num - 1 ## error dfs
+  power<-pwr.f2.test(u=df.num, v=df.denom, f2=f2, sig.level=sig.level)$power
   return(power)
 }
+
+# Alternative calculation of power function
+# power.eqtl <- function(heritability, sig.level, nSamples) {
+#   ## determine the rejection area under the null model (standard normal)
+#   reject <- qnorm(1 - sig.level)
+#   ## determine the non-centrality paramter
+#   z <- sqrt((nSamples * heritability) / (1 - heritability))
+#   ## get the probability to be in the rejection area given that alternative is true
+#   ## P(reject H0 | H1 true) = P(Z > reject | H1 true)
+#   power <- pnorm(reject, lower.tail=FALSE, mean=z)
+#   return(power)
+# }
 
 #' Power calculation for a DE gene
 #'
