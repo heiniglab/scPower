@@ -206,7 +206,14 @@ mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000,
 
   #Remove some of the zero genes but keep enough to get num.genes.kept genes in the end
   num.zeros.keep<-num.genes.kept-sum(!zeroGenes)
-  zeroGenes[zeroGenes][1:num.zeros.keep]<-FALSE
+
+  if(num.zeros.keep<0){
+    stop(paste("There are",sum(!zeroGenes),"genes with positive expression.",
+               "Increase the num.genes.kept parameter to a value larger than that!"))
+  } else if (num.zeros.keep>0){
+    zeroGenes[zeroGenes][1:num.zeros.keep]<-FALSE
+  }
+
   mean.vals<-mean.vals[!zeroGenes]
 
   #Set zero values to a very small number because zero values can not be fitted ...

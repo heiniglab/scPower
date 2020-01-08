@@ -108,6 +108,12 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     stop("Read depth too small! UMI model estimates a mean UMI count per cell smaller than 0!")
   }
 
+  #Check if gamma fit data for the cell type exists
+  if(! any(gamma.mixed.fits$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.mixed.fits fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.mixed.fits object used."))
+  }
+
   #Get gamma values dependent on mean umi
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
@@ -126,6 +132,12 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
   } else {
     stop("No known sampling method. Use the parameters 'random' or 'quantiles'.")
+  }
+
+  #Check if dispersion data for the cell type exists
+  if(! any(disp.fun.param$ct==ct)){
+    stop(paste("No dispersion fitting data in the data frame disp.fun.param fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right disp.fun.param object used."))
   }
 
   #Fit dispersion parameter dependent on mean parameter
@@ -150,6 +162,12 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   #Calculate the expected number of expressed genes
   exp.genes<-round(sum(sim.genes$exp.probs))
 
+  #Check if the study reference name exists in the data frame
+  if(! any(ref.study$name==ref.study.name)){
+    stop(paste("No study name in the data frame ref.study fits to the specified reference study name",
+               ref.study.name,". Check that the name is correctly spelled and the right ref.study.name object used."))
+  }
+
   #Set the simulated DE genes as the genes at the same rank position as the original DE genes
   ranks<-ref.study$rank[ref.study$name==ref.study.name]
 
@@ -168,15 +186,27 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     #Set the Rsq respectively
     foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
 
+    #Check that the required column FoldChange exists
+    if(! any(colnames(ref.study)=="Rsq")){
+      stop(paste("Column name Rsq missing in the ref.study data frame.",
+                 "Please make sure to provide this column for eQTL power analysis."))
+    }
+
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.eqtl(foundSignGenes$Rsq[i],
                                                                                alpha,
                                                                                nSamples))
   } else if (type=="de") {
 
+    #Check that the required column FoldChange exists
+    if(! any(colnames(ref.study)=="FoldChange")){
+      stop(paste("Column name FoldChange missing in the ref.study data frame.",
+                 "Please make sure to provide this column for DE power analysis."))
+    }
+
     #Set the fold change respectively
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
 
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) powerScPop:::power.de(
       floor(nSamples/2),
       foundSignGenes$mean.sum[i],
       foundSignGenes$FoldChange[i],
