@@ -89,7 +89,7 @@ shinyServer(
       costKit<-input$costKit
       costFlowCell<-input$costFlowCell
       readsPerFlowcell<-input$readsPerFlowcell
-      personsPerLane<-input$personsLane
+      cellsPerLane<-input$cellsLane
 
       mappingEfficiency<-input$map.eff
       multipletRate<-input$multipletRate
@@ -112,11 +112,13 @@ shinyServer(
         ref.study<-de.ref.study
       }
 
-      power.study.plot<-optimize.constant.budget(totalBudget, readDepthRange, cellPersRange,
+      power.study.plot<-optimize.constant.budget.restrictedDoublets(totalBudget, readDepthRange,
+                                                                    cellPersRange,
                                                  costKit,costFlowCell,readsPerFlowcell,
                                                  ct.freq,type,ref.study,ref.study.name,
-                                                 personsPerLane,
-                                                 read.umi.fit,gamma.mixed.fits,ct,
+                                                 cellsPerLane,
+                                                 read.umi.fit,gamma.mixed.fits,
+                                                 gamma.probs,ct,
                                                  disp.fun.param,mappingEfficiency,
                                                  multipletRate,multipletFactor,
                                                  min.UMI.counts,perc.indiv.expr,

@@ -48,13 +48,18 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
 #' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
-#' (required columns: rank, FoldChange (DE study) /Rsq (eQTL study))
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param personsPerLane Maximal number of persons per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
+#' (required columns: intercept, reads (slope))
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
+#' @param gamma.probs Data frame with probability parameter of the gamma distributions
+#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -76,7 +81,8 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      type,ref.study,ref.study.name,
                                      personsPerLane,
-                                     read.umi.fit,gamma.mixed.fits,ct,
+                                     read.umi.fit,gamma.mixed.fits,
+                                     gamma.probs,ct,
                                      disp.fun.param,
                                      mappingEfficiency=0.8,
                                      multipletRate=7.67e-06,multipletFactor=1.82,
@@ -118,12 +124,18 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
 
-  gamma.parameters<-data.frame(pi.c1=0.95,
-                              pi.c2=0.05,
-                              mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
-                              mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
-                              sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
-                              sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
+  #Check if gamma probability data for the cell type exists
+  if(! any(gamma.probs$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.probs fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.probs object used."))
+  }
+
+  gamma.parameters<-data.frame(pi.c1=gamma.probs$pi.c1[gamma.probs$ct==ct],
+                               pi.c2=1-gamma.probs$pi.c1[gamma.probs$ct==ct],
+                               mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
+                               mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
+                               sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
+                               sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
 
   #Sample means values
   if(samplingMethod=="random"){
@@ -186,7 +198,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     #Set the Rsq respectively
     foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
 
-    #Check that the required column FoldChange exists
+    #Check that the required column Rsq exists
     if(! any(colnames(ref.study)=="Rsq")){
       stop(paste("Column name Rsq missing in the ref.study data frame.",
                  "Please make sure to provide this column for eQTL power analysis."))
@@ -248,13 +260,18 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
 #' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
-#' (required columns: rank, FoldChange (DE study) /Rsq (eQTL study))
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param cellsPerLane Maximal number of cells per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
+#' (required columns: intercept, reads (slope))
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
+#' @param gamma.probs Data frame with probability parameter of the gamma distributions
+#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -271,7 +288,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            type,ref.study,ref.study.name,
                                            cellsPerLane,
-                                           read.umi.fit,gamma.mixed.fits,ct,
+                                           read.umi.fit,gamma.mixed.fits,
+                                           gamma.probs,ct,
                                            disp.fun.param,
                                            mappingEfficiency=0.8,
                                            multipletRate=7.67e-06,multipletFactor=1.82,
@@ -288,7 +306,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   return(power.general.withDoublets(nSamples,nCells,readDepth,ct.freq,
                              type,ref.study,ref.study.name,
                              personsPerLane,
-                             read.umi.fit,gamma.mixed.fits,ct,
+                             read.umi.fit,gamma.mixed.fits,
+                             gamma.probs,ct,
                              disp.fun.param,
                              mappingEfficiency,
                              multipletRate,multipletFactor,
@@ -308,11 +327,15 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
 #' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
-#' (required columns: rank, FoldChange (DE study) /Rsq (eQTL study))
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
+#' @param gamma.probs Data frame with probability parameter of the gamma distributions
+#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param disp.linear.fit Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
+#' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletFraction Multiplet fraction in the experiment as a constant factor
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -328,8 +351,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @export
 power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                          type,ref.study,ref.study.name,
-                         gamma.mixed.fits,ct,
-                         disp.fun.param,
+                         gamma.mixed.fits,gamma.probs,ct,
+                         disp.linear.fit,
                          mappingEfficiency=0.8,
                          multipletFraction=0,multipletFactor=1.82,
                          min.norm.count=10,perc.indiv.expr=0.5,
@@ -344,12 +367,29 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 
   ctCells<-usableCells*ct.freq
 
-  #Get gamma values dependent on mean umi
+  #Check if gamma fit data for the cell type exists
+  if(! any(gamma.mixed.fits$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.mixed.fits fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.mixed.fits object used."))
+  }
+
+  #Get gamma values dependent on mean reads
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanReads*mappedReadDepth
 
-  gamma.parameters<-data.frame(pi.c1=0.95,
-                               pi.c2=0.05,
+  if(any(gamma.fits.ct$fitted.value<=0)){
+    stop("At least one of the gamma parameter got negative for this read depth.",
+         "Choose a higher read depth or a different gamma - read fit.")
+  }
+
+  #Check if gamma probability data for the cell type exists
+  if(! any(gamma.probs$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.probs fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.probs object used."))
+  }
+
+  gamma.parameters<-data.frame(pi.c1=gamma.probs$pi.c1[gamma.probs$ct==ct],
+                               pi.c2=1-gamma.probs$pi.c1[gamma.probs$ct==ct],
                                mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
                                mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
                                sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
@@ -372,14 +412,35 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   #Sort simulated genes by mean expression
   sim.genes<-sim.genes[order(sim.genes$mean, decreasing = TRUE),]
 
+  #Check if the study reference name exists in the data frame
+  if(! any(ref.study$name==ref.study.name)){
+    stop(paste("No study name in the data frame ref.study fits to the specified reference study name",
+               ref.study.name,". Check that the name is correctly spelled and the right ref.study.name object used."))
+  }
+
   #Assign a gene length for each gene (default 5000), for known DE genes the real value
   sim.genes$geneLength<-5000
   temp.ranks<-ref.study[ref.study$rank<nGenes & ref.study$name==ref.study.name,]
   sim.genes$geneLength[temp.ranks$rank]<-temp.ranks$geneLength
 
+  #Check if dispersion data for the cell type exists
+  if(! any(disp.linear.fit$ct==ct)){
+    stop(paste("No dispersion fitting data in the data frame disp.linear.fit fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right disp.linear.fit object used."))
+  }
+
+  #Get dispersion values dependent on mean reads
+  disp.fun.ct<-disp.linear.fit[disp.linear.fit$ct==ct,]
+  disp.fun.ct$fitted.value<-disp.fun.ct$intercept+disp.fun.ct$meanReads*mappedReadDepth
+
+  #Fit dispersion parameter dependent on mean parameter
+  disp.fun<-data.frame(asymptDisp=disp.fun.ct$fitted.value[disp.fun.ct$parameter=="asymptDisp"],
+                       extraPois=disp.fun.ct$fitted.value[disp.fun.ct$parameter=="extraPois"],
+                       ct=ct)
+
   #Fit dispersion parameter dependent on mean parameter
   sim.genes$mean.length.transformed<-sim.genes$mean*sim.genes$geneLength/1000
-  sim.genes$disp<-sample.disp.values(sim.genes$mean.length.transformed,disp.fun.param)
+  sim.genes$disp<-sample.disp.values(sim.genes$mean.length.transformed,disp.fun)
   sim.genes$disp.sum<-sim.genes$disp/ctCells
 
   #Fit also length transformed sum
@@ -409,6 +470,12 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   #Calculate power
   if(type=="eqtl"){
 
+    #Check that the required column Rsq exists
+    if(! any(colnames(ref.study)=="Rsq")){
+      stop(paste("Column name Rsq missing in the ref.study data frame.",
+                 "Please make sure to provide this column for eQTL power analysis."))
+    }
+
     #Set the Rsq respectively
     foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
 
@@ -416,6 +483,12 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                                                                                             alpha,
                                                                                             nSamples))
   } else if (type=="de") {
+
+    #Check that the required column FoldChange exists
+    if(! any(colnames(ref.study)=="FoldChange")){
+      stop(paste("Column name FoldChange missing in the ref.study data frame.",
+                 "Please make sure to provide this column for DE power analysis."))
+    }
 
     #Set the fold change respectively
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
@@ -467,13 +540,19 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
-#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks (required columns:)
+#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param personsPerLane Maximal number of persons per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
+#' (required columns: intercept, reads (slope))
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
+#' @param gamma.probs Data frame with probability parameter of the gamma distributions
+#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -495,7 +574,8 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                    costKit,costFlowCell,readsPerFlowcell,
                                    ct.freq,type,ref.study,ref.study.name,
                                    personsPerLane,
-                                   read.umi.fit,gamma.mixed.fits,ct,
+                                   read.umi.fit,gamma.mixed.fits,
+                                   gamma.probs,ct,
                                    disp.fun.param,
                                    mappingEfficiency=0.8,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
@@ -534,6 +614,7 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                     personsPerLane=personsPerLane,
                                     read.umi.fit=read.umi.fit,
                                     gamma.mixed.fits=gamma.mixed.fits,
+                                    gamma.probs=gamma.probs,
                                     ct=ct,
                                     disp.fun.param=disp.fun.param,
                                     mappingEfficiency=mappingEfficiency,
@@ -565,13 +646,19 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
-#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks (required columns:)
+#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param cellsPerLane Maximal number of cells per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
+#' (required columns: intercept, reads (slope))
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
+#' @param gamma.probs Data frame with probability parameter of the gamma distributions
+#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -593,7 +680,7 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
                                    costKit,costFlowCell,readsPerFlowcell,
                                    ct.freq,type,ref.study,ref.study.name,
                                    cellsPerLane,
-                                   read.umi.fit,gamma.mixed.fits,ct,
+                                   read.umi.fit,gamma.mixed.fits,gamma.probs,ct,
                                    disp.fun.param,
                                    mappingEfficiency=0.8,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
@@ -631,6 +718,7 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
                                     cellsPerLane=cellsPerLane,
                                     read.umi.fit=read.umi.fit,
                                     gamma.mixed.fits=gamma.mixed.fits,
+                                    gamma.probs=gamma.probs,
                                     ct=ct,
                                     disp.fun.param=disp.fun.param,
                                     mappingEfficiency=mappingEfficiency,
@@ -662,13 +750,17 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
-#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks (required columns:)
+#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param personsPerLane Maximal number of persons per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type (required columns: )
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
+#' @param gamma.probs Data frame with probability parameter of the gamma distributions
+#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean (required columns:)
+#' @param disp.linear.fit Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
+#' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletFraction Multiplet fraction in the experiment as a constant factor
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -681,16 +773,11 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
 #'
 #' @export
 #'
-#' @examples
-#' optimize.constant.budget(10000,seq(1000,10000,by=1000),seq(1000,10000,by=1000),
-#' 5600,14032,4100*10^6,0.2,"de",de.ref.study,"Blueprint (CLL) iCLL-mCLL",8,
-#' read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
-#'
 optimize.constant.budget.smartseq<-function(totalBudget, readDepthRange, cellPersRange,
                                    prepCostCell,costFlowCell,readsPerFlowcell,
                                    ct.freq,type,ref.study,ref.study.name,
-                                   gamma.mixed.fits,ct,
-                                   disp.fun.param,
+                                   gamma.mixed.fits,gamma.probs,ct,
+                                   disp.linear.fit,
                                    mappingEfficiency=0.8,
                                    multipletFraction=0,multipletFactor=1.82,
                                    min.norm.count=10,perc.indiv.expr=0.5,
@@ -725,8 +812,9 @@ optimize.constant.budget.smartseq<-function(totalBudget, readDepthRange, cellPer
                                     ref.study=ref.study,
                                     ref.study.name=ref.study.name,
                                     gamma.mixed.fits=gamma.mixed.fits,
+                                    gamma.probs=gamma.probs,
                                     ct=ct,
-                                    disp.fun.param=disp.fun.param,
+                                    disp.linear.fit=disp.linear.fit,
                                     mappingEfficiency=mappingEfficiency,
                                     min.norm.count=min.norm.count,
                                     perc.indiv.expr=perc.indiv.expr,

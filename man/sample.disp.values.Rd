@@ -15,5 +15,5 @@ sample.disp.values(mean.vals, disp.parameter)
 Vector with simulated mean values
 }
 \description{
-WARNING: The used package might be changed later
+Sample the dispersion values dependent on mean values using the DESeq function parametrization
 }

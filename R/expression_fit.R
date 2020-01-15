@@ -241,8 +241,6 @@ mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000,
 
 #' Randomly sample the mean values using a gamma mixed distribution
 #'
-#' WARNING: The used package might be changed later
-#'
 #' @param gamma.parameters Data frame with gamma parameters
 #' (fitted using mixed.gamma.estimation)
 #' @param nGenes Number of genes to sample
@@ -303,8 +301,6 @@ sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
 }
 
 #' Sample the dispersion values dependent on mean values using the DESeq function parametrization
-#'
-#' WARNING: The used package might be changed later
 #'
 #' @param mean.vals Vector of gene means
 #' @param disp.parameter Data frame with parameter of mean-dispersion function

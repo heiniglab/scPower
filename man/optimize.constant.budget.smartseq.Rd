@@ -16,8 +16,9 @@ optimize.constant.budget.smartseq(
   ref.study,
   ref.study.name,
   gamma.mixed.fits,
+  gamma.probs,
   ct,
-  disp.fun.param,
+  disp.linear.fit,
   mappingEfficiency = 0.8,
   multipletFraction = 0,
   multipletFactor = 1.82,
@@ -50,9 +51,12 @@ optimize.constant.budget.smartseq(
 
 \item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type (required columns: )}
 
+\item{gamma.probs}{Data frame with probability parameter of the gamma distributions
+(required columns:ct (cell type), pi.c1 (probability of component 1))}
+
 \item{ct}{Cell type of interest (name from the gamma mixed models)}
 
-\item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean (required columns:)}
+\item{disp.linear.fit}{Function to fit the dispersion parameter dependent on the mean (required columns:)}
 
 \item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)}
 
@@ -82,10 +86,4 @@ The optimal combination is thereby the one with the highest detection power.
 The parameters are checked for a range of read depths and cells per person values,
 while the sample size is defined uniquely given the other two parameters and
 the overall budget.
-}
-\examples{
-optimize.constant.budget(10000,seq(1000,10000,by=1000),seq(1000,10000,by=1000),
-5600,14032,4100*10^6,0.2,"de",de.ref.study,"Blueprint (CLL) iCLL-mCLL",8,
-read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
-
 }

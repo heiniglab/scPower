@@ -15,6 +15,7 @@ power.general.restrictedDoublets(
   cellsPerLane,
   read.umi.fit,
   gamma.mixed.fits,
+  gamma.probs,
   ct,
   disp.fun.param,
   mappingEfficiency = 0.8,
@@ -47,6 +48,9 @@ power.general.restrictedDoublets(
 \item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )}
 
 \item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type (required columns: )}
+
+\item{gamma.probs}{Data frame with probability parameter of the gamma distributions
+(required columns:ct (cell type), pi.c1 (probability of component 1))}
 
 \item{ct}{Cell type of interest (name from the gamma mixed models)}
 

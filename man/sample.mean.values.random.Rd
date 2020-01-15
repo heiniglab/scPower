@@ -16,5 +16,5 @@ sample.mean.values.random(gamma.parameters, nGenes = 21000)
 Vector with simulated mean values
 }
 \description{
-WARNING: The used package might be changed later
+Randomly sample the mean values using a gamma mixed distribution
 }

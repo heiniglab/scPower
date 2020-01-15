@@ -73,6 +73,25 @@
 #' head(gamma.mixed.fits)
 "gamma.mixed.fits"
 
+#' Probability parameter for the gamma umi fit
+#'
+#' Probability parameter of the first component of the gamma mixed model,
+#' in contrast to the other parameters independent of the mean UMI counts per cell,
+#' fitted from our example PBMC data set (mean value per cell type)
+#'
+#' @docType data
+#'
+#' @usage data(gammaProbs)
+#'
+#' @format Data frame with probability parameter of UMI-gamma parameter fit
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(gammaProbs)
+#' head(gamma.probs)
+"gamma.probs"
+
 #' Parameters for mean dispersion fit
 #'
 #' Parameters to estimate the dispersion parameter of each gene with the
