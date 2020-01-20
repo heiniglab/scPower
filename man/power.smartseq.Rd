@@ -37,18 +37,20 @@ power.smartseq(
 \item{type}{(eqtl/de) study}
 
 \item{ref.study}{Data frame with reference studies to be used for expression ranks and effect sizes
-(required columns: rank, FoldChange (DE study) /Rsq (eQTL study))}
+(required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))}
 
 \item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
 
-\item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type (required columns: )}
+\item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type
+(required columns: parameter, ct (cell type), intercept, meanReads (slope))}
 
 \item{gamma.probs}{Data frame with probability parameter of the gamma distributions
 (required columns:ct (cell type), pi.c1 (probability of component 1))}
 
 \item{ct}{Cell type of interest (name from the gamma mixed models)}
 
-\item{disp.linear.fit}{Function to fit the dispersion parameter dependent on the mean (required columns:)}
+\item{disp.linear.fit}{Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
+(required columns: parameter, ct (cell type), intercept, meanReads (slope))}
 
 \item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)}
 

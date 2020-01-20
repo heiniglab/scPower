@@ -69,6 +69,8 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -87,10 +89,17 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      mappingEfficiency=0.8,
                                      multipletRate=7.67e-06,multipletFactor=1.82,
                                      min.UMI.counts=10,perc.indiv.expr=0.5,
-                                     nGenes=21000,samplingMethod="quantiles"){
+                                     nGenes=21000,samplingMethod="quantiles",
+                                     multipletRateGrowth="linear"){
 
   #Estimate multiplet fraction dependent on cells per lane
-  multipletFraction<-multipletRate*nCells*personsPerLane
+  if(multipletRateGrowth=="linear"){
+    multipletFraction<-multipletRate*nCells*personsPerLane
+  } else if (multipletRateGrowth == "constant") {
+    multipletFraction<-multipletRate
+  } else {
+    stop("No known option for multipletRateGrowth. Use the values 'linear' or 'constant'.")
+  }
 
   #Check that the number of cells entered does not provide a multiplet rate of >100%
   if(multipletFraction>=1){
@@ -143,7 +152,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   } else if (samplingMethod=="quantiles"){
     gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
   } else {
-    stop("No known sampling method. Use the parameters 'random' or 'quantiles'.")
+    stop("No known sampling method. Use the options 'random' or 'quantiles'.")
   }
 
   #Check if dispersion data for the cell type exists
@@ -281,6 +290,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -294,7 +305,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            mappingEfficiency=0.8,
                                            multipletRate=7.67e-06,multipletFactor=1.82,
                                            min.UMI.counts=10,perc.indiv.expr=0.5,
-                                           nGenes=21000,samplingMethod="quantiles"){
+                                           nGenes=21000,samplingMethod="quantiles",
+                                           multipletRateGrowth="linear"){
 
   #Distribute persons most optimal over the lanes
   personsPerLane<-floor(cellsPerLane/nCells)
@@ -312,7 +324,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                              mappingEfficiency,
                              multipletRate,multipletFactor,
                              min.UMI.counts,perc.indiv.expr,
-                             nGenes,samplingMethod))
+                             nGenes,samplingMethod,multipletRateGrowth))
 }
 
 #' Power calculation for a DE/eQTL study  with Smart-seq design
@@ -401,7 +413,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   } else if (samplingMethod=="quantiles"){
     gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
   } else {
-    stop("No known sampling method. Use the parameters 'random' or 'quantiles'.")
+    stop("No known sampling method. Use the options 'random' or 'quantiles'.")
   }
 
   sim.genes<-data.frame(mean=gene.means)
@@ -562,6 +574,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
 #'
 #' @export
 #'
@@ -580,7 +594,8 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                    mappingEfficiency=0.8,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
                                    min.UMI.counts=10,perc.indiv.expr=0.5,
-                                   nGenes=21000,samplingMethod="quantiles"){
+                                   nGenes=21000,samplingMethod="quantiles",
+                                   multipletRateGrowth="linear"){
 
   #Build a frame of all possible combinations
   param.combis<-expand.grid(cellPersRange,readDepthRange)
@@ -621,7 +636,119 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                     min.UMI.counts=min.UMI.counts,
                                     perc.indiv.expr=perc.indiv.expr,
                                     nGenes=nGenes,
-                                    samplingMethod=samplingMethod))
+                                    samplingMethod=samplingMethod,
+                                    multipletRateGrowth=multipletRateGrowth))
+
+  power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
+  power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
+
+  return(power.study)
+}
+
+#' Optimizing cost parameters to maximize detection power for a given budget with
+#' library preparation costs per cell
+#'
+#' This function determines the optimal parameter combination for a given budget.
+#' The optimal combination is thereby the one with the highest detection power.
+#' The parameters are checked for a range of read depths and cells per person values,
+#' while the sample size is defined uniquely given the other two parameters and
+#' the overall budget.
+#'
+#' @param totalBudget Overall experimental budget
+#' @param readDepthRange Range of read depth values that should be tested (vector)
+#' @param cellPersRange Range of cells per person that should be tested (vector)
+#' @param totalCost Experimental budget
+#' @param prepCostCell Library preparation costs per cell
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param ct.freq Frequency of the cell type of interest
+#' @param type (eqtl/de) study
+#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
+#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
+#' @param personsPerLane Maximal number of persons per 10X lane
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
+#' (required columns: intercept, reads (slope))
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
+#' @param gamma.probs Data frame with probability parameter of the gamma distributions
+#' (required columns:ct (cell type), pi.c1 (probability of component 1))
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
+#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
+#' @param multipletRate Expected increase in multiplets for additional cell in the lane
+#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
+#' gene per person and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
+#' to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#'
+#' @export
+#'
+#' @examples
+#' optimize.constant.budget(10000,seq(1000,10000,by=1000),seq(1000,10000,by=1000),
+#' 5600,14032,4100*10^6,0.2,"de",de.ref.study,"Blueprint (CLL) iCLL-mCLL",8,
+#' read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
+#'
+optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cellPersRange,
+                                               prepCostCell,costFlowCell,readsPerFlowcell,
+                                   ct.freq,type,ref.study,ref.study.name,
+                                   personsPerLane,
+                                   read.umi.fit,gamma.mixed.fits,
+                                   gamma.probs,ct,
+                                   disp.fun.param,
+                                   mappingEfficiency=0.8,
+                                   multipletRate=7.67e-06,multipletFactor=1.82,
+                                   min.UMI.counts=10,perc.indiv.expr=0.5,
+                                   nGenes=21000,samplingMethod="quantiles",
+                                   multipletRateGrowth="linear"){
+
+  #Build a frame of all possible combinations
+  param.combis<-expand.grid(cellPersRange,readDepthRange)
+  colnames(param.combis)<-c("cellsPerPerson","readDepth")
+
+  #Sample size dependent on the budget
+  param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
+                                            function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$cellsPerPerson[i],
+                                                                                                     param.combis$readDepth[i],
+                                                                                                     totalBudget,
+                                                                                                     prepCostCell,
+                                                                                                     costFlowCell,readsPerFlowcell)))
+
+  #Remove all combinations with a sample size of 0
+  if(any(param.combis$estimated.sampleSize==0)){
+    warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
+    param.combis<-param.combis[param.combis$estimated.sampleSize>0,]
+  }
+
+
+  power.study<-mapply(power.general.withDoublets,
+                      param.combis$estimated.sampleSize,
+                      param.combis$cellsPerPerson,
+                      param.combis$readDepth,
+                      MoreArgs=list(ct.freq=ct.freq,
+                                    multipletRate=multipletRate,
+                                    multipletFactor=multipletFactor,
+                                    type=type,
+                                    ref.study=ref.study,
+                                    ref.study.name=ref.study.name,
+                                    personsPerLane=personsPerLane,
+                                    read.umi.fit=read.umi.fit,
+                                    gamma.mixed.fits=gamma.mixed.fits,
+                                    gamma.probs=gamma.probs,
+                                    ct=ct,
+                                    disp.fun.param=disp.fun.param,
+                                    mappingEfficiency=mappingEfficiency,
+                                    min.UMI.counts=min.UMI.counts,
+                                    perc.indiv.expr=perc.indiv.expr,
+                                    nGenes=nGenes,
+                                    samplingMethod=samplingMethod,
+                                    multipletRateGrowth=multipletRateGrowth))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -668,6 +795,8 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
 #'
 #' @export
 #'
@@ -685,7 +814,8 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
                                    mappingEfficiency=0.8,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
                                    min.UMI.counts=10,perc.indiv.expr=0.5,
-                                   nGenes=21000,samplingMethod="quantiles"){
+                                   nGenes=21000,samplingMethod="quantiles",
+                                   multipletRateGrowth="linear"){
 
   #Build a frame of all possible combinations
   param.combis<-expand.grid(cellPersRange,readDepthRange)
@@ -725,13 +855,15 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
                                     min.UMI.counts=min.UMI.counts,
                                     perc.indiv.expr=perc.indiv.expr,
                                     nGenes=nGenes,
-                                    samplingMethod=samplingMethod))
+                                    samplingMethod=samplingMethod,
+                                    multipletRateGrowth=multipletRateGrowth))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
 
   return(power.study)
 }
+
 
 #' Optimizing cost parameters to maximize detection power for a given budget and Smart-seq design
 #'
@@ -789,7 +921,7 @@ optimize.constant.budget.smartseq<-function(totalBudget, readDepthRange, cellPer
 
   #Sample size dependent on the budget
   param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
-                                            function(i)floor(sampleSizeBudgetCalculation.smartseq(param.combis$cellsPerPerson[i],
+                                            function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$cellsPerPerson[i],
                                                                                          param.combis$readDepth[i],
                                                                                          totalBudget,
                                                                                          prepCostCell,
@@ -979,7 +1111,7 @@ budgetCalculation<-function(cellsPerPerson,readDepth,sampleSize,
 
 }
 
-#' Estimate possible sample size depending on the total cost and the other parameters for Smart-seq design
+#' Estimate possible sample size depending on the total cost, using preparation costs per cell
 #'
 #' A balanced design with two classes is assumed for the sample size calculation.
 #'
@@ -993,7 +1125,7 @@ budgetCalculation<-function(cellsPerPerson,readDepth,sampleSize,
 #' @return Number of samples that can be sampled with this budget and other parameters
 #'
 #' @export
-sampleSizeBudgetCalculation.smartseq<-function(cellsPerPerson,readDepth,totalCost,
+sampleSizeBudgetCalculation.libPrepCell<-function(cellsPerPerson,readDepth,totalCost,
                                                prepCostCell,
                                                costFlowCell,readsPerFlowcell){
 

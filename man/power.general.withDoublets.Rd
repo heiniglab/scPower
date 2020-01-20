@@ -24,7 +24,8 @@ power.general.withDoublets(
   min.UMI.counts = 10,
   perc.indiv.expr = 0.5,
   nGenes = 21000,
-  samplingMethod = "quantiles"
+  samplingMethod = "quantiles",
+  multipletRateGrowth = "linear"
 )
 }
 \arguments{
@@ -39,22 +40,25 @@ power.general.withDoublets(
 \item{type}{(eqtl/de) study}
 
 \item{ref.study}{Data frame with reference studies to be used for expression ranks and effect sizes
-(required columns: rank, FoldChange (DE study) /Rsq (eQTL study))}
+(required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))}
 
 \item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
 
 \item{personsPerLane}{Maximal number of persons per 10X lane}
 
-\item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell (required columns: )}
+\item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
+(required columns: intercept, reads (slope))}
 
-\item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type (required columns: )}
+\item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type
+(required columns: parameter, ct (cell type), intercept, meanUMI (slope))}
 
 \item{gamma.probs}{Data frame with probability parameter of the gamma distributions
 (required columns:ct (cell type), pi.c1 (probability of component 1))}
 
 \item{ct}{Cell type of interest (name from the gamma mixed models)}
 
-\item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean (required columns:)}
+\item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean
+(required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))}
 
 \item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)}
 
@@ -71,6 +75,9 @@ to define it as globally expressed}
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
 \item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
+
+\item{multipletRateGrowth}{Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".}
 }
 \value{
 Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
