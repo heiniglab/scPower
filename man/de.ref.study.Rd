@@ -11,7 +11,8 @@ data(DERefStudy)
 \description{
 Data frame with DE priors (fold changes and gene expression ranks) for
 calculation of the DE power. Taken from different celltype sorted bulk
-DE studies.
+DE studies. Gene length is required for estimation of power of read count
+based single cell technologies and reported for part of the studies.
 }
 \examples{
 data(DERefStudy)

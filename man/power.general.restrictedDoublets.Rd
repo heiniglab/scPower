@@ -83,7 +83,7 @@ modeled explicitly, otherwise "constant". The default value for the parameter mu
 Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 }
 \description{
-This function is a variant of power.general.withDoublets, where not the number of personsPerLane is given as an
+This function is a variant of power.general.withDoublets, where not the number of samplesPerLane is given as an
 parameter, but instead the individuals are distributed over the lanes in a way that restricts the total number of
 cells per lane instead. This gives also an upper bound for the doublet rate.
 }

@@ -5,17 +5,17 @@
 \title{Estimate possible sample size depending on the total cost and the other parameters for 10X design}
 \usage{
 sampleSizeBudgetCalculation(
-  cellsPerPerson,
+  nCells,
   readDepth,
   totalCost,
   costKit,
-  personsPerLane,
+  samplesPerLane,
   costFlowCell,
   readsPerFlowcell
 )
 }
 \arguments{
-\item{cellsPerPerson}{Cells per person}
+\item{nCells}{Cells per person}
 
 \item{readDepth}{Read depth per cell}
 
@@ -23,7 +23,7 @@ sampleSizeBudgetCalculation(
 
 \item{costKit}{Cost for one 10X kit}
 
-\item{personsPerLane}{Number of persons sequenced per lane}
+\item{samplesPerLane}{Number of persons sequenced per lane}
 
 \item{costFlowCell}{Cost of one flow cells for sequencing}
 

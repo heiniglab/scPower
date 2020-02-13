@@ -79,7 +79,7 @@ to define it as globally expressed}
 
 \item{totalCost}{Experimental budget}
 
-\item{personsPerLane}{Maximal number of persons per 10X lane}
+\item{samplesPerLane}{Maximal number of persons per 10X lane}
 }
 \description{
 This function determines the optimal parameter combination for a given budget.

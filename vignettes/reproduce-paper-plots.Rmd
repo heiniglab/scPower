@@ -43,11 +43,21 @@ col.set5<-col.paired[seq(2,12,2)]
 
 ```
 
-## Figure 2: Power to detect rare cell types
+# Paper Plot
 
-## Figure 3: Gene curve fits using our gamma mixed models parameterized over UMI counts per cell
+Figure 1 is an overview figure showing the dependence of experimental design parameters.
 
-## Figure 4: Expression probability, power and detection power
+## Figure 2: Expression probability model parameterized by UMI counts per cell
+
+```{r}
+#Get original numbers (save in a tmp folder ...)
+
+#Fit all for curves with the data from our model
+
+
+```
+
+## Figure 3: Expression probability, DE/eQTL power and overall detection power
 
 ```{r, fig.width=8,fig.height=6}
 #General parameters
@@ -59,7 +69,7 @@ personsPerLane<-8
 
 ########
 # DE subplot
-cellsPerCelltype<-c(50,100,150,200,300)
+cellsPerCelltype<-c(100,200,500,1000,1500,2000,2500,3000)
 sampleSize<-c(6,8,10,20,30,50)
 ref.study.name<-"Blueprint (CLL) iCLL-mCLL"
   
@@ -73,7 +83,8 @@ res<-lapply(1:nrow(param.combis),function(i)
                              param.combis$cellsPerCelltype[i],
                              transcriptome.mapped.reads,
                              ct.freq, "de",de.ref.study,ref.study.name,
-                             personsPerLane,read.umi.fit,gamma.mixed.fits,ct,
+                             personsPerLane,read.umi.fit,
+                             gamma.mixed.fits,gamma.probs,ct,
                              disp.fun.param,mappingEfficiency = 1,
                              multipletRate=0,multipletFactor=1,
                              nGenes=21000))
@@ -105,7 +116,7 @@ g.DE<-ggplot(power.DE.study,aes(x=ctCells,y=sampleSize,fill=value))+
 
 ########
 # eQTL subplot
-cellsPerCelltype<-c(50,100,150,200,300)
+cellsPerCelltype<-c(100,200,500,1000,1500,2000,2500,3000)
 sampleSize<-c(50,100,150,200)
 ref.study.name<-"Blueprint (Tcells)"
   
@@ -119,7 +130,8 @@ res<-lapply(1:nrow(param.combis),function(i)
                              param.combis$cellsPerCelltype[i],
                              transcriptome.mapped.reads,
                              ct.freq, "eqtl",eqtl.ref.study,ref.study.name,
-                             personsPerLane,read.umi.fit,gamma.mixed.fits,ct,
+                             personsPerLane,read.umi.fit,
+                             gamma.mixed.fits,gamma.probs,ct,
                              disp.fun.param,mappingEfficiency = 1,
                              multipletRate=0,multipletFactor=1,
                              nGenes=21000))
@@ -156,7 +168,16 @@ print(g)
 
 ```
 
-## Figure 5: Optimized parameter to maximize detection power
+## Figure 4: Optimal parameters for varying budgets
+
+```{r}
+#Not sure if 
+
+```
+
+# Supplementary Figures
+
+## Parameter optimization for constant budget
 
 ```{r,fig.width=8,fig.height=8}
 
@@ -179,7 +200,8 @@ totalBudget<-10000
 power.study<-optimize.constant.budget(totalBudget,readDepth,cellsPerPerson,costKit,
                               costFlowCell,readsPerFlowcell,ct.freq,comp.type,
                               de.ref.study,ref.study.name,personsPerLane,
-                              read.umi.fit,gamma.mixed.fits,ct,disp.fun.param,
+                              read.umi.fit,gamma.mixed.fits,gamma.probs,
+                              ct,disp.fun.param,
                               mappingEfficiency=mappingEfficiency)
 
 #Print maximal combination of values
@@ -256,7 +278,8 @@ totalBudget<-30000
 power.study<-optimize.constant.budget(totalBudget,readDepth,cellsPerPerson,costKit,
                               costFlowCell,readsPerFlowcell,ct.freq,comp.type,
                               eqtl.ref.study,ref.study.name,personsPerLane,
-                              read.umi.fit,gamma.mixed.fits,ct,disp.fun.param,
+                              read.umi.fit,gamma.mixed.fits,gamma.probs,
+                              ct,disp.fun.param,
                               mappingEfficiency=mappingEfficiency)
 
 #Print maximal combination of values
@@ -327,4 +350,4 @@ print(g)
 
 ```
 
-## Supplementary figures
+

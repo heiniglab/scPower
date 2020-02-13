@@ -11,7 +11,7 @@ data(gammaUmiFits)
 \description{
 Parameters to estimate parameter for the gamma mixed distribution of the
 gene means with the mean UMI counts per cell using a linear function,
-fitted from our example PBMC data set
+fitted from example PBMC 10X data set
 }
 \examples{
 data(gammaUmiFits)

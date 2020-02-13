@@ -1,0 +1,290 @@
+---
+title: "Introduction to powerScPop"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{introduction-powerScPop}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+powerScPop is a R package for design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets.
+
+The tool was evaluated with data from different tissues and single cell technologies.
+
+A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis".
+
+In the first part of this tutorial, the estimation of power and optimal design with the example data sets are shown, in the second part, the fitting of new priors from own data is described.
+
+We will show in the following the analysis for an eQTL study, for a DE study it works completely analogously.
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(powerScPop)
+library(reshape2)
+```
+
+## Part 1: Power estimation and experimental design selection with example data sets
+
+In the package, there exist two versions of power estimation, one for droplet based methods using UMI counts, such as 10X Genomics and drop-seq, and one for read based methods, such as Smart-seq2. They differ in the modelling of experimental costs and of multiplet rates (overloading possible for 10X Genomics). Furthermore, the UMI based methods need an additional layer of modelling between reads and UMI counts.
+
+### Power estimation
+
+We model the overall detection power as the product of the expression probability of a gene and the eQTL power of a gene. Both are influenced by the three main experimental parameters:
+
+* number of measured samples
+* number of measured cells per sample
+* read depth
+
+Exemplarily, we will set the number of samples to 100, the cells per sample to 1,500 and the read depth to 25,000.
+
+Additionally, the expected effect sizes and the expression ranks of the eQTL genes are important. To get realistic estimates for them, we used FACS sorted bulk RNA-seq data. We will use here data from the Blueprint project, which estimated eQTLs in FACS sorted Monocytes.
+
+In general, the goal of the analysis is the detection of cell-type specific DE and eQTL genes. Instead of cell types, of course also other cell states can be chosen. In each case, it needs to be defined, how often the target cells appear in the sample, i.e. the cell type frequency, and how the expression distribution of the genes in this cell type looks like. We will choose here CD14+ Monocytes and assume a cell type frequency of 10%. Expression distribution fits from an example PBMC data set are available in the package. The fitted distribution is a mixed distribution of with two gamma components parameterized over the UMI counts, for which the data frames gamma.mixed.fits and gamma.probs are necessary (the first one saving the rate and shape parameter, the second the probability parameters). Furthermore, the relationship between gene expression means and dispersion is modelled using DESeq fits, an example fit is available in the data frame disp.fun.param.
+
+The relationship between read depth and UMI counts is modelled logarithmic, an example fit is available in the data frame read.umi.fit. Additionally the mapping efficiency of the reads is important, we assume a efficiency of 80%.
+
+The definition of expression can be set user-specific to be above a specific count threshold in a certain fraction of all samples. We will set it to more than 3 counts in more than 50% of the samples.
+
+In the following, different example scenarios for different single cell technologies are shown.
+
+#### Case 1: Droplet-based method with flexible overloading
+
+For droplet-based methods, the so called overloading is possible. Loading more cells on a lane the recommended increases the multiplet rate, but reduces the cost.
+
+We modelled the multiplet rate linear increasing with the number of cells loaded per lane, using data from the 10X Genomics user guide V3. A doublet gets on average more reads than a singlet, for this, a model of Satija lab is used (https://satijalab.org/costpercell). The multiplet factor describes the ratio of reads in multiplets compared to reads in singlets.
+
+In this model, we permit an independent overloading of the lane, setting instead the number of samples per lane to a specific number.
+
+```{r}
+
+power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
+                                  ct.freq=0.1,type="eqtl",
+                                  ref.study=powerScPop::eqtl.ref.study,
+                                  ref.study.name="Blueprint (Monocytes)",
+                                  samplesPerLane=4,
+                                  read.umi.fit = powerScPop::read.umi.fit,
+                                  gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                  gamma.probs = powerScPop::gamma.probs,
+                                  ct="CD14+ Monocytes",
+                                  disp.fun.param=powerScPop::disp.fun.param,
+                                  mappingEfficiency = 0.8,
+                                  min.UMI.counts = 3,
+                                  perc.indiv.expr = 0.5)
+
+print(power)
+
+```
+
+The output shows an overall detection power for this parameter combination of 30.4%, which is the product of the expression probability of 47.9% and the eQTL power of 64.2%. Of in total 1,500 cells, 1,431 are "usable", which means that they are singlets (estimating a multiplet fraction of 4%). Of this, 143 cells are estimated to be cells of the correct cell type "CD14+ Monocytes". Also the read depth declines with more multiplets, resulting in an average read depth of 24,091 for a singlet and an average mapped read depths of 19,273. 7019 genes are estimated to be expressed, i.e. to have more than 3 counts in more than 50% of the 100 samples.
+
+#### Case 2: Droplet-based method with restricted overloading
+
+We implemented a second variant of the power function, where instead of the number of samples per lane the number of cells per lane is set. This restricts the overloading and gives the possibility to set the mutliplet rate. For example, by setting the cells per lane to 20,000 results in a multiplet rate of 15.4%.
+
+```{r}
+
+power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
+                                        ct.freq=0.1,type="eqtl",
+                                        ref.study=powerScPop::eqtl.ref.study,
+                                        ref.study.name="Blueprint (Monocytes)",
+                                        cellsPerLane=20000,
+                                        read.umi.fit = powerScPop::read.umi.fit,
+                                        gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                        gamma.probs = powerScPop::gamma.probs,
+                                        ct="CD14+ Monocytes",
+                                        disp.fun.param=powerScPop::disp.fun.param,
+                                        mappingEfficiency = 0.8,
+                                        min.UMI.counts = 3,
+                                        perc.indiv.expr = 0.5)
+
+print(power)
+
+```
+
+In this case, the power decreases slightly compared to case 1, but the overall experimental cost is lower.
+
+#### Experimental cost calculation
+
+The experimental costs are the sum of the library preparation cost and the sequencing costs. They dependent on the three main experimental parameters (sample size, cells per sample and read depth). The library prepration costs for 10X are determined by the cost of a 10X kit, the seuqencing cost by the cost of a flow cell and the reads that can be sequenced with a flow cell. Example values are here chosen for all three to calculate the experimental costs for case 1 and case 2.
+
+```{r}
+
+costKit<-5600
+costFlowCell<-14032
+readsPerFlowcell<-4100*10^6
+
+#Experimental cost for case 1
+cost<-budgetCalculation(nSamples=100,nCells=1500,readDepth=25000,
+                        costKit=costKit,samplesPerLane=4,
+                        costFlowCell=costFlowCell,readsPerFlowcell = readsPerFlowcell)
+print(paste("Costs for case 1:",round(cost)))
+
+#Experimental cost for case 2
+cost<-budgetCalculation.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
+                                           costKit=costKit,cellsPerLane=20000,
+                                           costFlowCell=costFlowCell,
+                                           readsPerFlowcell = readsPerFlowcell)
+print(paste("Costs for case 2:",round(cost)))
+
+```
+
+#### Case 3: Droplet-based method with constant multiplet rate
+
+If data is missing to model the overloading of the lane, instead also a constant multiplet rate can be used. This is influenced by the parameter multipletRateGrowth, which is either "linear" (for a linera increase with cells per lane) or "constant". The parameter multipletRate will be interpreted correspondingly.
+
+```{r}
+
+power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
+                                        ct.freq=0.1,type="eqtl",
+                                        ref.study=powerScPop::eqtl.ref.study,
+                                        ref.study.name="Blueprint (Monocytes)",
+                                        cellsPerLane=8000,
+                                        read.umi.fit = powerScPop::read.umi.fit,
+                                        gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                        gamma.probs = powerScPop::gamma.probs,
+                                        ct="CD14+ Monocytes",
+                                        disp.fun.param=powerScPop::disp.fun.param,
+                                        mappingEfficiency = 0.8,
+                                        min.UMI.counts = 3,
+                                        perc.indiv.expr = 0.5,
+                                        multipletRateGrowth = "constant",
+                                        multipletRate=0.05)
+
+print(power)
+
+```
+
+#### Case 4: Smart-seq2
+
+Read based technologies, such as smart-seq2, need to be modelled slightly differently. The fit between reads and UMI is not required, as the gamma mixed curves are directly parameterized over the read depth. Instead, specific gene curve fits with Smart-seq data are used. As an additional prior, the gene length of the eQTL/DE genes is taken here, which can also be gained from the FACS sorted bulk eQTL/DE studies. As example case, a pancreas smart-seq data set is used here together with a DE study performed in pancreas tissue.
+
+```{r}
+
+power<-power.smartseq(nSamples=100,nCells=1500,readDepth=25000,
+                      ct.freq=0.1,type="de",
+                      ref.study=powerScPop::de.ref.study,
+                      ref.study.name="Pancreas_alphabeta",
+                      gamma.mixed.fits = powerScPop::gamma.mixed.fits.smart,
+                      gamma.probs = powerScPop::gamma.probs.smart,
+                      ct="alpha",
+                      disp.linear.fit = powerScPop::disp.fun.param.smart,
+                      mappingEfficiency = 0.8,
+                      min.norm.count = 3,
+                      perc.indiv.expr = 0.5)
+
+print(power)
+
+```
+
+### Selection of optimal parameter combination for a restricted budget
+
+powerScPop give the user also the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. A realistic vector of possible values for read depth and cells per person is given in the parameters readDepthRange and cellPersRange. The sample size is defined uniquely given the other two parameters and the overall budget. For the function to calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before.
+
+```{r,fig.width=6}
+
+opt.design<-optimize.constant.budget(totalBudget=100000,
+                                     readDepthRange=seq(10000,50000,by=5000),
+                                     cellPersRange=seq(1000,10000,by=1000),
+                                     costKit=5600,
+                                     costFlowCell=14032,
+                                     readsPerFlowcell = 4100*10^6,
+                                     ct.freq=0.1,type="eqtl",
+                                     ref.study=powerScPop::eqtl.ref.study,
+                                     ref.study.name="Blueprint (Monocytes)",
+                                     samplesPerLane=4,
+                                     read.umi.fit = powerScPop::read.umi.fit,
+                                     gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                     gamma.probs = powerScPop::gamma.probs,
+                                     ct="CD14+ Monocytes",
+                                     disp.fun.param=powerScPop::disp.fun.param,
+                                     mappingEfficiency = 0.8)
+
+#First lines of result data frame
+head(opt.design)
+
+#Optimal experimental design combination
+print(opt.design[which.max(opt.design$powerDetect),])
+
+#Plot results
+power.DE.study<-melt(opt.design,id.vars=c("name","sampleSize","totalCells","usableCells",
+                                              "multipletFraction","ctCells","readDepth",
+                                              "readDepthSinglet","mappedReadDepth",
+                                              "expressedGenes"))
+power.DE.study$variable<-factor(power.DE.study$variable,levels=c("exp.probs","power","powerDetect"))
+
+var.labs<-c("Expression probability", "DE power", 
+            "Detection power")
+names(var.labs)<-c("exp.probs","power","powerDetect")
+
+power.DE.study$totalCells<-as.factor(power.DE.study$totalCells)
+power.DE.study$readDepth<-as.factor(power.DE.study$readDepth)
+g<-ggplot(power.DE.study,aes(x=totalCells,y=readDepth,fill=sampleSize))+
+  geom_tile()+
+  xlab("Number of measured cells per sample")+ylab("Read depth")+
+  ggtitle("Possible sample size for each parameter combination and a restricted budget")+
+  theme_bw()+
+  theme(plot.title = element_text(size=10),
+        axis.title=element_text(size=8),
+        axis.text=element_text(size=6),
+        legend.title=element_text(size=7),
+        legend.text=element_text(size=7))
+  
+print(g)
+
+```
+
+```{r,fig.width=8}
+g<-ggplot(power.DE.study,aes(x=totalCells,y=readDepth,fill=value))+
+  geom_tile()+facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
+  xlab("Number of measured cells per sample")+ylab("Read depth")+
+  ggtitle("Possible power for each parameter combination and a restricted budget")+
+  theme_bw()+
+  theme(plot.title = element_text(size=10),
+        axis.title=element_text(size=8),
+        axis.text=element_text(size=6),
+        legend.title=element_text(size=7),
+        legend.text=element_text(size=7))
+
+print(g)
+```
+
+The function returns for each combination of read depth and cells per person, how many samples can be measured with the given budget and which detection power can be reached. The combination in the data frame with the maximal detection power is the optimal experimental design.
+
+Similar to the power calculation, also here are variants for the function with a restricted number of cells per lane (optimize.constant.budget.restrictedDoublets) and for smart-seq data (optimize.constant.budget.smartseq). There is also the option to calculate the library preparation cost per cell instead of per kit (optimize.constant.budget.libPrepCell).
+
+## Part 2: Generation of new priors from a data set
+
+Additionally to the priors given by the package, powerScPop offers the option to generate new priors from your own data set. Two types of priors are necessary:
+
+* parameters for the expression probability curves, which can be fitted from single cell RNA-seq data of the same technology (e.g. data from a pilot study)
+
+* effect sizes and expression ranks of the DE/eQTL genes, which can be taken from any kind of study or simulated. We recommend studies with FACS sorted bulk RNA-seq to get a realistic estimation of parameters.
+
+### Expression probability curves
+
+A small example data set of a UMI count matrix is provided in the package to show the fitting of the expression probability curves.
+It contains data of one cell type, as each cell type needs to be fitted separately.
+
+The data set is a list of four count matrices, the first one the original count matrix and then 3 subsampled matrices to evaluate the effect of the read depth. The subsampling was performed on the reads and then the mapping repeated.
+
+```{r}
+  
+```
+
+
+### Effect sizes and expression ranks
+
+#### Using studies with FACS sorted bulk RNA-seq
+
+#### Using simulated priors
+
+```{r}
+
+```
+

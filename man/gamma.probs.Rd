@@ -11,7 +11,7 @@ data(gammaProbs)
 \description{
 Probability parameter of the first component of the gamma mixed model,
 in contrast to the other parameters independent of the mean UMI counts per cell,
-fitted from our example PBMC data set (mean value per cell type)
+fitted from example PBMC 10X data set (mean value per cell type)
 }
 \examples{
 data(gammaProbs)

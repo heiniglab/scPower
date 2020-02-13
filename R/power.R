@@ -50,7 +50,7 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param personsPerLane Maximal number of persons per 10X lane
+#' @param samplesPerLane Maximal number of persons per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
@@ -82,7 +82,7 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #'
 power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      type,ref.study,ref.study.name,
-                                     personsPerLane,
+                                     samplesPerLane,
                                      read.umi.fit,gamma.mixed.fits,
                                      gamma.probs,ct,
                                      disp.fun.param,
@@ -94,7 +94,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 
   #Estimate multiplet fraction dependent on cells per lane
   if(multipletRateGrowth=="linear"){
-    multipletFraction<-multipletRate*nCells*personsPerLane
+    multipletFraction<-multipletRate*nCells*samplesPerLane
   } else if (multipletRateGrowth == "constant") {
     multipletFraction<-multipletRate
   } else {
@@ -259,7 +259,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 
 #' Power calculation for a DE/eQTL study with 10X design (with a restricted number of cells per lane)
 #'
-#' This function is a variant of power.general.withDoublets, where not the number of personsPerLane is given as an
+#' This function is a variant of power.general.withDoublets, where not the number of samplesPerLane is given as an
 #' parameter, but instead the individuals are distributed over the lanes in a way that restricts the total number of
 #' cells per lane instead. This gives also an upper bound for the doublet rate.
 #'
@@ -309,15 +309,15 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            multipletRateGrowth="linear"){
 
   #Distribute persons most optimal over the lanes
-  personsPerLane<-floor(cellsPerLane/nCells)
+  samplesPerLane<-floor(cellsPerLane/nCells)
 
-  if(personsPerLane==0){
+  if(samplesPerLane==0){
     stop("Allowed number of cells per lane is too low to fit so many cells per person!")
   }
 
   return(power.general.withDoublets(nSamples,nCells,readDepth,ct.freq,
                              type,ref.study,ref.study.name,
-                             personsPerLane,
+                             samplesPerLane,
                              read.umi.fit,gamma.mixed.fits,
                              gamma.probs,ct,
                              disp.fun.param,
@@ -555,7 +555,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param personsPerLane Maximal number of persons per 10X lane
+#' @param samplesPerLane Maximal number of persons per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
@@ -587,7 +587,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                    costKit,costFlowCell,readsPerFlowcell,
                                    ct.freq,type,ref.study,ref.study.name,
-                                   personsPerLane,
+                                   samplesPerLane,
                                    read.umi.fit,gamma.mixed.fits,
                                    gamma.probs,ct,
                                    disp.fun.param,
@@ -599,14 +599,14 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 
   #Build a frame of all possible combinations
   param.combis<-expand.grid(cellPersRange,readDepthRange)
-  colnames(param.combis)<-c("cellsPerPerson","readDepth")
+  colnames(param.combis)<-c("nCells","readDepth")
 
   #Sample size dependent on the budget
   param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
-                                            function(i)floor(sampleSizeBudgetCalculation(param.combis$cellsPerPerson[i],
+                                            function(i)floor(sampleSizeBudgetCalculation(param.combis$nCells[i],
                                                                             param.combis$readDepth[i],
                                                                             totalBudget,
-                                                                            costKit,personsPerLane,
+                                                                            costKit,samplesPerLane,
                                                                             costFlowCell,readsPerFlowcell)))
 
   #Remove all combinations with a sample size of 0
@@ -618,7 +618,7 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 
   power.study<-mapply(power.general.withDoublets,
                       param.combis$estimated.sampleSize,
-                      param.combis$cellsPerPerson,
+                      param.combis$nCells,
                       param.combis$readDepth,
                       MoreArgs=list(ct.freq=ct.freq,
                                     multipletRate=multipletRate,
@@ -626,7 +626,7 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
                                     type=type,
                                     ref.study=ref.study,
                                     ref.study.name=ref.study.name,
-                                    personsPerLane=personsPerLane,
+                                    samplesPerLane=samplesPerLane,
                                     read.umi.fit=read.umi.fit,
                                     gamma.mixed.fits=gamma.mixed.fits,
                                     gamma.probs=gamma.probs,
@@ -666,7 +666,7 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param personsPerLane Maximal number of persons per 10X lane
+#' @param samplesPerLane Maximal number of persons per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
@@ -698,7 +698,7 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cellPersRange,
                                                prepCostCell,costFlowCell,readsPerFlowcell,
                                    ct.freq,type,ref.study,ref.study.name,
-                                   personsPerLane,
+                                   samplesPerLane,
                                    read.umi.fit,gamma.mixed.fits,
                                    gamma.probs,ct,
                                    disp.fun.param,
@@ -710,11 +710,11 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cell
 
   #Build a frame of all possible combinations
   param.combis<-expand.grid(cellPersRange,readDepthRange)
-  colnames(param.combis)<-c("cellsPerPerson","readDepth")
+  colnames(param.combis)<-c("nCells","readDepth")
 
   #Sample size dependent on the budget
   param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
-                                            function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$cellsPerPerson[i],
+                                            function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$nCells[i],
                                                                                                      param.combis$readDepth[i],
                                                                                                      totalBudget,
                                                                                                      prepCostCell,
@@ -729,7 +729,7 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cell
 
   power.study<-mapply(power.general.withDoublets,
                       param.combis$estimated.sampleSize,
-                      param.combis$cellsPerPerson,
+                      param.combis$nCells,
                       param.combis$readDepth,
                       MoreArgs=list(ct.freq=ct.freq,
                                     multipletRate=multipletRate,
@@ -737,7 +737,7 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cell
                                     type=type,
                                     ref.study=ref.study,
                                     ref.study.name=ref.study.name,
-                                    personsPerLane=personsPerLane,
+                                    samplesPerLane=samplesPerLane,
                                     read.umi.fit=read.umi.fit,
                                     gamma.mixed.fits=gamma.mixed.fits,
                                     gamma.probs=gamma.probs,
@@ -819,12 +819,12 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
 
   #Build a frame of all possible combinations
   param.combis<-expand.grid(cellPersRange,readDepthRange)
-  colnames(param.combis)<-c("cellsPerPerson","readDepth")
+  colnames(param.combis)<-c("nCells","readDepth")
 
   #Sample size dependent on the budget
   param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
                                             function(i)floor(sampleSizeBudgetCalculation.restrictedDoublets(
-                                              param.combis$cellsPerPerson[i], param.combis$readDepth[i],
+                                              param.combis$nCells[i], param.combis$readDepth[i],
                                               totalBudget,costKit,
                                               cellsPerLane, costFlowCell,readsPerFlowcell)))
 
@@ -837,7 +837,7 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
 
   power.study<-mapply(power.general.restrictedDoublets,
                       param.combis$estimated.sampleSize,
-                      param.combis$cellsPerPerson,
+                      param.combis$nCells,
                       param.combis$readDepth,
                       MoreArgs=list(ct.freq=ct.freq,
                                     multipletRate=multipletRate,
@@ -885,7 +885,7 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param personsPerLane Maximal number of persons per 10X lane
+#' @param samplesPerLane Maximal number of persons per 10X lane
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
 #' @param gamma.probs Data frame with probability parameter of the gamma distributions
@@ -917,11 +917,11 @@ optimize.constant.budget.smartseq<-function(totalBudget, readDepthRange, cellPer
 
   #Build a frame of all possible combinations
   param.combis<-expand.grid(cellPersRange,readDepthRange)
-  colnames(param.combis)<-c("cellsPerPerson","readDepth")
+  colnames(param.combis)<-c("nCells","readDepth")
 
   #Sample size dependent on the budget
   param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
-                                            function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$cellsPerPerson[i],
+                                            function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$nCells[i],
                                                                                          param.combis$readDepth[i],
                                                                                          totalBudget,
                                                                                          prepCostCell,
@@ -935,7 +935,7 @@ optimize.constant.budget.smartseq<-function(totalBudget, readDepthRange, cellPer
 
   power.study<-mapply(power.smartseq,
                       param.combis$estimated.sampleSize,
-                      param.combis$cellsPerPerson,
+                      param.combis$nCells,
                       param.combis$readDepth,
                       MoreArgs=list(ct.freq=ct.freq,
                                     multipletFraction=multipletFraction,
@@ -1025,24 +1025,24 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 #'
 #' A balanced design with two classes is assumed for the sample size calculation.
 #'
-#' @param cellsPerPerson Cells per person
+#' @param nCells Cells per person
 #' @param readDepth Read depth per cell
 #' @param totalCost Experimental budget
 #' @param costKit Cost for one 10X kit
-#' @param personsPerLane Number of persons sequenced per lane
+#' @param samplesPerLane Number of persons sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #'
 #' @return Number of samples that can be sampled with this budget and other parameters
 #'
 #' @export
-sampleSizeBudgetCalculation<-function(cellsPerPerson,readDepth,totalCost,
-                                      costKit,personsPerLane,
+sampleSizeBudgetCalculation<-function(nCells,readDepth,totalCost,
+                                      costKit,samplesPerLane,
                                       costFlowCell,readsPerFlowcell){
 
   #Estimate the maximal sample size dependent on the cost for the other parameter
-  samples <- totalCost / (costKit/(6*personsPerLane) +
-                 cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell)
+  samples <- totalCost / (costKit/(6*samplesPerLane) +
+                 nCells * readDepth / readsPerFlowcell * costFlowCell)
 
   #Return only even sample sizes (due to the balanced design)
   return(floor(samples / 2) * 2)
@@ -1054,7 +1054,7 @@ sampleSizeBudgetCalculation<-function(cellsPerPerson,readDepth,totalCost,
 #' Variant of sampleSizeBudgetCalculation, which restricts the cells per lane instead the persons
 #' per lane.
 #'
-#' @param cellsPerPerson Cells per person
+#' @param nCells Cells per person
 #' @param readDepth Read depth per cell
 #' @param totalCost Experimental budget
 #' @param costKit Cost for one 10X kit
@@ -1065,16 +1065,16 @@ sampleSizeBudgetCalculation<-function(cellsPerPerson,readDepth,totalCost,
 #' @return Number of samples that can be sampled with this budget and other parameters
 #'
 #' @export
-sampleSizeBudgetCalculation.restrictedDoublets<-function(cellsPerPerson,readDepth,totalCost,
+sampleSizeBudgetCalculation.restrictedDoublets<-function(nCells,readDepth,totalCost,
                                       costKit,cellsPerLane,
                                       costFlowCell,readsPerFlowcell){
 
   #Estimate persons per lane
-  personsPerLane<-floor(cellsPerLane/cellsPerPerson)
+  samplesPerLane<-floor(cellsPerLane/nCells)
 
   #Estimate the maximal sample size dependent on the cost for the other parameter
-  samples <- totalCost / (costKit/(6*personsPerLane) +
-                            cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell)
+  samples <- totalCost / (costKit/(6*samplesPerLane) +
+                            nCells * readDepth / readsPerFlowcell * costFlowCell)
 
   #Return only even sample sizes (due to the balanced design)
   return(floor(samples / 2) * 2)
@@ -1082,11 +1082,11 @@ sampleSizeBudgetCalculation.restrictedDoublets<-function(cellsPerPerson,readDept
 
 #' Calculate total cost dependent on parameters
 #'
-#' @param cellsPerPerson Cells per person
+#' @param nSamples Number of samples
+#' @param nCells Cells per person
 #' @param readDepth Read depth per cell
-#' @param sampleSize Number of samples
 #' @param costKit Cost for one 10X kit
-#' @param personsPerLane Number of persons sequenced per lane
+#' @param samplesPerLane Number of persons sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #' @param rounding Rounds up the number of used kits and flow cells
@@ -1095,17 +1095,51 @@ sampleSizeBudgetCalculation.restrictedDoublets<-function(cellsPerPerson,readDept
 #' @return Total experimental cost dependent on the parameters
 #'
 #' @export
-budgetCalculation<-function(cellsPerPerson,readDepth,sampleSize,
-                            costKit,personsPerLane,
+budgetCalculation<-function(nSamples,nCells,readDepth,
+                            costKit,samplesPerLane,
                             costFlowCell,readsPerFlowcell,
                             rounding=FALSE){
 
   if(rounding){
-    totalBudget<-ceiling(sampleSize/(6*personsPerLane))*costKit+
-      ceiling(sampleSize*cellsPerPerson*readDepth/readsPerFlowcell)*costFlowCell
+    totalBudget<-ceiling(nSamples/(6*samplesPerLane))*costKit+
+      ceiling(nSamples*nCells*readDepth/readsPerFlowcell)*costFlowCell
   } else {
-  totalBudget<-sampleSize/(6*personsPerLane)*costKit+
-    sampleSize*cellsPerPerson*readDepth/readsPerFlowcell*costFlowCell
+  totalBudget<-nSamples/(6*samplesPerLane)*costKit+
+    nSamples*nCells*readDepth/readsPerFlowcell*costFlowCell
+  }
+  return(totalBudget)
+
+}
+
+#' Calculate total cost dependent on parameters (adaptation with cells per lane instead of samples)
+#'
+#' @param nSamples Number of samples
+#' @param nCells Cells per person
+#' @param readDepth Read depth per cell
+#' @param costKit Cost for one 10X kit
+#' @param cellsPerLane Number of cells sequenced per lane
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param rounding Rounds up the number of used kits and flow cells
+#' (which might give a more realistic estimation of costs)
+#'
+#' @return Total experimental cost dependent on the parameters
+#'
+#' @export
+budgetCalculation.restrictedDoublets<-function(nSamples,nCells,readDepth,
+                                              costKit,cellsPerLane,
+                                              costFlowCell,readsPerFlowcell,
+                                              rounding=FALSE){
+
+  #Estimate persons per lane
+  samplesPerLane<-floor(cellsPerLane/nCells)
+
+  if(rounding){
+    totalBudget<-ceiling(nSamples/(6*samplesPerLane))*costKit+
+      ceiling(nSamples*nCells*readDepth/readsPerFlowcell)*costFlowCell
+  } else {
+    totalBudget<-nSamples/(6*samplesPerLane)*costKit+
+      nSamples*nCells*readDepth/readsPerFlowcell*costFlowCell
   }
   return(totalBudget)
 
@@ -1115,7 +1149,7 @@ budgetCalculation<-function(cellsPerPerson,readDepth,sampleSize,
 #'
 #' A balanced design with two classes is assumed for the sample size calculation.
 #'
-#' @param cellsPerPerson Cells per person
+#' @param nCells Cells per person
 #' @param readDepth Read depth per cell
 #' @param totalCost Experimental budget
 #' @param prepCostCell Library preparation costs per cell
@@ -1125,13 +1159,13 @@ budgetCalculation<-function(cellsPerPerson,readDepth,sampleSize,
 #' @return Number of samples that can be sampled with this budget and other parameters
 #'
 #' @export
-sampleSizeBudgetCalculation.libPrepCell<-function(cellsPerPerson,readDepth,totalCost,
+sampleSizeBudgetCalculation.libPrepCell<-function(nCells,readDepth,totalCost,
                                                prepCostCell,
                                                costFlowCell,readsPerFlowcell){
 
   #Estimate the maximal sample size dependent on the cost for the other parameter
-  samples <- totalCost / (prepCostCell * cellsPerPerson +
-                            cellsPerPerson * readDepth / readsPerFlowcell * costFlowCell)
+  samples <- totalCost / (prepCostCell * nCells +
+                            nCells * readDepth / readsPerFlowcell * costFlowCell)
 
   #Return only even sample sizes (due to the balanced design)
   return(floor(samples / 2) * 2)

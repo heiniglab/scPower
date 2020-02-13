@@ -16,7 +16,7 @@ optimize.constant.budget.libPrepCell(
   type,
   ref.study,
   ref.study.name,
-  personsPerLane,
+  samplesPerLane,
   read.umi.fit,
   gamma.mixed.fits,
   gamma.probs,
@@ -54,7 +54,7 @@ optimize.constant.budget.libPrepCell(
 
 \item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
 
-\item{personsPerLane}{Maximal number of persons per 10X lane}
+\item{samplesPerLane}{Maximal number of persons per 10X lane}
 
 \item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 (required columns: intercept, reads (slope))}

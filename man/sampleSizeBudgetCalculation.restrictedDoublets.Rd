@@ -6,7 +6,7 @@
 (with a restricted number of cells per lane)}
 \usage{
 sampleSizeBudgetCalculation.restrictedDoublets(
-  cellsPerPerson,
+  nCells,
   readDepth,
   totalCost,
   costKit,
@@ -16,7 +16,7 @@ sampleSizeBudgetCalculation.restrictedDoublets(
 )
 }
 \arguments{
-\item{cellsPerPerson}{Cells per person}
+\item{nCells}{Cells per person}
 
 \item{readDepth}{Read depth per cell}
 

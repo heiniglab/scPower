@@ -5,7 +5,7 @@
 \title{Estimate possible sample size depending on the total cost, using preparation costs per cell}
 \usage{
 sampleSizeBudgetCalculation.libPrepCell(
-  cellsPerPerson,
+  nCells,
   readDepth,
   totalCost,
   prepCostCell,
@@ -14,7 +14,7 @@ sampleSizeBudgetCalculation.libPrepCell(
 )
 }
 \arguments{
-\item{cellsPerPerson}{Cells per person}
+\item{nCells}{Cells per person}
 
 \item{readDepth}{Read depth per cell}
 
