@@ -1,3 +1,7 @@
+################################################
+# Functions for fitting the expression model
+###############################################
+
 #' Reformat count matrix to 3D pseudocount matrix
 #'
 #' Sum up the counts per cell type and person for each gene and create a
@@ -316,12 +320,80 @@ sample.disp.values<-function(mean.vals,disp.parameter){
   return(disp.vals)
 }
 
-#' Estimate the relationship between the gamma mixed parameter and the mean UMI counts
-gamma.umi.relation<-function(){
-
+#' Calculate the mean UMI count per cell
+#'
+#' @param countMatrix Raw UMI count matrix with genes as rows and cells as columns
+#'
+#' @return Mean UMI count per cell
+#'
+#' @export
+#'
+meanUMI.calculation<-function(countMatrix){
+  return(mean(colSums(countMatrix)))
 }
 
-#' Estimate the relationship between mean UMI counts and mean read counts
-umi.read.relation<-function(){
+#' Estimate linear relationship between the gamma mixed parameter and the mean UMI counts
+#'
+#' @param gamma.fits Parameters from the fitted gamma function (pi.c1,pi.c2,mu.c1,mu.c2,sd.c1,sd.c2),
+#' calculated in mixed.gamma.estimation, and a column with mean UMI values, can be calculated in
+#' mean.umi.calculation
+#'
+#' @return List with linear fit for gamma parameters mean and sd and mean values for gamma parameters probability
+#'
+#' @export
+#'
+umi.gamma.relation<-function(gamma.fits){
 
+  #Fit mean and standard deviation parameters linear dependent on the mean UMI values
+  parameter.fits<-NULL
+  for(param in c("mu.c1","mu.c2","sd.c1","sd.c2")){
+
+    #Fit a linear relationship
+    fit<-lm(data=gamma.fits,as.formula(paste0(param," ~ mean.umi")))
+
+    parameter.fits<-rbind(parameter.fits,
+                          data.frame(parameter=param,
+                                     intercept=fit$coefficients["(Intercept)"],
+                                     meanUMI=fit$coefficients["mean.umi"]))
+  }
+
+  #Set probability parameter independent of the mean UMI values
+  probability<-data.frame(pi.c1=mean(gamma.fits$pi.c1))
+
+  return(list(parameter.fits,probability))
+}
+
+#' Estimate logarithmic relationship between mean UMI counts and mean mapped read counts per cell
+#'
+#' @param read.umis Data.frame with column for mean UMI values (mean.umi) and
+#' column for mean transcriptome mapped reads (transcriptome.mapped.reads)
+#'
+#' @return Parameters of logarithmic fit between reads and UMIs
+#'
+#' @export
+#'
+umi.read.relation<-function(read.umis){
+  fit<-lm(data=read.umis,mean.umi~log(transcriptome.mapped.reads))
+
+  read.umi.fit<-data.frame(intercept=fit$coefficients["(Intercept)"],
+                           reads=fit$coefficients["log(transcriptome.mapped.reads)"])
+
+  return(read.umi.fit)
+}
+
+#' Get median values of parameters from the mean-dispersion fits
+#' (no correlation with UMI counts visible)
+#'
+#' @param disp.funs Data.frame with parameters of mean-dispersion fit
+#' (asymptDisp, extraPois)
+#'
+#' @return Median parameters
+#'
+#' @export
+#'
+dispersion.function.estimation<-function(disp.funs){
+  disp.fun.general<-data.frame(asymptDisp=median(disp.funs$asymptDisp),
+                               extraPois=median(disp.funs$extraPois))
+
+  return(disp.fun.general)
 }

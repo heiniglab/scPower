@@ -1,5 +1,7 @@
 ---
 title: "Introduction to powerScPop"
+author: "Matthias Heinig, Katharina Schmid"
+date:  "`r format(Sys.time(), '%d %B, %Y')`"
 output: rmarkdown::html_vignette
 vignette: >
   %\VignetteIndexEntry{introduction-powerScPop}
@@ -7,7 +9,7 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-powerScPop is a R package for design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets.
+powerScPop is a R package for design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis. A detection of cell-type specific DE and eQTL genes is possible with the help of single cell data. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets.
 
 The tool was evaluated with data from different tissues and single cell technologies.
 
@@ -15,7 +17,7 @@ A detailed description of all methods and citation of all used tools and data se
 
 In the first part of this tutorial, the estimation of power and optimal design with the example data sets are shown, in the second part, the fitting of new priors from own data is described.
 
-We will show in the following the analysis for an eQTL study, for a DE study it works completely analogously.
+We will show the analysis for an eQTL study, for a DE study it works completely analogously.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -45,9 +47,9 @@ Exemplarily, we will set the number of samples to 100, the cells per sample to 1
 
 Additionally, the expected effect sizes and the expression ranks of the eQTL genes are important. To get realistic estimates for them, we used FACS sorted bulk RNA-seq data. We will use here data from the Blueprint project, which estimated eQTLs in FACS sorted Monocytes.
 
-In general, the goal of the analysis is the detection of cell-type specific DE and eQTL genes. Instead of cell types, of course also other cell states can be chosen. In each case, it needs to be defined, how often the target cells appear in the sample, i.e. the cell type frequency, and how the expression distribution of the genes in this cell type looks like. We will choose here CD14+ Monocytes and assume a cell type frequency of 10%. Expression distribution fits from an example PBMC data set are available in the package. The fitted distribution is a mixed distribution of with two gamma components parameterized over the UMI counts, for which the data frames gamma.mixed.fits and gamma.probs are necessary (the first one saving the rate and shape parameter, the second the probability parameters). Furthermore, the relationship between gene expression means and dispersion is modelled using DESeq fits, an example fit is available in the data frame disp.fun.param.
+In general, the goal of the analysis is the detection of cell-type specific DE and eQTL genes. It needs to be defined, how often the target cells appear in the sample, i.e. the cell type frequency, and how the expression distribution of the genes in this cell type looks like. We will choose here CD14+ Monocytes and assume a cell type frequency of 10%. Expression distribution fits from an example PBMC data set are available in the package. The fitted distribution is a mixed distribution of with two gamma components parameterized over the UMI counts, for which the data frames gamma.mixed.fits and gamma.probs are necessary (the first one saving the rate and shape parameter, the second the probability parameter). Furthermore, the relationship between gene expression means and dispersion is modelled using DESeq fits, an example fit is available in the data frame disp.fun.param.
 
-The relationship between read depth and UMI counts is modelled logarithmic, an example fit is available in the data frame read.umi.fit. Additionally the mapping efficiency of the reads is important, we assume a efficiency of 80%.
+The relationship between read depth and UMI counts is modelled logarithmic, an example fit is available in the data frame read.umi.fit. Additionally, the mapping efficiency of the reads is important, we assume a efficiency of 80%.
 
 The definition of expression can be set user-specific to be above a specific count threshold in a certain fraction of all samples. We will set it to more than 3 counts in more than 50% of the samples.
 
@@ -81,11 +83,11 @@ print(power)
 
 ```
 
-The output shows an overall detection power for this parameter combination of 30.4%, which is the product of the expression probability of 47.9% and the eQTL power of 64.2%. Of in total 1,500 cells, 1,431 are "usable", which means that they are singlets (estimating a multiplet fraction of 4%). Of this, 143 cells are estimated to be cells of the correct cell type "CD14+ Monocytes". Also the read depth declines with more multiplets, resulting in an average read depth of 24,091 for a singlet and an average mapped read depths of 19,273. 7019 genes are estimated to be expressed, i.e. to have more than 3 counts in more than 50% of the 100 samples.
+The output shows an overall detection power for this parameter combination of 30.4%, which is the product of the expression probability of 47.9% and the eQTL power of 64.2%. Of in total 1,500 cells, 1,431 are "usable", which means that they are singlets (estimating a multiplet fraction of 4%). Of this, 143 cells are estimated to be cells of the correct cell type "CD14+ Monocytes". The read depth declines with more multiplets, resulting in an average read depth of 24,091 for a singlet and an average mapped read depths of 19,273. 7019 genes are estimated to be expressed, i.e. to have more than 3 counts in more than 50% of the 100 samples.
 
 #### Case 2: Droplet-based method with restricted overloading
 
-We implemented a second variant of the power function, where instead of the number of samples per lane the number of cells per lane is set. This restricts the overloading and gives the possibility to set the mutliplet rate. For example, by setting the cells per lane to 20,000 results in a multiplet rate of 15.4%.
+We implemented a second variant of the power function, where instead of the number of samples per lane the number of cells per lane is set. This restricts the overloading and gives the possibility to set the mutliplet rate. For example, setting the cells per lane to 20,000 results in a multiplet rate of 15.4%.
 
 ```{r}
 
@@ -136,7 +138,7 @@ print(paste("Costs for case 2:",round(cost)))
 
 #### Case 3: Droplet-based method with constant multiplet rate
 
-If data is missing to model the overloading of the lane, instead also a constant multiplet rate can be used. This is influenced by the parameter multipletRateGrowth, which is either "linear" (for a linera increase with cells per lane) or "constant". The parameter multipletRate will be interpreted correspondingly.
+If data is missing to model the overloading of the lane, a constant multiplet rate can be used instead. This is influenced by the parameter multipletRateGrowth, which is either "linear" (for a linera increase with cells per lane during overloading) or "constant". The parameter multipletRate will be interpreted correspondingly.
 
 ```{r}
 
@@ -184,7 +186,7 @@ print(power)
 
 ### Selection of optimal parameter combination for a restricted budget
 
-powerScPop give the user also the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. A realistic vector of possible values for read depth and cells per person is given in the parameters readDepthRange and cellPersRange. The sample size is defined uniquely given the other two parameters and the overall budget. For the function to calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before.
+powerScPop give the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. A realistic vector of possible values for read depth and cells per person is given in the parameters readDepthRange and cellPersRange. The sample size is defined uniquely given the other two parameters and the overall budget. For the function to calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before.
 
 ```{r,fig.width=6}
 
@@ -256,7 +258,7 @@ print(g)
 
 The function returns for each combination of read depth and cells per person, how many samples can be measured with the given budget and which detection power can be reached. The combination in the data frame with the maximal detection power is the optimal experimental design.
 
-Similar to the power calculation, also here are variants for the function with a restricted number of cells per lane (optimize.constant.budget.restrictedDoublets) and for smart-seq data (optimize.constant.budget.smartseq). There is also the option to calculate the library preparation cost per cell instead of per kit (optimize.constant.budget.libPrepCell).
+Similar to the power calculation, variants if the function exist to model a restricted number of cells per lane (optimize.constant.budget.restrictedDoublets) and to model smart-seq data (optimize.constant.budget.smartseq). Furthermore, there is the option to calculate the library preparation cost per cell instead of per kit (optimize.constant.budget.libPrepCell).
 
 ## Part 2: Generation of new priors from a data set
 
@@ -268,23 +270,262 @@ Additionally to the priors given by the package, powerScPop offers the option to
 
 ### Expression probability curves
 
-A small example data set of a UMI count matrix is provided in the package to show the fitting of the expression probability curves.
-It contains data of one cell type, as each cell type needs to be fitted separately.
+A small example data set of a UMI count matrix is provided in the package to show the fitting of the expression probability curves. It contains data of one cell type, as each cell type needs to be fitted separately.
 
-The data set is a list of four count matrices, the first one the original count matrix and then 3 subsampled matrices to evaluate the effect of the read depth. The subsampling was performed on the reads and then the mapping repeated.
+The data set is a list of four raw count matrices, the first one is the original count matrix and 3 subsampled matrices to evaluate the effect of the read depth. The subsampling was performed on the reads using the tool fastq-sample from fastq-tools version 0.8 and then the mapping repeated with cellranger.
 
 ```{r}
+
+data(countMatrixExample)
+
+#Dimensions of the three count matrices
+sapply(count.matrix.example,dim)
+
+```
+
+As a first step, the negative binomial fit for each gene, i.e. the mean and disperion parameter, are estimated. The function uses DESeq for library normalization and parameter estimation and returns a list with three elements: the normalized mean values, the dispersion values and the parameters of the mean-dispersion function fitted from DESeq. We will save the mean values and the parameters of the mean-dispersion function for further processing.
+
+```{r}
+
+norm.mean.values<-NULL
+disp.param<-NULL
+for(name in names(count.matrix.example)){
+  temp<-nbinom.estimation(count.matrix.example[[name]])
   
+  #Save the normalized mean values
+  norm.mean.values.temp<-temp[[1]]
+  norm.mean.values.temp$matrix<-name
+  norm.mean.values<-rbind(norm.mean.values,norm.mean.values.temp)
+  
+  #Save the parameter of the mean-dispersion function
+  disp.param.temp<-temp[[3]]
+  disp.param.temp$matrix<-name
+  disp.param<-rbind(disp.param,disp.param.temp)
+}
+
+#First rows of the data frame with normalized mean values
+head(norm.mean.values)
+
+#Parameter of the mean - dispersion function
+print(disp.param)
+
+```
+
+A mixed distribution with two gamma components is fitted for each mean value vector (one fit per count matrix). The count matrix contains often a large number of genes with a mean of zero. To reduce the matrix size and faciliate so the fit, the parameter of num.genes.kept regulates the number of mean values for the fit (it removes only genes with a mean of zero). The number should however never be smaller than the number of means values larger than zero. As a fraction of the zero values can be expressed genes below the detection threshold of the experiment, zero values are set to a very small value instead of kept zero (value should be below the smallest detected mean value) and so incorporated in the tail fo the gamma experiment.
+
+```{r}
+
+gamma.fits<-NULL
+for(name in names(count.matrix.example)){
+  
+  norm.mean.values.temp<-norm.mean.values[norm.mean.values$matrix==name,]
+  gamma.fit.temp<-mixed.gamma.estimation(norm.mean.values.temp$mean,
+                                         num.genes.kept = 21000,
+                                         default.zero.val = 10e-5)
+  gamma.fit.temp$matrix<-name
+  gamma.fits<-rbind(gamma.fits,gamma.fit.temp)
+}
+
+print(gamma.fits)
+```
+
+The fit can be evaluated by simulating mean values using this gamma distribution. In general, the package provides two options for the sampling the values, either random (sample.mean.values.random) or using the quantiles of the gamma mixed distribution (sample.mean.values.quantiles).
+
+```{r,fig.width=4}
+#Check fit for the full matrix
+sim.mean.vals<-sample.mean.values.quantiles(gamma.fits[gamma.fits$matrix=="complete",],nGenes=21000)
+plot.values<-data.frame(means=c(norm.mean.values$mean[norm.mean.values$matrix=="complete"],
+                                sim.mean.vals),
+                        type=c(rep("Observed",sum(norm.mean.values$matrix=="complete")),
+                               rep("Simulated",21000)))
+
+ggplot(plot.values,aes(x=means,fill=type))+geom_histogram(position="dodge")+
+  scale_x_log10(limits=c(1e-4,1e2))
+
+```
+
+The gamma fits over all matrices are parameterized by the mean UMI counts per cell. The values are calculated from the original count matrices.
+
+```{r,fig.width=4}
+#Estimate the mean umi values per cell for each matrix
+umi.values<-NULL
+for(name in names(count.matrix.example)){
+  mean.umi<-meanUMI.calculation(count.matrix.example[[name]])
+  umi.values<-rbind(umi.values,data.frame(mean.umi,matrix=name))
+}
+
+print(umi.values)
+
+gamma.fits<-merge(gamma.fits,umi.values,by="matrix")
+
+#Plot linear relationship between gamma parameters and UMI values
+plot.values<-melt(gamma.fits,id.vars=c("matrix","mean.umi"))
+plot.values<-plot.values[plot.values$variable %in% c("mu.c1","mu.c2","sd.c1","sd.c2"),]
+ggplot(plot.values,aes(x=mean.umi,y=value))+
+  geom_point()+geom_line()+
+  facet_wrap(~variable,ncol=2,scales="free")
+
+#Fit relationship between gamma parameters and UMI values
+fits<-umi.gamma.relation(gamma.fits)
+gamma.linear.fit.new<-fits[[1]]
+print(gamma.linear.fit.new)
+gamma.prob.fit.new<-fits[[2]]
+print(gamma.prob.fit.new)
+
+```
+
+For the dispersion parameter, no relation with the UMI counts was found. Therefore, simply the median value over all subsampling runs is taken for each parameter of the mean-dispersion function.
+
+```{r}
+disp.fun.general.new<-dispersion.function.estimation(disp.param)
+print(disp.fun.general.new)
+```
+
+
+Multiple fits, e.g. from different cell types or other cell states, can be combined in the gamma fit and disperion fit data frames. To extract the correct fits for a specific cell type in the power calculation later, an additional column ct is required.
+
+```{r}
+gamma.linear.fit.new$ct<-"New_ct"
+gamma.prob.fit.new$ct<-"New_ct"
+disp.fun.general.new$ct<-"New_ct"
+```
+
+As a last point, the relationship between reads and UMIs is fitted logarithmically. Therefore, the number of mapped reads is necessary, which can be gained from summary statistics after the mapping (e.g. in the cellranger summary statistics).
+
+```{r}
+#Number of mapped reads taken from cellranger summary statistics
+mapped.reads<-data.frame(matrix=c("complete","subsampled75","subsampled50","subsampled25"),
+                         transcriptome.mapped.reads=c(23130,17422,11666,5859))
+
+#Plot relationship between mean reads per cell and mean UMI per cell
+read.umis<-merge(umi.values,mapped.reads,by="matrix")
+print(read.umis)
+ggplot(read.umis,aes(x=transcriptome.mapped.reads,y=mean.umi))+
+  geom_point()+geom_line()
+
+#Fit relationship between mean reads per cell and mean UMI per cell
+read.umi.fit.new<-umi.read.relation(read.umis)
+print(read.umi.fit.new)
+```
+
+All fitted values are used to adapt the power calculation to the specific conditions of the experiment, e.g. a specific cell type of interest. The new data frames are added as parameter instead of the standard example fits of the package. The cell type is set to "New_ct", as saved in the dispersion and gamma fit data frames above.
+
+```{r}
+
+power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
+                                        ct.freq=0.1,type="eqtl",
+                                        ref.study=powerScPop::eqtl.ref.study,
+                                        ref.study.name="Blueprint (Monocytes)",
+                                        cellsPerLane=20000,
+                                        read.umi.fit = read.umi.fit.new,
+                                        gamma.mixed.fits = gamma.linear.fit.new,
+                                        gamma.probs = gamma.prob.fit.new,
+                                        ct="New_ct",
+                                        disp.fun.param=disp.fun.general.new,
+                                        mappingEfficiency = 0.8,
+                                        min.UMI.counts = 3,
+                                        perc.indiv.expr = 0.5)
+
+print(power)
+
 ```
 
 
 ### Effect sizes and expression ranks
 
-#### Using studies with FACS sorted bulk RNA-seq
+To use other effect size and expression rank priors either data from other DE / eQTL studies or simulated data can be taken.
 
-#### Using simulated priors
+#### Priors from DE / eQTL studies
+
+Effect sizes from other studies can be taken directly from the summary statistics of the study (FoldChange for DE genes and R^2 value for eQTL genes). A function of poweScPop extracts the gene ranks, if Ta normalized (!) count matrix is provided and a vector with the names of the significante DE / eQTL genes. To show the function, an example count matrix of powerScPop is processed in the following. For normalization, a simple normalization by counts per cell is done here. Depending on the data, other normalization strategies, e.g. incorporating also the gene length, might be more appropriate.
 
 ```{r}
 
+data(countMatrixExample)
+#Choose one of the example matrices given by powerScPop
+example.matrix<-count.matrix.example[["complete"]]
+
+#To speed up computation, remove all 0 genes
+example.matrix<-example.matrix[rowSums(example.matrix)>0,]
+
+#Normalize by count per cell
+example.matrix<-t(t(example.matrix)/colSums(example.matrix))
+
+#Randomly select a fraction of the gene to be significant DE genes
+sign.genes<-rownames(example.matrix)[1:300]
+
+#Calulate gene ranks
+gene.ranks<-gene.rank.calculation(example.matrix,sign.genes)
+
+head(gene.ranks)
+
+#Plot cumulative density function of significant genes
+ggplot(gene.ranks, aes(rank)) + stat_ecdf(geom = "step") +
+  xlab("top x highest expressed genes") +ylab("top x% of significant genes")
+
+```
+
+#### Simulated priors
+
+If a data from a suitable study is not available or extreme cases, such as very small or very large effect sizes, shall be tested, the priors can also be simulated using functions of powerScPop. Gene ranks can be either sampled randomly or if an even distribution in a certain interval is preferred, generated with the function uniform.ranks.interval.
+
+For eQTL genes, the R^2 value are simulated by transformation of Z-Scores using the Fisher Z Transformation. The Z-Scores are sampled from a normal distribution with parameters mean and sd.
+
+```{r}
+
+#Uniform distributed gene ranks for 200 genes in the interval from 5,001-10,000
+ranks<-uniform.ranks.interval(start=5001,end=10000,numGenes=200)
+#Simulation of fold changes
+Rsq<-effectSize.eQTL.simulation(mean=0.5,sd=0.2,numGenes=200)
+
+simulated.eqtl.genes<-data.frame(ranks=ranks,
+                               Rsq=Rsq,
+                               name="Simulated")
+
+power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
+                                  ct.freq=0.1,type="eqtl",
+                                  ref.study=simulated.eqtl.genes,
+                                  ref.study.name="Simulated",
+                                  samplesPerLane=4,
+                                  read.umi.fit = powerScPop::read.umi.fit,
+                                  gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                  gamma.probs = powerScPop::gamma.probs,
+                                  ct="CD14+ Monocytes",
+                                  disp.fun.param=powerScPop::disp.fun.param,
+                                  mappingEfficiency = 0.8,
+                                  min.UMI.counts = 3,
+                                  perc.indiv.expr = 0.5)
+
+print(power)
+```
+
+For DE genes, the log fold changes are simulated from a normal distribution with parameters mean and sd and transformed to fold changes.
+
+```{r}
+
+#Uniform distributed gene ranks for 200 genes in the interval from 5,001-10,000
+ranks<-uniform.ranks.interval(start=5001,end=10000,numGenes=200)
+#Simulation of fold changes
+foldChange<-effectSize.DE.simulation(mean=2,sd=0.5,numGenes=200)
+
+simulated.de.genes<-data.frame(ranks=ranks,
+                               FoldChange=foldChange,
+                               name="Simulated")
+
+power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
+                                  ct.freq=0.1,type="de",
+                                  ref.study=simulated.de.genes,
+                                  ref.study.name="Simulated",
+                                  samplesPerLane=4,
+                                  read.umi.fit = powerScPop::read.umi.fit,
+                                  gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                  gamma.probs = powerScPop::gamma.probs,
+                                  ct="CD14+ Monocytes",
+                                  disp.fun.param=powerScPop::disp.fun.param,
+                                  mappingEfficiency = 0.8,
+                                  min.UMI.counts = 3,
+                                  perc.indiv.expr = 0.5)
+
+print(power)
 ```
 

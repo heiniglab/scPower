@@ -31,9 +31,9 @@ library(powerScPop)
 runShiny()
 ```
 
-## Reproduction of paper plots
+## Vignettes for introduction and for reproduction of paper plots
 
-All plots shown in the manuscript were created with the package. To reproduce them, the code can be found in the corresponding vignette called 'reproduce-paper-plots'. It is not created by default when downloading the package, instead the specific parameter need to be set:
+The package provides two vignettes for the user. The first one, called "introduction-powerScPop", is a user manual describing all functions with small toy examples. The second one, called "reproduce-paper-plots", shows how all plots in the manuscript were created with the package. The vignettes are not incorporated by default when downloading the package, instead the specific parameter need to be set:
 
 ```{R}
 devtools::install_github("KatharinaSchmid/powerScPop",build_vignettes=TRUE)

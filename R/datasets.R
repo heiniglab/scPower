@@ -1,3 +1,7 @@
+##################################
+# Description of all data sets
+################################
+
 #' eQTL priors
 #'
 #' Data frame with eQTL priors (beta values and gene expression ranks) for

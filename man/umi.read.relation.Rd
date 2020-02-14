@@ -2,10 +2,17 @@
 % Please edit documentation in R/expression_fit.R
 \name{umi.read.relation}
 \alias{umi.read.relation}
-\title{Estimate the relationship between mean UMI counts and mean read counts}
+\title{Estimate logarithmic relationship between mean UMI counts and mean mapped read counts per cell}
 \usage{
-umi.read.relation()
+umi.read.relation(read.umis)
+}
+\arguments{
+\item{read.umis}{Data.frame with column for mean UMI values (mean.umi) and
+column for mean transcriptome mapped reads (transcriptome.mapped.reads)}
+}
+\value{
+Parameters of logarithmic fit between reads and UMIs
 }
 \description{
-Estimate the relationship between mean UMI counts and mean read counts
+Estimate logarithmic relationship between mean UMI counts and mean mapped read counts per cell
 }
