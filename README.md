@@ -1,4 +1,4 @@
-# powerScPop (working title)
+# scPower
 
 R package for the manuscript "Design of single cell transcriptomics experiments for differential expression and eQTL analysis between samples"
 
@@ -19,7 +19,7 @@ devtools::install_github("hadley/devtools")
 Finally you can install the latest development version of QTLnetwork from github with:
 
 ```R
-devtools::install_github("KatharinaSchmid/powerScPop")
+devtools::install_github("KatharinaSchmid/scPower")
 ```
 
 ## Shiny app
@@ -27,7 +27,7 @@ devtools::install_github("KatharinaSchmid/powerScPop")
 Run the Shiny app of the package with the following commands:
 
 ```{R}
-library(powerScPop)
+library(scPower)
 runShiny()
 ```
 
@@ -36,6 +36,6 @@ runShiny()
 The package provides two vignettes for the user. The first one, called "introduction-powerScPop", is a user manual describing all functions with small toy examples. The second one, called "reproduce-paper-plots", shows how all plots in the manuscript were created with the package. The vignettes are not incorporated by default when downloading the package, instead the specific parameter need to be set:
 
 ```{R}
-devtools::install_github("KatharinaSchmid/powerScPop",build_vignettes=TRUE)
-browseVignettes("powerScPop")
+devtools::install_github("KatharinaSchmid/scPower",build_vignettes=TRUE)
+browseVignettes("scPower")
 ```

@@ -27,7 +27,7 @@ knitr::opts_chunk$set(
 ```
 
 ```{r setup}
-library(powerScPop)
+library(scPower)
 library(reshape2)
 ```
 
