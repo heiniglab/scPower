@@ -177,6 +177,124 @@ print(g)
 
 # Supplementary Figures
 
+## Detectable genes
+
+```{r,fig.width=6}
+
+ct<-"CD4 T cells"
+cellCounts<-c(100,200,500,1000,1500,2000,2500,3000)
+readDepths<-c(12500,25000,37500,50000)
+
+minUMI.counts<-10
+measuredIndivs<-14
+numInd.threshold<-0.5
+nGenes<-21000
+
+geneCounts<-NULL
+for(r in readDepths){
+  for(c in cellCounts){
+    count.est<-powerScPop::estimate.exp.prob.param(nSamples=measuredIndivs,
+                                                   readDepth=r,nCellsCt=c,
+                                                   powerScPop::read.umi.fit,
+                                                   powerScPop::gamma.mixed.fits,
+                                                   powerScPop::gamma.probs,
+                                                   ct=ct,
+                                                   powerScPop::disp.fun.param,
+                                                   nGenes=nGenes,
+                                                   min.counts=minUMI.counts,
+                                                   perc.indiv=numInd.threshold)
+    
+    geneCounts<-rbind(geneCounts,data.frame(meanReads=r,numCells=c,
+                                            count.est=round(sum(count.est))))
+  }
+}
+
+geneCounts$meanReads<-as.factor(geneCounts$meanReads)
+geneCounts$numCells<-as.factor(geneCounts$numCells)
+g<-ggplot(geneCounts,aes(x=numCells,y=meanReads,fill=count.est))+
+  geom_tile()+
+  geom_text(aes(label=count.est,color=count.est>8000))+
+  scale_colour_manual(values=c("white", "black"))+
+  xlab("Number of measured cells per cell type and individual")+ylab("Mean reads per cell")+
+  scale_fill_viridis("Detectable genes")+
+  theme_bw()+
+  theme(axis.title=element_text(size=12),
+        axis.text=element_text(size=10),
+        legend.title=element_text(size=10),
+        legend.text=element_text(size=10))+
+  guides(colour=FALSE)
+  
+print(g)
+
+```
+
+## Expression rank priors from bulk studies
+
+```{r, fig.width=8, fig.height=8}
+#Load precalculated results
+eqtl.ranks<-powerScPop::eqtl.ref.study
+de.ranks<-powerScPop::de.ref.study[de.ref.study$type=="PBMC",]
+de.rank.lung<-powerScPop::de.ref.study[de.ref.study$type=="lung",]
+de.ranks.panc<-powerScPop::de.ref.study[de.ref.study$type=="pancreas",]
+  
+#Add on the y-axis also absolute numbers (second plot)
+eqtl.ranks$name<-paste0("Blueprint (",eqtl.ranks$cellType,")")
+eqtl.g<-ggplot(eqtl.ranks, aes(rank, col=name)) + stat_ecdf(geom = "step") +
+  xlab("Number of expressed genes") +ylab("Percentage of eQTL genes")+
+  scale_color_manual("Study", values=col.set2[5:6])+
+  theme_bw() + xlim(0,30000) + 
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=7),
+        legend.position = "bottom",
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        aspect.ratio = 0.8)+
+  guides(col=guide_legend(nrow=2,byrow=TRUE))
+
+de.g<-ggplot(de.ranks, aes(rank, col=name)) + stat_ecdf(geom = "step") +
+  xlab("Number of expressed genes") +ylab("Percentage of DE genes")+
+  scale_color_manual("Study", values=col.set2)+
+  theme_bw() + xlim(0,30000) + 
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=7),
+        legend.position = "bottom",
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        aspect.ratio = 0.8)+
+  guides(col=guide_legend(nrow=4,byrow=TRUE))
+
+de.rank.lung$name<-gsub("_"," ",de.rank.lung$name)
+de.lung<-ggplot(de.rank.lung, aes(rank, col=name)) + stat_ecdf(geom = "step") +
+  xlab("Number of expressed genes") +ylab("Percentage of DE genes")+
+  scale_color_manual("Study", values=col.set2)+
+  theme_bw() + xlim(0,30000) + 
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=7),
+        legend.position = "bottom",
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        aspect.ratio = 0.8)+
+  guides(col=guide_legend(nrow=1,byrow=TRUE))
+
+de.ranks.panc$name<-gsub("_"," ",de.ranks.panc$name)
+de.panc<-ggplot(de.ranks.panc, aes(rank, col=name)) + stat_ecdf(geom = "step") +
+  xlab("Number of expressed genes") +ylab("Percentage of DE genes")+
+  scale_color_manual("Study", values=col.set2)+
+  theme_bw() + xlim(0,30000) + 
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=7),
+        legend.position = "bottom",
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        aspect.ratio = 0.8)+
+  guides(col=guide_legend(nrow=2,byrow=TRUE))
+
+g<-ggarrange(eqtl.g,de.g,de.lung,de.panc,ncol=2,nrow=2,labels=c("A","B","C","D"),
+             align="hv")
+
+print(g)
+```
+
 ## Parameter optimization for constant budget
 
 ```{r,fig.width=8,fig.height=8}

@@ -30,7 +30,7 @@ sampleSizeBudgetCalculation(
 \item{readsPerFlowcell}{Number reads that can be sequenced with one flow cell}
 }
 \value{
-Number of samples that can be sampled with this budget and other parameters
+Number of samples that can be measured with this budget and other parameters
 }
 \description{
 A balanced design with two classes is assumed for the sample size calculation.

@@ -6,19 +6,20 @@
 \usage{
 optimize.constant.budget.smartseq(
   totalBudget,
-  readDepthRange,
-  cellPersRange,
+  type,
+  ct,
+  ct.freq,
   prepCostCell,
   costFlowCell,
   readsPerFlowcell,
-  ct.freq,
-  type,
   ref.study,
   ref.study.name,
   gamma.mixed.fits,
   gamma.probs,
-  ct,
   disp.linear.fit,
+  nSamplesRange = NULL,
+  nCellsRange = NULL,
+  readDepthRange = NULL,
   mappingEfficiency = 0.8,
   multipletFraction = 0,
   multipletFactor = 1.82,
@@ -31,19 +32,17 @@ optimize.constant.budget.smartseq(
 \arguments{
 \item{totalBudget}{Overall experimental budget}
 
-\item{readDepthRange}{Range of read depth values that should be tested (vector)}
+\item{type}{(eqtl/de) study}
 
-\item{cellPersRange}{Range of cells per person that should be tested (vector)}
+\item{ct}{Cell type of interest (name should be found in the gamma and dispersion models)}
+
+\item{ct.freq}{Frequency of the cell type of interest}
 
 \item{prepCostCell}{Library preparation costs per cell}
 
 \item{costFlowCell}{Cost of one flow cells for sequencing}
 
 \item{readsPerFlowcell}{Number reads that can be sequenced with one flow cell}
-
-\item{ct.freq}{Frequency of the cell type of interest}
-
-\item{type}{(eqtl/de) study}
 
 \item{ref.study}{Data frame with reference studies to be used for effect sizes and ranks
 (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))}
@@ -56,10 +55,14 @@ optimize.constant.budget.smartseq(
 \item{gamma.probs}{Data frame with probability parameter of the gamma distributions
 (required columns:ct (cell type), pi.c1 (probability of component 1))}
 
-\item{ct}{Cell type of interest (name from the gamma mixed models)}
-
 \item{disp.linear.fit}{Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
 (required columns: parameter, ct (cell type), intercept, meanReads (slope))}
+
+\item{nSamplesRange}{Range of sample sizes that should be tested (vector)}
+
+\item{nCellsRange}{Range of cells per person that should be tested (vector)}
+
+\item{readDepthRange}{Range of read depth values that should be tested (vector)}
 
 \item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)}
 
@@ -76,15 +79,10 @@ to define it as globally expressed}
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
 \item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
-
-\item{totalCost}{Experimental budget}
-
-\item{samplesPerLane}{Maximal number of persons per 10X lane}
 }
 \description{
 This function determines the optimal parameter combination for a given budget.
 The optimal combination is thereby the one with the highest detection power.
-The parameters are checked for a range of read depths and cells per person values,
-while the sample size is defined uniquely given the other two parameters and
-the overall budget.
+Of the three parameters sample size, cells per sample and read depth, two need to be set and
+the third one is uniquely defined given the other two parameters and the overall budget.
 }

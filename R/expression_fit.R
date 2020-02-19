@@ -77,39 +77,127 @@ calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
 
 }
 
-#' Estimate gene expression probability
+#' Estimate gene expression probability based on experimental parameters
 #'
 #' This function estimates the expression probability of each gene in pseudobulk
-#' with a certain cutoff of more than min.counts UMI counts
+#' with a certain cutoff of more than min.counts UMI counts, based on experimental
+#' parameters which lead to certain mean and dispersion values for each gene
 #'
-#' @param mu Estimated mean value in sc data per gene (vector)
-#' @param size Estimated size parameter in sc data from the negative binomial fit (1/dispersion parameter), also per gene (vector)
-#' @param cells.per.person Mean number of cells per person and cell type
+#' @param nSamples Sample size
+#' @param readDepth Target read depth per cell
+#' @param nCellsCt Mean number of cells per person and cell type
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
+#' (required columns: intercept, reads (slope))
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
+#' @param gamma.probs Data frame with probability parameter of the gamma distributions
+#' (required columns:ct (cell type), pi.c1 (probability of component 1))
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param min.counts  More than is number of UMI counts for each gene per person and cell type is required to defined it as expressed in one individual
-#' @param num.indivs  Total sample size
 #' @param perc.indiv  Percentage of individuals that need to have this gene expressed to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #'
-#' @return Vector with expression probabilites for each gene
+#' @return Vector with expression probabilities for each gene
 #'
 #' @export
 #'
-estimate.gene.counts<-function(mu,size,cells.per.person,num.indivs,
-                               min.counts=10,perc.indiv=0.5){
+estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
+                                  read.umi.fit,gamma.mixed.fits,
+                                  gamma.probs,ct,disp.fun.param,
+                                  min.counts=10,perc.indiv=0.5,
+                                  nGenes=21000,samplingMethod="quantiles"){
+
+  #Get mean umi dependent on read depth
+  umiCounts<-read.umi.fit$intercept+read.umi.fit$reads*log(readDepth)
+
+  if(umiCounts<=0){
+    stop("Read depth too small! UMI model estimates a mean UMI count per cell smaller than 0!")
+  }
+
+  #Check if gamma fit data for the cell type exists
+  if(! any(gamma.mixed.fits$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.mixed.fits fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.mixed.fits object used."))
+  }
+
+  #Get gamma values dependent on mean umi
+  gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
+  gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
+
+  #Check if gamma probability data for the cell type exists
+  if(! any(gamma.probs$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.probs fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.probs object used."))
+  }
+
+  gamma.parameters<-data.frame(pi.c1=gamma.probs$pi.c1[gamma.probs$ct==ct],
+                               pi.c2=1-gamma.probs$pi.c1[gamma.probs$ct==ct],
+                               mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
+                               mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
+                               sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
+                               sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
+
+  #Sample means values
+  if(samplingMethod=="random"){
+    gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
+  } else if (samplingMethod=="quantiles"){
+    gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
+  } else {
+    stop("No known sampling method. Use the options 'random' or 'quantiles'.")
+  }
+
+  #Check if dispersion data for the cell type exists
+  if(! any(disp.fun.param$ct==ct)){
+    stop(paste("No dispersion fitting data in the data frame disp.fun.param fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right disp.fun.param object used."))
+  }
+
+  #Fit dispersion parameter dependent on mean parameter
+  disp.fun<-disp.fun.param[disp.fun.param$ct==ct,]
+  gene.disps<-sample.disp.values(gene.means,disp.fun)
+
+  return(estimate.exp.prob.values(gene.means,1/gene.disps,nCellsCt,
+                           nSamples,min.counts,perc.indiv))
+
+}
+
+#' Estimate gene expression probability based on mean and dispersion values
+#'
+#' This function estimates the expression probability of each gene in pseudobulk
+#' with a certain cutoff of more than min.counts UMI counts, based on the mean and
+#' the disperion value of each gene
+#'
+#' @param mu Estimated mean value in sc data per gene (vector)
+#' @param size Estimated size parameter in sc data from the negative binomial fit (1/dispersion parameter), also per gene (vector)
+#' @param nCellsCt Mean number of cells per person and cell type
+#' @param nSamples  Total sample size
+#' @param min.counts  More than is number of UMI counts for each gene per person and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv  Percentage of individuals that need to have this gene expressed to define it as globally expressed
+#'
+#' @return Vector with expression probabilities for each gene
+#'
+#' @export
+#'
+estimate.exp.prob.values<-function(mu,size,nCellsCt,nSamples,
+                                   min.counts=10,perc.indiv=0.5){
 
   #Generate basis data.frame
-  fits.allIndivs<-data.frame(mu=mu,size=size,cells.per.person=cells.per.person)
+  fits.allIndivs<-data.frame(mu=mu,size=size,nCellsCt=nCellsCt)
 
   #Calculate summed NegBinomial distribution
-  fits.allIndivs$size<-fits.allIndivs$size*fits.allIndivs$cells.per.person
-  fits.allIndivs$mu<-fits.allIndivs$mu*fits.allIndivs$cells.per.person
+  fits.allIndivs$size<-fits.allIndivs$size*fits.allIndivs$nCellsCt
+  fits.allIndivs$mu<-fits.allIndivs$mu*fits.allIndivs$nCellsCt
 
   #Calculate probability to observe > n counts in one individual
   fits.allIndivs$count.probs<-1 - pnbinom(min.counts,mu=fits.allIndivs$mu,size=fits.allIndivs$size)
 
   #Calculate probability that > prob indivs have count > n
-  fits.allIndivs$indiv.probs<-1 - pbinom(perc.indiv*num.indivs,num.indivs,fits.allIndivs$count.probs)
+  fits.allIndivs$indiv.probs<-1 - pbinom(perc.indiv*nSamples,nSamples,fits.allIndivs$count.probs)
 
-  #Return number of expressed cells per celltype
+  #Return expression probability of each gene
   return(fits.allIndivs$indiv.probs)
 }
 

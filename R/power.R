@@ -176,8 +176,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 
   #Calculate for each gene the expression probability with the definition
   #expressed in 50% of the individuals with count > 10
-  sim.genes$exp.probs<-estimate.gene.counts(sim.genes$mean,1/sim.genes$disp,ctCells,
-                                            num.indivs=nSamples,min.counts=min.UMI.counts,
+  sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
+                                            nSamples=nSamples,min.counts=min.UMI.counts,
                                             perc.indiv=perc.indiv.expr)
 
   #Calculate the expected number of expressed genes
@@ -460,8 +460,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 
   #Calculate for each gene the expression probability with the definition
   #expressed in 50% of the individuals with count > 10
-  sim.genes$exp.probs<-estimate.gene.counts(sim.genes$mean,1/sim.genes$disp,ctCells,
-                                            num.indivs=nSamples,min.counts=min.norm.count,
+  sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
+                                            nSamples=nSamples,min.counts=min.norm.count,
                                             perc.indiv=perc.indiv.expr)
 
   #Calculate the expected number of expressed genes
@@ -539,19 +539,16 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #'
 #' This function determines the optimal parameter combination for a given budget.
 #' The optimal combination is thereby the one with the highest detection power.
-#' The parameters are checked for a range of read depths and cells per person values,
-#' while the sample size is defined uniquely given the other two parameters and
-#' the overall budget.
+#' Of the three parameters sample size, cells per sample and read depth, two need to be set and
+#' the third one is uniquely defined given the other two parameters and the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
-#' @param readDepthRange Range of read depth values that should be tested (vector)
-#' @param cellPersRange Range of cells per person that should be tested (vector)
-#' @param totalCost Experimental budget
+#' @param type (eqtl/de) study
+#' @param ct Cell type of interest (name should be found in the gamma and dispersion models)
+#' @param ct.freq Frequency of the cell type of interest
 #' @param costKit Cost for one 10X kit
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#' @param ct.freq Frequency of the cell type of interest
-#' @param type (eqtl/de) study
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
@@ -562,9 +559,11 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
 #' @param gamma.probs Data frame with probability parameter of the gamma distributions
 #' (required columns:ct (cell type), pi.c1 (probability of component 1))
-#' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
+#' @param nSamplesRange Range of sample sizes that should be tested (vector)
+#' @param nCellsRange Range of cells per person that should be tested (vector)
+#' @param readDepthRange Range of read depth values that should be tested (vector)
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -584,40 +583,75 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' 5600,14032,4100*10^6,0.2,"de",de.ref.study,"Blueprint (CLL) iCLL-mCLL",8,
 #' read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
 #'
-optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
+optimize.constant.budget<-function(totalBudget,type,
+                                   ct,ct.freq,
                                    costKit,costFlowCell,readsPerFlowcell,
-                                   ct.freq,type,ref.study,ref.study.name,
+                                   ref.study,ref.study.name,
                                    samplesPerLane,
                                    read.umi.fit,gamma.mixed.fits,
-                                   gamma.probs,ct,
-                                   disp.fun.param,
+                                   gamma.probs, disp.fun.param,
+                                   nSamplesRange=NULL,
+                                   nCellsRange=NULL, readDepthRange=NULL,
                                    mappingEfficiency=0.8,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
                                    min.UMI.counts=10,perc.indiv.expr=0.5,
                                    nGenes=21000,samplingMethod="quantiles",
                                    multipletRateGrowth="linear"){
 
-  #Build a frame of all possible combinations
-  param.combis<-expand.grid(cellPersRange,readDepthRange)
-  colnames(param.combis)<-c("nCells","readDepth")
-
-  #Sample size dependent on the budget
-  param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
-                                            function(i)floor(sampleSizeBudgetCalculation(param.combis$nCells[i],
-                                                                            param.combis$readDepth[i],
-                                                                            totalBudget,
-                                                                            costKit,samplesPerLane,
-                                                                            costFlowCell,readsPerFlowcell)))
-
-  #Remove all combinations with a sample size of 0
-  if(any(param.combis$estimated.sampleSize==0)){
-    warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
-    param.combis<-param.combis[param.combis$estimated.sampleSize>0,]
+  #Check that exactly two of the parameters are set and the third one is not defined
+  if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
+    stop(paste("To optimize the experimental design for a given budget,",
+               "always exactly one of the parameters nSamplesRange, nCellsRange",
+               "and readDepthRange should be set to NULL."))
   }
 
+  #Case 1: estimate the sample size
+  if(is.null(nSamplesRange)){
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nCellsRange,readDepthRange)
+    colnames(param.combis)<-c("nCells","readDepth")
+
+    #Sample size dependent on the budget
+    param.combis$nSamples<-sapply(1:nrow(param.combis),
+                                  function(i)floor(sampleSizeBudgetCalculation(param.combis$nCells[i],
+                                                                               param.combis$readDepth[i],
+                                                                               totalBudget,
+                                                                               costKit,samplesPerLane,
+                                                                               costFlowCell,readsPerFlowcell)))
+  #Case 2: estimate the number of cells per persons
+  } else if (is.null(nCellsRange)){
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nSamplesRange,readDepthRange)
+    colnames(param.combis)<-c("nSamples","readDepth")
+
+    param.combis$nCells<-sapply(1:nrow(param.combis),
+                                   function(i)cellsPersonBudgetCalculation(param.combis$nSamples[i],
+                                                                          param.combis$readDepth[i],
+                                                                          totalBudget,
+                                                                          costKit,samplesPerLane,
+                                                                          costFlowCell,readsPerFlowcell))
+  # Case 3: estimate the read depth
+  } else {
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nSamplesRange,nCellsRange)
+    colnames(param.combis)<-c("nSamples","nCells")
+
+    param.combis$readDepth<-sapply(1:nrow(param.combis),
+                                   function(i)readDepthBudgetCalculation(param.combis$nSamples[i],
+                                                                         param.combis$nCells[i],
+                                                                         totalBudget,
+                                                                         costKit,samplesPerLane,
+                                                                         costFlowCell,readsPerFlowcell))
+  }
+
+  #Remove all combinations where one of the parameters is <=0
+  if(any(param.combis$nSamples==0) | any(param.combis$nCells<=0) | any(param.combis$readDepth<=0)){
+    warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
+    param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
+  }
 
   power.study<-mapply(power.general.withDoublets,
-                      param.combis$estimated.sampleSize,
+                      param.combis$nSamples,
                       param.combis$nCells,
                       param.combis$readDepth,
                       MoreArgs=list(ct.freq=ct.freq,
@@ -650,19 +684,16 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 #'
 #' This function determines the optimal parameter combination for a given budget.
 #' The optimal combination is thereby the one with the highest detection power.
-#' The parameters are checked for a range of read depths and cells per person values,
-#' while the sample size is defined uniquely given the other two parameters and
-#' the overall budget.
+#' Of the three parameters sample size, cells per sample and read depth, two need to be set and
+#' the third one is uniquely defined given the other two parameters and the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
-#' @param readDepthRange Range of read depth values that should be tested (vector)
-#' @param cellPersRange Range of cells per person that should be tested (vector)
-#' @param totalCost Experimental budget
+#' @param type (eqtl/de) study
+#' @param ct Cell type of interest (name should be found in the gamma and dispersion models)
+#' @param ct.freq Frequency of the cell type of interest
 #' @param prepCostCell Library preparation costs per cell
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#' @param ct.freq Frequency of the cell type of interest
-#' @param type (eqtl/de) study
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
@@ -673,9 +704,11 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
 #' @param gamma.probs Data frame with probability parameter of the gamma distributions
 #' (required columns:ct (cell type), pi.c1 (probability of component 1))
-#' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
+#' @param nSamplesRange Range of sample sizes that should be tested (vector)
+#' @param nCellsRange Range of cells per person that should be tested (vector)
+#' @param readDepthRange Range of read depth values that should be tested (vector)
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -689,46 +722,72 @@ optimize.constant.budget<-function(totalBudget, readDepthRange, cellPersRange,
 #' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
 #'
 #' @export
-#'
-#' @examples
-#' optimize.constant.budget(10000,seq(1000,10000,by=1000),seq(1000,10000,by=1000),
-#' 5600,14032,4100*10^6,0.2,"de",de.ref.study,"Blueprint (CLL) iCLL-mCLL",8,
-#' read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
-#'
-optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cellPersRange,
+optimize.constant.budget.libPrepCell<-function(totalBudget, type,
+                                               ct,ct.freq,
                                                prepCostCell,costFlowCell,readsPerFlowcell,
-                                   ct.freq,type,ref.study,ref.study.name,
-                                   samplesPerLane,
-                                   read.umi.fit,gamma.mixed.fits,
-                                   gamma.probs,ct,
-                                   disp.fun.param,
-                                   mappingEfficiency=0.8,
-                                   multipletRate=7.67e-06,multipletFactor=1.82,
-                                   min.UMI.counts=10,perc.indiv.expr=0.5,
-                                   nGenes=21000,samplingMethod="quantiles",
-                                   multipletRateGrowth="linear"){
+                                               ref.study,ref.study.name,
+                                               samplesPerLane,
+                                               read.umi.fit,gamma.mixed.fits,
+                                               gamma.probs, disp.fun.param,
+                                               nSamplesRange=NULL,
+                                               nCellsRange=NULL, readDepthRange=NULL,
+                                               mappingEfficiency=0.8,
+                                               multipletRate=7.67e-06,multipletFactor=1.82,
+                                               min.UMI.counts=10,perc.indiv.expr=0.5,
+                                               nGenes=21000,samplingMethod="quantiles",
+                                               multipletRateGrowth="linear"){
 
-  #Build a frame of all possible combinations
-  param.combis<-expand.grid(cellPersRange,readDepthRange)
-  colnames(param.combis)<-c("nCells","readDepth")
-
-  #Sample size dependent on the budget
-  param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
-                                            function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$nCells[i],
-                                                                                                     param.combis$readDepth[i],
-                                                                                                     totalBudget,
-                                                                                                     prepCostCell,
-                                                                                                     costFlowCell,readsPerFlowcell)))
-
-  #Remove all combinations with a sample size of 0
-  if(any(param.combis$estimated.sampleSize==0)){
-    warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
-    param.combis<-param.combis[param.combis$estimated.sampleSize>0,]
+  #Check that exactly two of the parameters are set and the third one is not defined
+  if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
+    stop(paste("To optimize the experimental design for a given budget,",
+               "always exactly one of the parameters nSamplesRange, nCellsRange",
+               "and readDepthRange should be set to NULL."))
   }
 
+  #Case 1: estimate the sample size
+  if(is.null(nSamplesRange)){
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nCellsRange,readDepthRange)
+    colnames(param.combis)<-c("nCells","readDepth")
+
+    #Sample size dependent on the budget
+    param.combis$nSamples<-sapply(1:nrow(param.combis),
+                                  function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$nCells[i],
+                                                                                           param.combis$readDepth[i],
+                                                                                           totalBudget,prepCostCell,
+                                                                                           costFlowCell,readsPerFlowcell)))
+    #Case 2: estimate the number of cells per persons
+  } else if (is.null(nCellsRange)){
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nSamplesRange,readDepthRange)
+    colnames(param.combis)<-c("nSamples","readDepth")
+
+    param.combis$nCells<-sapply(1:nrow(param.combis),
+                                function(i)cellsPersonBudgetCalculation.libPrepCell(param.combis$nSamples[i],
+                                                                                    param.combis$readDepth[i],
+                                                                                    totalBudget, prepCostCell,
+                                                                                    costFlowCell,readsPerFlowcell))
+    # Case 3: estimate the read depth
+  } else {
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nSamplesRange,nCellsRange)
+    colnames(param.combis)<-c("nSamples","nCells")
+
+    param.combis$readDepth<-sapply(1:nrow(param.combis),
+                                   function(i)readDepthBudgetCalculation.libPrepCell(param.combis$nSamples[i],
+                                                                                     param.combis$nCells[i],
+                                                                                     totalBudget,prepCostCell,
+                                                                                     costFlowCell,readsPerFlowcell))
+  }
+
+  #Remove all combinations where one of the parameters is <=0
+  if(any(param.combis$nSamples==0) | any(param.combis$nCells<=0) | any(param.combis$readDepth<=0)){
+    warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
+    param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
+  }
 
   power.study<-mapply(power.general.withDoublets,
-                      param.combis$estimated.sampleSize,
+                      param.combis$nSamples,
                       param.combis$nCells,
                       param.combis$readDepth,
                       MoreArgs=list(ct.freq=ct.freq,
@@ -760,19 +819,16 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cell
 #'
 #' This function determines the optimal parameter combination for a given budget.
 #' The optimal combination is thereby the one with the highest detection power.
-#' The parameters are checked for a range of read depths and cells per person values,
-#' while the sample size is defined uniquely given the other two parameters and
-#' the overall budget.
+#' Of the three parameters sample size, cells per sample and read depth, two need to be set and
+#' the third one is uniquely defined given the other two parameters and the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
-#' @param readDepthRange Range of read depth values that should be tested (vector)
-#' @param cellPersRange Range of cells per person that should be tested (vector)
-#' @param totalCost Experimental budget
+#' @param type (eqtl/de) study
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param ct.freq Frequency of the cell type of interest
 #' @param costKit Cost for one 10X kit
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#' @param ct.freq Frequency of the cell type of interest
-#' @param type (eqtl/de) study
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
@@ -783,9 +839,11 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cell
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
 #' @param gamma.probs Data frame with probability parameter of the gamma distributions
 #' (required columns:ct (cell type), pi.c1 (probability of component 1))
-#' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
+#' @param nSamplesRange Range of sample sizes that should be tested (vector)
+#' @param nCellsRange Range of cells per person that should be tested (vector)
+#' @param readDepthRange Range of read depth values that should be tested (vector)
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -799,44 +857,77 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, readDepthRange, cell
 #' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
 #'
 #' @export
-#'
-#' @examples
-#' optimize.constant.budget(10000,seq(1000,10000,by=1000),seq(1000,10000,by=1000),
-#' 5600,14032,4100*10^6,0.2,"de",de.ref.study,"Blueprint (CLL) iCLL-mCLL",8,
-#' read.umi.fit,gamma.mixed.fits,"CD4 T cells",disp.fun.param)
-#'
-optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRange, cellPersRange,
-                                   costKit,costFlowCell,readsPerFlowcell,
-                                   ct.freq,type,ref.study,ref.study.name,
-                                   cellsPerLane,
-                                   read.umi.fit,gamma.mixed.fits,gamma.probs,ct,
-                                   disp.fun.param,
-                                   mappingEfficiency=0.8,
-                                   multipletRate=7.67e-06,multipletFactor=1.82,
-                                   min.UMI.counts=10,perc.indiv.expr=0.5,
-                                   nGenes=21000,samplingMethod="quantiles",
-                                   multipletRateGrowth="linear"){
+optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
+                                                     ct,ct.freq,
+                                                     costKit,costFlowCell,readsPerFlowcell,
+                                                     ref.study,ref.study.name,
+                                                     cellsPerLane,
+                                                     read.umi.fit,gamma.mixed.fits,
+                                                     gamma.probs,disp.fun.param,
+                                                     nSamplesRange=NULL,
+                                                     nCellsRange=NULL, readDepthRange=NULL,
+                                                     mappingEfficiency=0.8,
+                                                     multipletRate=7.67e-06,multipletFactor=1.82,
+                                                     min.UMI.counts=10,perc.indiv.expr=0.5,
+                                                     nGenes=21000,samplingMethod="quantiles",
+                                                     multipletRateGrowth="linear"){
 
-  #Build a frame of all possible combinations
-  param.combis<-expand.grid(cellPersRange,readDepthRange)
-  colnames(param.combis)<-c("nCells","readDepth")
+  #Check that exactly two of the parameters are set and the third one is not defined
+  if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
+    stop(paste("To optimize the experimental design for a given budget,",
+               "always exactly one of the parameters nSamplesRange, nCellsRange",
+               "and readDepthRange should be set to NULL."))
+  }
 
-  #Sample size dependent on the budget
-  param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
-                                            function(i)floor(sampleSizeBudgetCalculation.restrictedDoublets(
-                                              param.combis$nCells[i], param.combis$readDepth[i],
-                                              totalBudget,costKit,
-                                              cellsPerLane, costFlowCell,readsPerFlowcell)))
+  #Case 1: estimate the sample size
+  if(is.null(nSamplesRange)){
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nCellsRange,readDepthRange)
+    colnames(param.combis)<-c("nCells","readDepth")
 
-  #Remove all combinations with a sample size of 0
-  if(any(param.combis$estimated.sampleSize==0)){
+    #Sample size dependent on the budget
+    param.combis$nSamples<-sapply(1:nrow(param.combis),
+                                  function(i)floor(sampleSizeBudgetCalculation.restrictedDoublets(param.combis$nCells[i],
+                                                                                                 param.combis$readDepth[i],
+                                                                                                 totalBudget,
+                                                                                                 costKit,cellsPerLane,
+                                                                                                 costFlowCell,readsPerFlowcell)))
+    #Case 2: estimate the number of cells per persons
+  } else if (is.null(nCellsRange)){
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nSamplesRange,readDepthRange)
+    colnames(param.combis)<-c("nSamples","readDepth")
+
+    param.combis$nCells<-sapply(1:nrow(param.combis),
+                                function(i)cellsPersonBudgetCalculation.restrictedDoublets(param.combis$nSamples[i],
+                                                                                          param.combis$readDepth[i],
+                                                                                          totalBudget,
+                                                                                          costKit,cellsPerLane,
+                                                                                          costFlowCell,readsPerFlowcell))
+    # Case 3: estimate the read depth
+  } else {
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nSamplesRange,nCellsRange)
+    colnames(param.combis)<-c("nSamples","nCells")
+
+    param.combis$readDepth<-sapply(1:nrow(param.combis),
+                                   function(i)readDepthBudgetCalculation.restrictedDoublets(param.combis$nSamples[i],
+                                                                                           param.combis$nCells[i],
+                                                                                           totalBudget,
+                                                                                           costKit,cellsPerLane,
+                                                                                           costFlowCell,readsPerFlowcell))
+  }
+
+
+  #Remove all combinations where one of the parameters is <=0
+  if(any(param.combis$nSamples==0) | any(param.combis$nCells<=0) | any(param.combis$readDepth<=0)){
     warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
-    param.combis<-param.combis[param.combis$estimated.sampleSize>0,]
+    param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
   }
 
 
   power.study<-mapply(power.general.restrictedDoublets,
-                      param.combis$estimated.sampleSize,
+                      param.combis$nSamples,
                       param.combis$nCells,
                       param.combis$readDepth,
                       MoreArgs=list(ct.freq=ct.freq,
@@ -869,30 +960,28 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
 #'
 #' This function determines the optimal parameter combination for a given budget.
 #' The optimal combination is thereby the one with the highest detection power.
-#' The parameters are checked for a range of read depths and cells per person values,
-#' while the sample size is defined uniquely given the other two parameters and
-#' the overall budget.
+#' Of the three parameters sample size, cells per sample and read depth, two need to be set and
+#' the third one is uniquely defined given the other two parameters and the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
-#' @param readDepthRange Range of read depth values that should be tested (vector)
-#' @param cellPersRange Range of cells per person that should be tested (vector)
-#' @param totalCost Experimental budget
+#' @param type (eqtl/de) study
+#' @param ct Cell type of interest (name should be found in the gamma and dispersion models)
+#' @param ct.freq Frequency of the cell type of interest
 #' @param prepCostCell Library preparation costs per cell
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#' @param ct.freq Frequency of the cell type of interest
-#' @param type (eqtl/de) study
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param samplesPerLane Maximal number of persons per 10X lane
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
 #' @param gamma.probs Data frame with probability parameter of the gamma distributions
 #' (required columns:ct (cell type), pi.c1 (probability of component 1))
-#' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.linear.fit Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
 #' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
+#' @param nSamplesRange Range of sample sizes that should be tested (vector)
+#' @param nCellsRange Range of cells per person that should be tested (vector)
+#' @param readDepthRange Range of read depth values that should be tested (vector)
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletFraction Multiplet fraction in the experiment as a constant factor
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
@@ -905,36 +994,70 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget, readDepthRang
 #'
 #' @export
 #'
-optimize.constant.budget.smartseq<-function(totalBudget, readDepthRange, cellPersRange,
-                                   prepCostCell,costFlowCell,readsPerFlowcell,
-                                   ct.freq,type,ref.study,ref.study.name,
-                                   gamma.mixed.fits,gamma.probs,ct,
-                                   disp.linear.fit,
-                                   mappingEfficiency=0.8,
-                                   multipletFraction=0,multipletFactor=1.82,
-                                   min.norm.count=10,perc.indiv.expr=0.5,
-                                   nGenes=21000,samplingMethod="quantiles"){
+optimize.constant.budget.smartseq<-function(totalBudget, type,
+                                           ct,ct.freq,
+                                           prepCostCell,costFlowCell,readsPerFlowcell,
+                                           ref.study,ref.study.name,
+                                           gamma.mixed.fits,gamma.probs,
+                                           disp.linear.fit,
+                                           nSamplesRange=NULL,
+                                           nCellsRange=NULL, readDepthRange=NULL,
+                                           mappingEfficiency=0.8,
+                                           multipletFraction=0,multipletFactor=1.82,
+                                           min.norm.count=10,perc.indiv.expr=0.5,
+                                           nGenes=21000,samplingMethod="quantiles"){
 
-  #Build a frame of all possible combinations
-  param.combis<-expand.grid(cellPersRange,readDepthRange)
-  colnames(param.combis)<-c("nCells","readDepth")
+  #Check that exactly two of the parameters are set and the third one is not defined
+  if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
+    stop(paste("To optimize the experimental design for a given budget,",
+               "always exactly one of the parameters nSamplesRange, nCellsRange",
+               "and readDepthRange should be set to NULL."))
+  }
 
-  #Sample size dependent on the budget
-  param.combis$estimated.sampleSize<-sapply(1:nrow(param.combis),
-                                            function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$nCells[i],
-                                                                                         param.combis$readDepth[i],
-                                                                                         totalBudget,
-                                                                                         prepCostCell,
-                                                                                         costFlowCell,readsPerFlowcell)))
+  #Case 1: estimate the sample size
+  if(is.null(nSamplesRange)){
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nCellsRange,readDepthRange)
+    colnames(param.combis)<-c("nCells","readDepth")
 
-  #Remove all combinations with a sample size of 0
-  if(any(param.combis$estimated.sampleSize==0)){
+    #Sample size dependent on the budget
+    param.combis$nSamples<-sapply(1:nrow(param.combis),
+                                  function(i)floor(sampleSizeBudgetCalculation.libPrepCell(param.combis$nCells[i],
+                                                                                           param.combis$readDepth[i],
+                                                                                           totalBudget,prepCostCell,
+                                                                                           costFlowCell,readsPerFlowcell)))
+    #Case 2: estimate the number of cells per persons
+  } else if (is.null(nCellsRange)){
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nSamplesRange,readDepthRange)
+    colnames(param.combis)<-c("nSamples","readDepth")
+
+    param.combis$nCells<-sapply(1:nrow(param.combis),
+                                function(i)cellsPersonBudgetCalculation.libPrepCell(param.combis$nSamples[i],
+                                                                                    param.combis$readDepth[i],
+                                                                                    totalBudget, prepCostCell,
+                                                                                    costFlowCell,readsPerFlowcell))
+    # Case 3: estimate the read depth
+  } else {
+    #Build a frame of all possible combinations
+    param.combis<-expand.grid(nSamplesRange,nCellsRange)
+    colnames(param.combis)<-c("nSamples","nCells")
+
+    param.combis$readDepth<-sapply(1:nrow(param.combis),
+                                   function(i)readDepthBudgetCalculation.libPrepCell(param.combis$nSamples[i],
+                                                                                     param.combis$nCells[i],
+                                                                                     totalBudget,prepCostCell,
+                                                                                     costFlowCell,readsPerFlowcell))
+  }
+
+  #Remove all combinations where one of the parameters is <=0
+  if(any(param.combis$nSamples==0) | any(param.combis$nCells<=0) | any(param.combis$readDepth<=0)){
     warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
-    param.combis<-param.combis[param.combis$estimated.sampleSize>0,]
+    param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
   }
 
   power.study<-mapply(power.smartseq,
-                      param.combis$estimated.sampleSize,
+                      param.combis$nSamples,
                       param.combis$nCells,
                       param.combis$readDepth,
                       MoreArgs=list(ct.freq=ct.freq,
@@ -1021,66 +1144,7 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
   return(calc$power)
 }
 
-#' Estimate possible sample size depending on the total cost and the other parameters for 10X design
-#'
-#' A balanced design with two classes is assumed for the sample size calculation.
-#'
-#' @param nCells Cells per person
-#' @param readDepth Read depth per cell
-#' @param totalCost Experimental budget
-#' @param costKit Cost for one 10X kit
-#' @param samplesPerLane Number of persons sequenced per lane
-#' @param costFlowCell Cost of one flow cells for sequencing
-#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#'
-#' @return Number of samples that can be sampled with this budget and other parameters
-#'
-#' @export
-sampleSizeBudgetCalculation<-function(nCells,readDepth,totalCost,
-                                      costKit,samplesPerLane,
-                                      costFlowCell,readsPerFlowcell){
-
-  #Estimate the maximal sample size dependent on the cost for the other parameter
-  samples <- totalCost / (costKit/(6*samplesPerLane) +
-                 nCells * readDepth / readsPerFlowcell * costFlowCell)
-
-  #Return only even sample sizes (due to the balanced design)
-  return(floor(samples / 2) * 2)
-}
-
-#' Estimate possible sample size depending on the total cost and the other parameters
-#' (with a restricted number of cells per lane)
-#'
-#' Variant of sampleSizeBudgetCalculation, which restricts the cells per lane instead the persons
-#' per lane.
-#'
-#' @param nCells Cells per person
-#' @param readDepth Read depth per cell
-#' @param totalCost Experimental budget
-#' @param costKit Cost for one 10X kit
-#' @param cellsPerLane Number of cells sequenced per lane
-#' @param costFlowCell Cost of one flow cells for sequencing
-#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#'
-#' @return Number of samples that can be sampled with this budget and other parameters
-#'
-#' @export
-sampleSizeBudgetCalculation.restrictedDoublets<-function(nCells,readDepth,totalCost,
-                                      costKit,cellsPerLane,
-                                      costFlowCell,readsPerFlowcell){
-
-  #Estimate persons per lane
-  samplesPerLane<-floor(cellsPerLane/nCells)
-
-  #Estimate the maximal sample size dependent on the cost for the other parameter
-  samples <- totalCost / (costKit/(6*samplesPerLane) +
-                            nCells * readDepth / readsPerFlowcell * costFlowCell)
-
-  #Return only even sample sizes (due to the balanced design)
-  return(floor(samples / 2) * 2)
-}
-
-#' Calculate total cost dependent on parameters
+#' Calculate total cost dependent on parameters for 10X design
 #'
 #' @param nSamples Number of samples
 #' @param nCells Cells per person
@@ -1104,11 +1168,86 @@ budgetCalculation<-function(nSamples,nCells,readDepth,
     totalBudget<-ceiling(nSamples/(6*samplesPerLane))*costKit+
       ceiling(nSamples*nCells*readDepth/readsPerFlowcell)*costFlowCell
   } else {
-  totalBudget<-nSamples/(6*samplesPerLane)*costKit+
-    nSamples*nCells*readDepth/readsPerFlowcell*costFlowCell
+    totalBudget<-nSamples/(6*samplesPerLane)*costKit+
+      nSamples*nCells*readDepth/readsPerFlowcell*costFlowCell
   }
   return(totalBudget)
 
+}
+
+#' Estimate possible sample size depending on the total cost and the other parameters for 10X design
+#'
+#' A balanced design with two classes is assumed for the sample size calculation.
+#'
+#' @param nCells Cells per person
+#' @param readDepth Read depth per cell
+#' @param totalCost Experimental budget
+#' @param costKit Cost for one 10X kit
+#' @param samplesPerLane Number of persons sequenced per lane
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Number of samples that can be measured with this budget and other parameters
+#'
+#' @export
+sampleSizeBudgetCalculation<-function(nCells,readDepth,totalCost,
+                                      costKit,samplesPerLane,
+                                      costFlowCell,readsPerFlowcell){
+
+  #Estimate the maximal sample size dependent on the cost for the other parameter
+  samples <- totalCost / (costKit/(6*samplesPerLane) +
+                 nCells * readDepth / readsPerFlowcell * costFlowCell)
+
+  #Return only even sample sizes (due to the balanced design)
+  return(floor(samples / 2) * 2)
+}
+
+#' Estimate possible number of cells per person depending on the total cost
+#' and the other parameters for 10X design
+#'
+#' @param nSamples Number of samples
+#' @param readDepth Read depth per cell
+#' @param totalCost Experimental budget
+#' @param costKit Cost for one 10X kit
+#' @param samplesPerLane Number of persons sequenced per lane
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Cells per person that can be measured with this budget and other parameters
+#'
+#' @export
+cellsPersonBudgetCalculation<-function(nSamples,readDepth,totalCost,
+                                     costKit,samplesPerLane,
+                                     costFlowCell,readsPerFlowcell){
+
+  nCells <- (totalCost - nSamples/(6*samplesPerLane)*costKit)/
+    (nSamples*readDepth/readsPerFlowcell*costFlowCell)
+
+  return(floor(nCells))
+}
+
+#' Estimate possible read depth depending on the total cost
+#' and the other parameters for 10X design
+#'
+#' @param nSamples Number of samples
+#' @param nCells Cells per person
+#' @param totalCost Experimental budget
+#' @param costKit Cost for one 10X kit
+#' @param samplesPerLane Number of persons sequenced per lane
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Read depth that can be measured with this budget and other parameters
+#'
+#' @export
+readDepthBudgetCalculation<-function(nSamples,nCells,totalCost,
+                                      costKit,samplesPerLane,
+                                      costFlowCell,readsPerFlowcell){
+
+  readDepth <- (totalCost - nSamples/(6*samplesPerLane)*costKit)/
+    (nSamples*nCells/readsPerFlowcell*costFlowCell)
+
+  return(floor(readDepth))
 }
 
 #' Calculate total cost dependent on parameters (adaptation with cells per lane instead of samples)
@@ -1127,25 +1266,135 @@ budgetCalculation<-function(nSamples,nCells,readDepth,
 #'
 #' @export
 budgetCalculation.restrictedDoublets<-function(nSamples,nCells,readDepth,
-                                              costKit,cellsPerLane,
-                                              costFlowCell,readsPerFlowcell,
-                                              rounding=FALSE){
+                                               costKit,cellsPerLane,
+                                               costFlowCell,readsPerFlowcell,
+                                               rounding=FALSE){
 
   #Estimate persons per lane
   samplesPerLane<-floor(cellsPerLane/nCells)
 
+  return(budgetCalculation(nSamples,nCells,readDepth,
+                           costKit,samplesPerLane, costFlowCell,
+                           readsPerFlowcell, rounding))
+
+}
+
+#' Estimate possible sample size depending on the total cost and the other parameters
+#' (with a restricted number of cells per lane)
+#'
+#' Variant of sampleSizeBudgetCalculation, which restricts the cells per lane instead the persons
+#' per lane.
+#'
+#' @param nCells Cells per person
+#' @param readDepth Read depth per cell
+#' @param totalCost Experimental budget
+#' @param costKit Cost for one 10X kit
+#' @param cellsPerLane Number of cells sequenced per lane
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Number of samples that can be measured with this budget and other parameters
+#'
+#' @export
+sampleSizeBudgetCalculation.restrictedDoublets<-function(nCells,readDepth,totalCost,
+                                                        costKit,cellsPerLane,
+                                                        costFlowCell,readsPerFlowcell){
+
+  #Estimate persons per lane
+  samplesPerLane<-floor(cellsPerLane/nCells)
+
+  #Calculate sample size dependent on the estimated number of persons per lane
+  return(sampleSizeBudgetCalculation(nCells,readDepth,totalCost,costKit,samplesPerLane,
+                               costFlowCell,readsPerFlowcell))
+}
+
+#' Estimate possible number of cells per person depending on the total cost
+#' and the other parameters (with a restricted number of cells per lane)
+#'
+#' Approximation without rounding
+#'
+#' @param nSamples Number of samples
+#' @param readDepth Read depth per cell
+#' @param totalCost Experimental budget
+#' @param costKit Cost for one 10X kit
+#' @param cellsPerLane Number of cells sequenced per lane
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Cells per person that can be measured with this budget and other parameters
+#'
+#' @export
+cellsPersonBudgetCalculation.restrictedDoublets<-function(nSamples,readDepth,totalCost,
+                                                          costKit,cellsPerLane,
+                                                          costFlowCell,readsPerFlowcell){
+
+  #Estimate the maximal sample size dependent on the cost for the other parameter
+  nCells <- totalCost / (nSamples*costKit/(6*cellsPerLane) +
+                           nSamples * readDepth / readsPerFlowcell * costFlowCell)
+
+  return(floor(nCells))
+
+}
+
+#' Estimate possible read depth depending on the total cost
+#' and the other parameters (with a restricted number of cells per lane)
+#'
+#' @param nSamples Number of samples
+#' @param nCells Cells per person
+#' @param totalCost Experimental budget
+#' @param costKit Cost for one 10X kit
+#' @param cellsPerLane Number of cells sequenced per lane
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Read depth that can be measured with this budget and other parameters
+#'
+#' @export
+readDepthBudgetCalculation.restrictedDoublets<-function(nSamples,nCells,totalCost,
+                                                        costKit,cellsPerLane,
+                                                        costFlowCell,readsPerFlowcell){
+
+  #Estimate persons per lane
+  samplesPerLane<-floor(cellsPerLane/nCells)
+
+  return(readDepthBudgetCalculation(nSamples,nCells,totalCost,costKit,samplesPerLane,
+                                     costFlowCell,readsPerFlowcell))
+}
+
+
+#' Calculate total cost dependent on parameters for 10X design
+#' using library preparation costs per cell
+#'
+#' @param nSamples Number of samples
+#' @param nCells Cells per person
+#' @param readDepth Read depth per cell
+#' @param prepCostCell Library preparation costs per cell
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param rounding Rounds up the number of used kits and flow cells
+#' (which might give a more realistic estimation of costs)
+#'
+#' @return Total experimental cost dependent on the parameters
+#'
+#' @export
+budgetCalculation.libPrepCell<-function(nSamples,nCells,readDepth,
+                                        prepCostCell,
+                                        costFlowCell,readsPerFlowcell,
+                                        rounding=FALSE){
+
   if(rounding){
-    totalBudget<-ceiling(nSamples/(6*samplesPerLane))*costKit+
+    totalBudget<-prepCostCell*nSamples*nCells+
       ceiling(nSamples*nCells*readDepth/readsPerFlowcell)*costFlowCell
   } else {
-    totalBudget<-nSamples/(6*samplesPerLane)*costKit+
+    totalBudget<-prepCostCell*nSamples*nCells+
       nSamples*nCells*readDepth/readsPerFlowcell*costFlowCell
   }
   return(totalBudget)
 
 }
 
-#' Estimate possible sample size depending on the total cost, using preparation costs per cell
+#' Estimate possible sample size depending on the total cost,
+#' using library preparation costs per cell
 #'
 #' A balanced design with two classes is assumed for the sample size calculation.
 #'
@@ -1156,12 +1405,11 @@ budgetCalculation.restrictedDoublets<-function(nSamples,nCells,readDepth,
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #'
-#' @return Number of samples that can be sampled with this budget and other parameters
+#' @return Number of samples that can be measured with this budget and other parameters
 #'
 #' @export
 sampleSizeBudgetCalculation.libPrepCell<-function(nCells,readDepth,totalCost,
-                                               prepCostCell,
-                                               costFlowCell,readsPerFlowcell){
+                                                  prepCostCell,costFlowCell,readsPerFlowcell){
 
   #Estimate the maximal sample size dependent on the cost for the other parameter
   samples <- totalCost / (prepCostCell * nCells +
@@ -1169,4 +1417,51 @@ sampleSizeBudgetCalculation.libPrepCell<-function(nCells,readDepth,totalCost,
 
   #Return only even sample sizes (due to the balanced design)
   return(floor(samples / 2) * 2)
+}
+
+
+#' Estimate possible number of cells per person depending on the total cost,
+#' using library preparation costs per cell
+#'
+#' @param nSamples Number of samples
+#' @param readDepth Read depth per cell
+#' @param totalCost Experimental budget
+#' @param prepCostCell Library preparation costs per cell
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Cells per person that can be measured with this budget and other parameters
+#'
+#' @export
+cellsPersonBudgetCalculation.libPrepCell<-function(nSamples,readDepth,totalCost,
+                                                   prepCostCell, costFlowCell,readsPerFlowcell){
+
+  nCells <- totalCost / (prepCostCell * nSamples +
+                           nSamples * readDepth / readsPerFlowcell * costFlowCell)
+
+  return(floor(nCells))
+
+}
+
+#' Estimate possible read depth depending on the total cost,
+#' using library preparation costs per cell
+#'
+#' @param nSamples Number of samples
+#' @param nCells Cells per person
+#' @param totalCost Experimental budget
+#' @param prepCostCell Library preparation costs per cell
+#' @param costFlowCell Cost of one flow cells for sequencing
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#'
+#' @return Read depth that can be measured with this budget and other parameters
+#'
+#' @export
+readDepthBudgetCalculation.libPrepCell<-function(nSamples,nCells,totalCost,
+                                                 prepCostCell,
+                                                 costFlowCell,readsPerFlowcell){
+
+  readDepth <- (totalCost - prepCostCell*nSamples*nCells)/
+    (nSamples*nCells/readsPerFlowcell*costFlowCell)
+
+  return(floor(readDepth))
 }

@@ -184,27 +184,49 @@ print(power)
 
 ```
 
+#### Expression probabilities
+
+The detection power is the product of the expression probabilities and the power. The expression probabilities can also be calculated independently, using the function estimate.exp.prob.param.
+
+```{r,fig.width=6}
+exp.probs<-powerScPop::estimate.exp.prob.param(nSamples=100,readDepth=25000,nCellsCt=150,
+                                                read.umi.fit = powerScPop::read.umi.fit,
+                                                gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                                gamma.probs = powerScPop::gamma.probs,
+                                                ct="CD14+ Monocytes",
+                                                disp.fun.param=powerScPop::disp.fun.param,
+                                                min.counts = 3,
+                                                perc.indiv = 0.5)
+
+hist(exp.probs,main="Histogram of expression probabilities")
+
+print(paste("Expected number of expressed genes:",round(sum(exp.probs))))
+
+```
+
 ### Selection of optimal parameter combination for a restricted budget
 
-powerScPop give the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. A realistic vector of possible values for read depth and cells per person is given in the parameters readDepthRange and cellPersRange. The sample size is defined uniquely given the other two parameters and the overall budget. For the function to calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before.
+powerScPop give the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. For two of three parameters, sample size, cells per person and read depth, vectors with potential values are required, the third variable is the determined uniquely given the other two and the overall budget. Which of the variables is left out, can be freely chosen. In this example we set the number of cells per person and read depths in the parameters readDepthRange and cellPersRange, and leave out the sample size, which will be determined by the algorithm
+
+For the function to calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before, such as gamma and dispersion fits.
 
 ```{r,fig.width=6}
 
-opt.design<-optimize.constant.budget(totalBudget=100000,
-                                     readDepthRange=seq(10000,50000,by=5000),
-                                     cellPersRange=seq(1000,10000,by=1000),
+opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
+                                     ct="CD14+ Monocytes",ct.freq=0.1,
                                      costKit=5600,
                                      costFlowCell=14032,
                                      readsPerFlowcell = 4100*10^6,
-                                     ct.freq=0.1,type="eqtl",
                                      ref.study=powerScPop::eqtl.ref.study,
                                      ref.study.name="Blueprint (Monocytes)",
                                      samplesPerLane=4,
                                      read.umi.fit = powerScPop::read.umi.fit,
                                      gamma.mixed.fits = powerScPop::gamma.mixed.fits,
                                      gamma.probs = powerScPop::gamma.probs,
-                                     ct="CD14+ Monocytes",
                                      disp.fun.param=powerScPop::disp.fun.param,
+                                     nSamplesRange=NULL,
+                                     nCellsRange=seq(1000,10000,by=1000),
+                                     readDepthRange=seq(10000,50000,by=5000),
                                      mappingEfficiency = 0.8)
 
 #First lines of result data frame
@@ -257,6 +279,55 @@ print(g)
 ```
 
 The function returns for each combination of read depth and cells per person, how many samples can be measured with the given budget and which detection power can be reached. The combination in the data frame with the maximal detection power is the optimal experimental design.
+
+Instead of the sample size, the flexible parameter can also be the number of cells per person or the read depth. We set here the sample size to values between 50 and 300 and leave each of the other two parameters out.
+
+```{r}
+
+#Infer cells per sample
+opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
+                                     ct="CD14+ Monocytes",ct.freq=0.1,
+                                     costKit=5600,
+                                     costFlowCell=14032,
+                                     readsPerFlowcell = 4100*10^6,
+                                     ref.study=powerScPop::eqtl.ref.study,
+                                     ref.study.name="Blueprint (Monocytes)",
+                                     samplesPerLane=4,
+                                     read.umi.fit = powerScPop::read.umi.fit,
+                                     gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                     gamma.probs = powerScPop::gamma.probs,
+                                     disp.fun.param=powerScPop::disp.fun.param,
+                                     nSamplesRange=seq(100,300,by=25),
+                                     nCellsRange=NULL,
+                                     readDepthRange=seq(10000,50000,by=5000),
+                                     mappingEfficiency = 0.8)
+
+#Optimal experimental design combination
+print(opt.design[which.max(opt.design$powerDetect),])
+
+#Infer read depth
+opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
+                                     ct="CD14+ Monocytes",ct.freq=0.1,
+                                     costKit=5600,
+                                     costFlowCell=14032,
+                                     readsPerFlowcell = 4100*10^6,
+                                     ref.study=powerScPop::eqtl.ref.study,
+                                     ref.study.name="Blueprint (Monocytes)",
+                                     samplesPerLane=4,
+                                     read.umi.fit = powerScPop::read.umi.fit,
+                                     gamma.mixed.fits = powerScPop::gamma.mixed.fits,
+                                     gamma.probs = powerScPop::gamma.probs,
+                                     disp.fun.param=powerScPop::disp.fun.param,
+                                     nSamplesRange=seq(100,300,by=25),
+                                     nCellsRange=seq(1000,10000,by=1000),
+                                     readDepthRange=NULL,
+                                     mappingEfficiency = 0.8)
+
+
+#Optimal experimental design combination
+print(opt.design[which.max(opt.design$powerDetect),])
+
+```
 
 Similar to the power calculation, variants if the function exist to model a restricted number of cells per lane (optimize.constant.budget.restrictedDoublets) and to model smart-seq data (optimize.constant.budget.smartseq). Furthermore, there is the option to calculate the library preparation cost per cell instead of per kit (optimize.constant.budget.libPrepCell).
 
