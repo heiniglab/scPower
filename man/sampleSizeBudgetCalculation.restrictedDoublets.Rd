@@ -16,7 +16,7 @@ sampleSizeBudgetCalculation.restrictedDoublets(
 )
 }
 \arguments{
-\item{nCells}{Cells per person}
+\item{nCells}{Cells per individual}
 
 \item{readDepth}{Read depth per cell}
 
@@ -34,6 +34,6 @@ sampleSizeBudgetCalculation.restrictedDoublets(
 Number of samples that can be measured with this budget and other parameters
 }
 \description{
-Variant of sampleSizeBudgetCalculation, which restricts the cells per lane instead the persons
+Variant of sampleSizeBudgetCalculation, which restricts the cells per lane instead the individuals
 per lane.
 }

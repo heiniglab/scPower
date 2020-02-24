@@ -15,7 +15,7 @@ sampleSizeBudgetCalculation.libPrepCell(
 )
 }
 \arguments{
-\item{nCells}{Cells per person}
+\item{nCells}{Cells per individual}
 
 \item{readDepth}{Read depth per cell}
 

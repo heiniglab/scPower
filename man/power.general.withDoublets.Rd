@@ -2,7 +2,7 @@
 % Please edit documentation in R/power.R
 \name{power.general.withDoublets}
 \alias{power.general.withDoublets}
-\title{Power calculation for a DE/eQTL study  with 10X design (with a restricted number of persons per lane)}
+\title{Power calculation for a DE/eQTL study  with 10X design (with a restricted number of individuals per lane)}
 \usage{
 power.general.withDoublets(
   nSamples,
@@ -31,7 +31,7 @@ power.general.withDoublets(
 \arguments{
 \item{nSamples}{Sample size}
 
-\item{nCells}{Number of cells per person}
+\item{nCells}{Number of cells per individual}
 
 \item{readDepth}{Target read depth per cell}
 
@@ -44,7 +44,7 @@ power.general.withDoublets(
 
 \item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
 
-\item{samplesPerLane}{Maximal number of persons per 10X lane}
+\item{samplesPerLane}{Maximal number of individuals per 10X lane}
 
 \item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 (required columns: intercept, reads (slope))}
@@ -67,7 +67,7 @@ power.general.withDoublets(
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
 \item{min.UMI.counts}{Expression defition parameter: more than is number of UMI counts for each
-gene per person and cell type is required to defined it as expressed in one individual}
+gene per individual and cell type is required to defined it as expressed in one individual}
 
 \item{perc.indiv.expr}{Expression defition parameter: percentage of individuals that need to have this gene expressed
 to define it as globally expressed}
@@ -85,7 +85,7 @@ Power to detect the DE/eQTL genes from the reference study in a single cell expe
 \description{
 This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study,
 in a single cell 10X RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
-per person and read depth.
+per individual and read depth.
 }
 \examples{
 power.general.withDoublets(83,1000,1000,0.2,"de",de.ref.study, "Blueprint (CLL) iCLL-mCLL",

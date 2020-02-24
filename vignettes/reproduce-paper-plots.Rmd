@@ -1,5 +1,5 @@
 ---
-title: "Reproduce paper plots with powerScPop"
+title: "Reproduce paper plots with scPower"
 author: "Matthias Heinig, Katharina Schmid"
 date:  "`r format(Sys.time(), '%d %B, %Y')`"
 output: rmarkdown::html_vignette
@@ -65,7 +65,7 @@ transcriptome.mapped.reads<-20000
 nGenes<-21000
 ct<-"CD4 T cells"
 ct.freq<-1
-personsPerLane<-8
+samplesPerLane<-8
 
 ########
 # DE subplot
@@ -83,7 +83,7 @@ res<-lapply(1:nrow(param.combis),function(i)
                              param.combis$cellsPerCelltype[i],
                              transcriptome.mapped.reads,
                              ct.freq, "de",de.ref.study,ref.study.name,
-                             personsPerLane,read.umi.fit,
+                             samplesPerLane,read.umi.fit,
                              gamma.mixed.fits,gamma.probs,ct,
                              disp.fun.param,mappingEfficiency = 1,
                              multipletRate=0,multipletFactor=1,
@@ -130,7 +130,7 @@ res<-lapply(1:nrow(param.combis),function(i)
                              param.combis$cellsPerCelltype[i],
                              transcriptome.mapped.reads,
                              ct.freq, "eqtl",eqtl.ref.study,ref.study.name,
-                             personsPerLane,read.umi.fit,
+                             samplesPerLane,read.umi.fit,
                              gamma.mixed.fits,gamma.probs,ct,
                              disp.fun.param,mappingEfficiency = 1,
                              multipletRate=0,multipletFactor=1,
@@ -193,13 +193,13 @@ nGenes<-21000
 geneCounts<-NULL
 for(r in readDepths){
   for(c in cellCounts){
-    count.est<-powerScPop::estimate.exp.prob.param(nSamples=measuredIndivs,
+    count.est<-scPower::estimate.exp.prob.param(nSamples=measuredIndivs,
                                                    readDepth=r,nCellsCt=c,
-                                                   powerScPop::read.umi.fit,
-                                                   powerScPop::gamma.mixed.fits,
-                                                   powerScPop::gamma.probs,
+                                                   scPower::read.umi.fit,
+                                                   scPower::gamma.mixed.fits,
+                                                   scPower::gamma.probs,
                                                    ct=ct,
-                                                   powerScPop::disp.fun.param,
+                                                   scPower::disp.fun.param,
                                                    nGenes=nGenes,
                                                    min.counts=minUMI.counts,
                                                    perc.indiv=numInd.threshold)
@@ -232,10 +232,10 @@ print(g)
 
 ```{r, fig.width=8, fig.height=8}
 #Load precalculated results
-eqtl.ranks<-powerScPop::eqtl.ref.study
-de.ranks<-powerScPop::de.ref.study[de.ref.study$type=="PBMC",]
-de.rank.lung<-powerScPop::de.ref.study[de.ref.study$type=="lung",]
-de.ranks.panc<-powerScPop::de.ref.study[de.ref.study$type=="pancreas",]
+eqtl.ranks<-scPower::eqtl.ref.study
+de.ranks<-scPower::de.ref.study[de.ref.study$type=="PBMC",]
+de.rank.lung<-scPower::de.ref.study[de.ref.study$type=="lung",]
+de.ranks.panc<-scPower::de.ref.study[de.ref.study$type=="pancreas",]
   
 #Add on the y-axis also absolute numbers (second plot)
 eqtl.ranks$name<-paste0("Blueprint (",eqtl.ranks$cellType,")")
@@ -302,7 +302,7 @@ print(g)
 costKit<-5600
 costFlowCell<-14032
 readsPerFlowcell<-4100*10^6
-personsPerLane<-5
+samplesPerLane<-5
 ct<-"CD4 T cells"
 ct.freq<-0.25
 mappingEfficiency<-0.8
@@ -312,17 +312,17 @@ mappingEfficiency<-0.8
 comp.type<-"de"
 ref.study.name<-"Blueprint (CLL) iCLL-mCLL"
 readDepth<-c(2000,5000,10000,15000,20000,30000,50000,70000)
-cellsPerPerson<-c(100,200,500,700,seq(1000,12000,500))
+cellsPerIndividual<-c(100,200,500,700,seq(1000,12000,500))
 totalBudget<-10000
 
 power.study<-optimize.constant.budget(totalBudget,comp.type,
                                       ct,ct.freq,
                                       costKit,costFlowCell,readsPerFlowcell,
                                       de.ref.study,ref.study.name,
-                                      personsPerLane,
+                                      samplesPerLane,
                                       read.umi.fit,gamma.mixed.fits,
                                       gamma.probs,disp.fun.param,
-                                      nCellsRange=cellsPerPerson,
+                                      nCellsRange=cellsPerIndividual,
                                       readDepthRange=readDepth,
                                       mappingEfficiency=mappingEfficiency)
 
@@ -345,9 +345,9 @@ power.study.plot$variable<-factor(power.study.plot$variable,
 g.rd<-ggplot(power.study.plot,aes(totalCells,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
 
-g.rd<-g.rd + scale_x_continuous("Cells per person",sec.axis=sec_axis(~., breaks=labels,
+g.rd<-g.rd + scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
                                                                     labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(c,max.study$readDepth,
-    totalBudget, costKit, personsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
+    totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
   geom_vline(xintercept = max.study$totalCells)+
   ylab("Probability")+
   scale_color_manual("",values=col.set)+
@@ -373,7 +373,7 @@ labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
 
 g.cp <- g.cp + scale_x_continuous("Read depth",sec.axis=sec_axis(~., breaks=labels,
                                                       labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
-    c,totalBudget, costKit, personsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
+    c,totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
   geom_vline(xintercept = max.study$readDepth)+
   ylab("Probability")+
   scale_color_manual("",values=col.set)+
@@ -394,17 +394,17 @@ g.a<-ggarrange(g.rd,g.cp,ncol=2,nrow=1,labels=c("A","B"),
 comp.type<-"eqtl"
 ref.study.name<-"Blueprint (Tcells)"
 readDepth<-c(2000,5000,10000,15000,20000,30000,50000)
-cellsPerPerson<-c(100,200,500,700,seq(1000,9000,500))
+cellsPerIndividual<-c(100,200,500,700,seq(1000,9000,500))
 totalBudget<-30000
 
 power.study<-optimize.constant.budget(totalBudget,comp.type,
                                       ct,ct.freq,
                                       costKit,costFlowCell,readsPerFlowcell,
                                       eqtl.ref.study,ref.study.name,
-                                      personsPerLane,
+                                      samplesPerLane,
                                       read.umi.fit,gamma.mixed.fits,
                                       gamma.probs,disp.fun.param,
-                                      nCellsRange=cellsPerPerson,
+                                      nCellsRange=cellsPerIndividual,
                                       readDepthRange=readDepth,
                                       mappingEfficiency=mappingEfficiency)
 
@@ -427,9 +427,9 @@ power.study.plot$variable<-factor(power.study.plot$variable,
 g.rd<-ggplot(power.study.plot,aes(totalCells,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
 
-g.rd<-g.rd + scale_x_continuous("Cells per person",sec.axis=sec_axis(~., breaks=labels,
+g.rd<-g.rd + scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
                                                                     labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
-    c,totalBudget, costKit, personsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
+    c,totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
   geom_vline(xintercept = max.study$totalCells)+
   ylab("Probability")+
   scale_color_manual("",values=col.set)+
@@ -455,7 +455,7 @@ labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
 
 g.cp <- g.cp + scale_x_continuous("Read depth",sec.axis=sec_axis(~., breaks=labels,
                                                       labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
-    c,totalBudget, costKit, personsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
+    c,totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
   geom_vline(xintercept = max.study$readDepth)+
   scale_color_manual("",values=col.set)+
   ylab("Probability")+

@@ -31,7 +31,7 @@ power.general.restrictedDoublets(
 \arguments{
 \item{nSamples}{Sample size}
 
-\item{nCells}{Number of cells per person}
+\item{nCells}{Number of cells per individual}
 
 \item{readDepth}{Target read depth per cell}
 
@@ -67,7 +67,7 @@ power.general.restrictedDoublets(
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
 \item{min.UMI.counts}{Expression defition parameter: more than is number of UMI counts for each
-gene per person and cell type is required to defined it as expressed in one individual}
+gene per individual and cell type is required to defined it as expressed in one individual}
 
 \item{perc.indiv.expr}{Expression defition parameter: percentage of individuals that need to have this gene expressed
 to define it as globally expressed}

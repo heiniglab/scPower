@@ -33,7 +33,7 @@ runShiny()
 
 ## Vignettes for introduction and for reproduction of paper plots
 
-The package provides two vignettes for the user. The first one, called "introduction-powerScPop", is a user manual describing all functions with small toy examples. The second one, called "reproduce-paper-plots", shows how all plots in the manuscript were created with the package. The vignettes are not incorporated by default when downloading the package, instead the specific parameter need to be set:
+The package provides two vignettes for the user. The first one, called "introduction-scPower", is a user manual describing all functions with small toy examples. The second one, called "reproduce-paper-plots", shows how all plots in the manuscript were created with the package. The vignettes are not incorporated by default when downloading the package, instead the specific parameter need to be set:
 
 ```{R}
 devtools::install_github("KatharinaSchmid/scPower",build_vignettes=TRUE)

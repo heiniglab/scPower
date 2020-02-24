@@ -1,15 +1,15 @@
 ---
-title: "Introduction to powerScPop"
+title: "Introduction to scPower"
 author: "Matthias Heinig, Katharina Schmid"
 date:  "`r format(Sys.time(), '%d %B, %Y')`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{introduction-powerScPop}
+  %\VignetteIndexEntry{introduction-scPower}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
 
-powerScPop is a R package for design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis. A detection of cell-type specific DE and eQTL genes is possible with the help of single cell data. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets.
+scPower is a R package for design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis. A detection of cell-type specific DE and eQTL genes is possible with the help of single cell data. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets.
 
 The tool was evaluated with data from different tissues and single cell technologies.
 
@@ -67,14 +67,14 @@ In this model, we permit an independent overloading of the lane, setting instead
 
 power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                   ct.freq=0.1,type="eqtl",
-                                  ref.study=powerScPop::eqtl.ref.study,
+                                  ref.study=scPower::eqtl.ref.study,
                                   ref.study.name="Blueprint (Monocytes)",
                                   samplesPerLane=4,
-                                  read.umi.fit = powerScPop::read.umi.fit,
-                                  gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                  gamma.probs = powerScPop::gamma.probs,
+                                  read.umi.fit = scPower::read.umi.fit,
+                                  gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                  gamma.probs = scPower::gamma.probs,
                                   ct="CD14+ Monocytes",
-                                  disp.fun.param=powerScPop::disp.fun.param,
+                                  disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,
                                   min.UMI.counts = 3,
                                   perc.indiv.expr = 0.5)
@@ -93,14 +93,14 @@ We implemented a second variant of the power function, where instead of the numb
 
 power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                         ct.freq=0.1,type="eqtl",
-                                        ref.study=powerScPop::eqtl.ref.study,
+                                        ref.study=scPower::eqtl.ref.study,
                                         ref.study.name="Blueprint (Monocytes)",
                                         cellsPerLane=20000,
-                                        read.umi.fit = powerScPop::read.umi.fit,
-                                        gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                        gamma.probs = powerScPop::gamma.probs,
+                                        read.umi.fit = scPower::read.umi.fit,
+                                        gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                        gamma.probs = scPower::gamma.probs,
                                         ct="CD14+ Monocytes",
-                                        disp.fun.param=powerScPop::disp.fun.param,
+                                        disp.fun.param=scPower::disp.fun.param,
                                         mappingEfficiency = 0.8,
                                         min.UMI.counts = 3,
                                         perc.indiv.expr = 0.5)
@@ -144,14 +144,14 @@ If data is missing to model the overloading of the lane, a constant multiplet ra
 
 power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                         ct.freq=0.1,type="eqtl",
-                                        ref.study=powerScPop::eqtl.ref.study,
+                                        ref.study=scPower::eqtl.ref.study,
                                         ref.study.name="Blueprint (Monocytes)",
                                         cellsPerLane=8000,
-                                        read.umi.fit = powerScPop::read.umi.fit,
-                                        gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                        gamma.probs = powerScPop::gamma.probs,
+                                        read.umi.fit = scPower::read.umi.fit,
+                                        gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                        gamma.probs = scPower::gamma.probs,
                                         ct="CD14+ Monocytes",
-                                        disp.fun.param=powerScPop::disp.fun.param,
+                                        disp.fun.param=scPower::disp.fun.param,
                                         mappingEfficiency = 0.8,
                                         min.UMI.counts = 3,
                                         perc.indiv.expr = 0.5,
@@ -170,12 +170,12 @@ Read based technologies, such as smart-seq2, need to be modelled slightly differ
 
 power<-power.smartseq(nSamples=100,nCells=1500,readDepth=25000,
                       ct.freq=0.1,type="de",
-                      ref.study=powerScPop::de.ref.study,
+                      ref.study=scPower::de.ref.study,
                       ref.study.name="Pancreas_alphabeta",
-                      gamma.mixed.fits = powerScPop::gamma.mixed.fits.smart,
-                      gamma.probs = powerScPop::gamma.probs.smart,
+                      gamma.mixed.fits = scPower::gamma.mixed.fits.smart,
+                      gamma.probs = scPower::gamma.probs.smart,
                       ct="alpha",
-                      disp.linear.fit = powerScPop::disp.fun.param.smart,
+                      disp.linear.fit = scPower::disp.fun.param.smart,
                       mappingEfficiency = 0.8,
                       min.norm.count = 3,
                       perc.indiv.expr = 0.5)
@@ -189,12 +189,12 @@ print(power)
 The detection power is the product of the expression probabilities and the power. The expression probabilities can also be calculated independently, using the function estimate.exp.prob.param.
 
 ```{r,fig.width=6}
-exp.probs<-powerScPop::estimate.exp.prob.param(nSamples=100,readDepth=25000,nCellsCt=150,
-                                                read.umi.fit = powerScPop::read.umi.fit,
-                                                gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                                gamma.probs = powerScPop::gamma.probs,
+exp.probs<-scPower::estimate.exp.prob.param(nSamples=100,readDepth=25000,nCellsCt=150,
+                                                read.umi.fit = scPower::read.umi.fit,
+                                                gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                                gamma.probs = scPower::gamma.probs,
                                                 ct="CD14+ Monocytes",
-                                                disp.fun.param=powerScPop::disp.fun.param,
+                                                disp.fun.param=scPower::disp.fun.param,
                                                 min.counts = 3,
                                                 perc.indiv = 0.5)
 
@@ -206,7 +206,7 @@ print(paste("Expected number of expressed genes:",round(sum(exp.probs))))
 
 ### Selection of optimal parameter combination for a restricted budget
 
-powerScPop give the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. For two of three parameters, sample size, cells per person and read depth, vectors with potential values are required, the third variable is the determined uniquely given the other two and the overall budget. Which of the variables is left out, can be freely chosen. In this example we set the number of cells per person and read depths in the parameters readDepthRange and cellPersRange, and leave out the sample size, which will be determined by the algorithm
+scPower give the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. For two of three parameters, sample size, cells per individual and read depth, vectors with potential values are required, the third variable is the determined uniquely given the other two and the overall budget. Which of the variables is left out, can be freely chosen. In this example we set the number of cells per individual and read depths in the parameters readDepthRange and cellPersRange, and leave out the sample size, which will be determined by the algorithm
 
 For the function to calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before, such as gamma and dispersion fits.
 
@@ -217,13 +217,13 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      costKit=5600,
                                      costFlowCell=14032,
                                      readsPerFlowcell = 4100*10^6,
-                                     ref.study=powerScPop::eqtl.ref.study,
+                                     ref.study=scPower::eqtl.ref.study,
                                      ref.study.name="Blueprint (Monocytes)",
                                      samplesPerLane=4,
-                                     read.umi.fit = powerScPop::read.umi.fit,
-                                     gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                     gamma.probs = powerScPop::gamma.probs,
-                                     disp.fun.param=powerScPop::disp.fun.param,
+                                     read.umi.fit = scPower::read.umi.fit,
+                                     gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                     gamma.probs = scPower::gamma.probs,
+                                     disp.fun.param=scPower::disp.fun.param,
                                      nSamplesRange=NULL,
                                      nCellsRange=seq(1000,10000,by=1000),
                                      readDepthRange=seq(10000,50000,by=5000),
@@ -278,9 +278,9 @@ g<-ggplot(power.DE.study,aes(x=totalCells,y=readDepth,fill=value))+
 print(g)
 ```
 
-The function returns for each combination of read depth and cells per person, how many samples can be measured with the given budget and which detection power can be reached. The combination in the data frame with the maximal detection power is the optimal experimental design.
+The function returns for each combination of read depth and cells per individual, how many samples can be measured with the given budget and which detection power can be reached. The combination in the data frame with the maximal detection power is the optimal experimental design.
 
-Instead of the sample size, the flexible parameter can also be the number of cells per person or the read depth. We set here the sample size to values between 50 and 300 and leave each of the other two parameters out.
+Instead of the sample size, the flexible parameter can also be the number of cells per individual or the read depth. We set here the sample size to values between 50 and 300 and leave each of the other two parameters out.
 
 ```{r}
 
@@ -290,13 +290,13 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      costKit=5600,
                                      costFlowCell=14032,
                                      readsPerFlowcell = 4100*10^6,
-                                     ref.study=powerScPop::eqtl.ref.study,
+                                     ref.study=scPower::eqtl.ref.study,
                                      ref.study.name="Blueprint (Monocytes)",
                                      samplesPerLane=4,
-                                     read.umi.fit = powerScPop::read.umi.fit,
-                                     gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                     gamma.probs = powerScPop::gamma.probs,
-                                     disp.fun.param=powerScPop::disp.fun.param,
+                                     read.umi.fit = scPower::read.umi.fit,
+                                     gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                     gamma.probs = scPower::gamma.probs,
+                                     disp.fun.param=scPower::disp.fun.param,
                                      nSamplesRange=seq(100,300,by=25),
                                      nCellsRange=NULL,
                                      readDepthRange=seq(10000,50000,by=5000),
@@ -311,13 +311,13 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      costKit=5600,
                                      costFlowCell=14032,
                                      readsPerFlowcell = 4100*10^6,
-                                     ref.study=powerScPop::eqtl.ref.study,
+                                     ref.study=scPower::eqtl.ref.study,
                                      ref.study.name="Blueprint (Monocytes)",
                                      samplesPerLane=4,
-                                     read.umi.fit = powerScPop::read.umi.fit,
-                                     gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                     gamma.probs = powerScPop::gamma.probs,
-                                     disp.fun.param=powerScPop::disp.fun.param,
+                                     read.umi.fit = scPower::read.umi.fit,
+                                     gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                     gamma.probs = scPower::gamma.probs,
+                                     disp.fun.param=scPower::disp.fun.param,
                                      nSamplesRange=seq(100,300,by=25),
                                      nCellsRange=seq(1000,10000,by=1000),
                                      readDepthRange=NULL,
@@ -333,7 +333,7 @@ Similar to the power calculation, variants if the function exist to model a rest
 
 ## Part 2: Generation of new priors from a data set
 
-Additionally to the priors given by the package, powerScPop offers the option to generate new priors from your own data set. Two types of priors are necessary:
+Additionally to the priors given by the package, scPower offers the option to generate new priors from your own data set. Two types of priors are necessary:
 
 * parameters for the expression probability curves, which can be fitted from single cell RNA-seq data of the same technology (e.g. data from a pilot study)
 
@@ -485,7 +485,7 @@ All fitted values are used to adapt the power calculation to the specific condit
 
 power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                         ct.freq=0.1,type="eqtl",
-                                        ref.study=powerScPop::eqtl.ref.study,
+                                        ref.study=scPower::eqtl.ref.study,
                                         ref.study.name="Blueprint (Monocytes)",
                                         cellsPerLane=20000,
                                         read.umi.fit = read.umi.fit.new,
@@ -508,12 +508,12 @@ To use other effect size and expression rank priors either data from other DE / 
 
 #### Priors from DE / eQTL studies
 
-Effect sizes from other studies can be taken directly from the summary statistics of the study (FoldChange for DE genes and R^2 value for eQTL genes). A function of poweScPop extracts the gene ranks, if Ta normalized (!) count matrix is provided and a vector with the names of the significante DE / eQTL genes. To show the function, an example count matrix of powerScPop is processed in the following. For normalization, a simple normalization by counts per cell is done here. Depending on the data, other normalization strategies, e.g. incorporating also the gene length, might be more appropriate.
+Effect sizes from other studies can be taken directly from the summary statistics of the study (FoldChange for DE genes and R^2 value for eQTL genes). A function of poweScPop extracts the gene ranks, if Ta normalized (!) count matrix is provided and a vector with the names of the significante DE / eQTL genes. To show the function, an example count matrix of scPower is processed in the following. For normalization, a simple normalization by counts per cell is done here. Depending on the data, other normalization strategies, e.g. incorporating also the gene length, might be more appropriate.
 
 ```{r}
 
 data(countMatrixExample)
-#Choose one of the example matrices given by powerScPop
+#Choose one of the example matrices given by scPower
 example.matrix<-count.matrix.example[["complete"]]
 
 #To speed up computation, remove all 0 genes
@@ -538,7 +538,7 @@ ggplot(gene.ranks, aes(rank)) + stat_ecdf(geom = "step") +
 
 #### Simulated priors
 
-If a data from a suitable study is not available or extreme cases, such as very small or very large effect sizes, shall be tested, the priors can also be simulated using functions of powerScPop. Gene ranks can be either sampled randomly or if an even distribution in a certain interval is preferred, generated with the function uniform.ranks.interval.
+If a data from a suitable study is not available or extreme cases, such as very small or very large effect sizes, shall be tested, the priors can also be simulated using functions of scPower. Gene ranks can be either sampled randomly or if an even distribution in a certain interval is preferred, generated with the function uniform.ranks.interval.
 
 For eQTL genes, the R^2 value are simulated by transformation of Z-Scores using the Fisher Z Transformation. The Z-Scores are sampled from a normal distribution with parameters mean and sd.
 
@@ -558,11 +558,11 @@ power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                   ref.study=simulated.eqtl.genes,
                                   ref.study.name="Simulated",
                                   samplesPerLane=4,
-                                  read.umi.fit = powerScPop::read.umi.fit,
-                                  gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                  gamma.probs = powerScPop::gamma.probs,
+                                  read.umi.fit = scPower::read.umi.fit,
+                                  gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                  gamma.probs = scPower::gamma.probs,
                                   ct="CD14+ Monocytes",
-                                  disp.fun.param=powerScPop::disp.fun.param,
+                                  disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,
                                   min.UMI.counts = 3,
                                   perc.indiv.expr = 0.5)
@@ -588,11 +588,11 @@ power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                   ref.study=simulated.de.genes,
                                   ref.study.name="Simulated",
                                   samplesPerLane=4,
-                                  read.umi.fit = powerScPop::read.umi.fit,
-                                  gamma.mixed.fits = powerScPop::gamma.mixed.fits,
-                                  gamma.probs = powerScPop::gamma.probs,
+                                  read.umi.fit = scPower::read.umi.fit,
+                                  gamma.mixed.fits = scPower::gamma.mixed.fits,
+                                  gamma.probs = scPower::gamma.probs,
                                   ct="CD14+ Monocytes",
-                                  disp.fun.param=powerScPop::disp.fun.param,
+                                  disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,
                                   min.UMI.counts = 3,
                                   perc.indiv.expr = 0.5)

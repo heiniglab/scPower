@@ -18,13 +18,13 @@ readDepthBudgetCalculation(
 \arguments{
 \item{nSamples}{Number of samples}
 
-\item{nCells}{Cells per person}
+\item{nCells}{Cells per individual}
 
 \item{totalCost}{Experimental budget}
 
 \item{costKit}{Cost for one 10X kit}
 
-\item{samplesPerLane}{Number of persons sequenced per lane}
+\item{samplesPerLane}{Number of individuals sequenced per lane}
 
 \item{costFlowCell}{Cost of one flow cells for sequencing}
 

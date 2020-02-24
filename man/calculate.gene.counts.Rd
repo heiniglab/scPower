@@ -9,7 +9,7 @@ calculate.gene.counts(expr.array, min.counts = 10, perc.indiv = 0.5)
 \arguments{
 \item{expr.array}{3d pesudobulk matrix of genes x individuals x cell type (output of create.pseudobulk)}
 
-\item{min.counts}{More than is number of UMI counts for each gene per person and cell type is required
+\item{min.counts}{More than is number of UMI counts for each gene per individual and cell type is required
 to defined it as expressed in one individual}
 
 \item{perc.indiv}{Percentage of individuals that need to have this gene expressed

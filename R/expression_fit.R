@@ -4,7 +4,7 @@
 
 #' Reformat count matrix to 3D pseudocount matrix
 #'
-#' Sum up the counts per cell type and person for each gene and create a
+#' Sum up the counts per cell type and individual for each gene and create a
 #' 3 dimensional matrix of genes x individuals x cell types
 #'
 #' @param expr.singlets gene count matrix (already filtered for multiplets etc.)
@@ -19,7 +19,7 @@
 create.pseudobulk<-function(expr.singlets, annotation, colName="cell.type"){
   #Get dimensions
   individuals<-unique(annotation$individual)
-  #Convert annotation column to factor as it makes handling of missing cts per person easier
+  #Convert annotation column to factor as it makes handling of missing cts per individual easier
   annotation[,colName]<-as.factor(annotation[,colName])
   celltypes<-levels(annotation[,colName])
 
@@ -31,9 +31,9 @@ create.pseudobulk<-function(expr.singlets, annotation, colName="cell.type"){
   for(indiv in individuals){
     associated.barcodes<-(annotation$individual==indiv)
 
-    expr.person <- expr.singlets[,associated.barcodes,drop=FALSE]
-    cell.annotation.person <- annotation[associated.barcodes,colName]
-    expr.array[,as.character(indiv),] <- t(apply(expr.person, 1, tapply, cell.annotation.person,
+    expr.individual <- expr.singlets[,associated.barcodes,drop=FALSE]
+    cell.annotation.individual <- annotation[associated.barcodes,colName]
+    expr.array[,as.character(indiv),] <- t(apply(expr.individual, 1, tapply, cell.annotation.individual,
                                                  sum, na.rm=T))
   }
 
@@ -48,7 +48,7 @@ create.pseudobulk<-function(expr.singlets, annotation, colName="cell.type"){
 #' in perc.indiv fraction of all individuals)
 #'
 #' @param expr.array 3d pesudobulk matrix of genes x individuals x cell type (output of create.pseudobulk)
-#' @param min.counts  More than is number of UMI counts for each gene per person and cell type is required
+#' @param min.counts  More than is number of UMI counts for each gene per individual and cell type is required
 #' to defined it as expressed in one individual
 #' @param perc.indiv  Percentage of individuals that need to have this gene expressed
 #' to define it as globally expressed
@@ -64,7 +64,7 @@ calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
 
   require(reshape2)
 
-  ## get the percentage of persons with counts > min.count per gene and cell type
+  ## get the percentage of individuals with counts > min.count per gene and cell type
   pct.expr <- t(apply(expr.array > min.counts, 1, apply, 2, sum) / dim(expr.array)[2])
 
   pct.expr.reformated <- melt(pct.expr)
@@ -85,7 +85,7 @@ calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
 #'
 #' @param nSamples Sample size
 #' @param readDepth Target read depth per cell
-#' @param nCellsCt Mean number of cells per person and cell type
+#' @param nCellsCt Mean number of cells per individual and cell type
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
@@ -95,7 +95,7 @@ calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
 #' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
-#' @param min.counts  More than is number of UMI counts for each gene per person and cell type is required to defined it as expressed in one individual
+#' @param min.counts  More than is number of UMI counts for each gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv  Percentage of individuals that need to have this gene expressed to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
@@ -172,9 +172,9 @@ estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
 #'
 #' @param mu Estimated mean value in sc data per gene (vector)
 #' @param size Estimated size parameter in sc data from the negative binomial fit (1/dispersion parameter), also per gene (vector)
-#' @param nCellsCt Mean number of cells per person and cell type
+#' @param nCellsCt Mean number of cells per individual and cell type
 #' @param nSamples  Total sample size
-#' @param min.counts  More than is number of UMI counts for each gene per person and cell type is required to defined it as expressed in one individual
+#' @param min.counts  More than is number of UMI counts for each gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv  Percentage of individuals that need to have this gene expressed to define it as globally expressed
 #'
 #' @return Vector with expression probabilities for each gene

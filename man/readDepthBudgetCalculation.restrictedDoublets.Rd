@@ -18,7 +18,7 @@ readDepthBudgetCalculation.restrictedDoublets(
 \arguments{
 \item{nSamples}{Number of samples}
 
-\item{nCells}{Cells per person}
+\item{nCells}{Cells per individual}
 
 \item{totalCost}{Experimental budget}
 

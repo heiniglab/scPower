@@ -60,7 +60,7 @@ optimize.constant.budget.smartseq(
 
 \item{nSamplesRange}{Range of sample sizes that should be tested (vector)}
 
-\item{nCellsRange}{Range of cells per person that should be tested (vector)}
+\item{nCellsRange}{Range of cells per individual that should be tested (vector)}
 
 \item{readDepthRange}{Range of read depth values that should be tested (vector)}
 
@@ -71,7 +71,7 @@ optimize.constant.budget.smartseq(
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
 \item{min.norm.count}{Expression defition parameter: more than is number of counts per kilobase transcript for each
-gene per person and cell type is required to defined it as expressed in one individual}
+gene per individual and cell type is required to defined it as expressed in one individual}
 
 \item{perc.indiv.expr}{Expression defition parameter: percentage of individuals that need to have this gene expressed
 to define it as globally expressed}

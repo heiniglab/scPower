@@ -21,7 +21,7 @@ power.detect.celltype<-function(nCells,min.num.cells,cell.type.frac,nSamples){
 
 #' Cell sample size calculation for cell type identification
 #'
-#' Calculate required number of cells per person to detect at least min.num.cells of a cell type
+#' Calculate required number of cells per individual to detect at least min.num.cells of a cell type
 #' with class frequency cell.type.frac for each of nSamples individual.
 #' with a probability of prob.cutoff
 #' @param prob.cutoff Target power to detect the cell type
@@ -29,28 +29,28 @@ power.detect.celltype<-function(nCells,min.num.cells,cell.type.frac,nSamples){
 #' @param cell.type.frac Frequency of the cell type of interest
 #' @param nSamples Sample size (number of individuals)
 #'
-#' @return Required number of cells per person to reach the target power
+#' @return Required number of cells per individual to reach the target power
 #'
 #' @export
 number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,nSamples){
   return(qnbinom(prob.cutoff^(1/nSamples),min.num.cells,cell.type.frac)+min.num.cells)
 }
 
-#' Power calculation for a DE/eQTL study  with 10X design (with a restricted number of persons per lane)
+#' Power calculation for a DE/eQTL study  with 10X design (with a restricted number of individuals per lane)
 #'
 #' This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study,
 #' in a single cell 10X RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
-#' per person and read depth.
+#' per individual and read depth.
 #'
 #' @param nSamples Sample size
-#' @param nCells Number of cells per person
+#' @param nCells Number of cells per individual
 #' @param readDepth Target read depth per cell
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
 #' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param samplesPerLane Maximal number of persons per 10X lane
+#' @param samplesPerLane Maximal number of individuals per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
@@ -64,7 +64,7 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per person and cell type is required to defined it as expressed in one individual
+#' gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
@@ -103,7 +103,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 
   #Check that the number of cells entered does not provide a multiplet rate of >100%
   if(multipletFraction>=1){
-    stop("Too many cells per person entered! Multiplet rate of more than 100%!")
+    stop("Too many cells per individual entered! Multiplet rate of more than 100%!")
   }
 
   usableCells<-round((1-multipletFraction)*nCells)
@@ -227,7 +227,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     #Set the fold change respectively
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
 
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) powerScPop:::power.de(
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
       floor(nSamples/2),
       foundSignGenes$mean.sum[i],
       foundSignGenes$FoldChange[i],
@@ -264,7 +264,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' cells per lane instead. This gives also an upper bound for the doublet rate.
 #'
 #' @param nSamples Sample size
-#' @param nCells Number of cells per person
+#' @param nCells Number of cells per individual
 #' @param readDepth Target read depth per cell
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
@@ -285,7 +285,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per person and cell type is required to defined it as expressed in one individual
+#' gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
@@ -308,11 +308,11 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            nGenes=21000,samplingMethod="quantiles",
                                            multipletRateGrowth="linear"){
 
-  #Distribute persons most optimal over the lanes
+  #Distribute individuals most optimal over the lanes
   samplesPerLane<-floor(cellsPerLane/nCells)
 
   if(samplesPerLane==0){
-    stop("Allowed number of cells per lane is too low to fit so many cells per person!")
+    stop("Allowed number of cells per lane is too low to fit so many cells per individual!")
   }
 
   return(power.general.withDoublets(nSamples,nCells,readDepth,ct.freq,
@@ -331,10 +331,10 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #'
 #' This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study,
 #' in a single cell Smart-seq RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
-#' per person and read depth.
+#' per individual and read depth.
 #'
 #' @param nSamples Sample size
-#' @param nCells Number of cells per person
+#' @param nCells Number of cells per individual
 #' @param readDepth Target read depth per cell
 #' @param ct.freq Frequency of the cell type of interest
 #' @param type (eqtl/de) study
@@ -352,7 +352,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param multipletFraction Multiplet fraction in the experiment as a constant factor
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #' @param min.norm.count Expression defition parameter: more than is number of counts per kilobase transcript for each
-#' gene per person and cell type is required to defined it as expressed in one individual
+#' gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
@@ -505,7 +505,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
     #Set the fold change respectively
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
 
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) powerScPop:::power.de(
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
       floor(nSamples/2),
       foundSignGenes$mean.length.sum[i],
       foundSignGenes$FoldChange[i],
@@ -552,7 +552,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param samplesPerLane Maximal number of persons per 10X lane
+#' @param samplesPerLane Maximal number of individuals per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
@@ -562,13 +562,13 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
-#' @param nCellsRange Range of cells per person that should be tested (vector)
+#' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per person and cell type is required to defined it as expressed in one individual
+#' gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
@@ -618,14 +618,14 @@ optimize.constant.budget<-function(totalBudget,type,
                                                                                totalBudget,
                                                                                costKit,samplesPerLane,
                                                                                costFlowCell,readsPerFlowcell)))
-  #Case 2: estimate the number of cells per persons
+  #Case 2: estimate the number of cells per individuals
   } else if (is.null(nCellsRange)){
     #Build a frame of all possible combinations
     param.combis<-expand.grid(nSamplesRange,readDepthRange)
     colnames(param.combis)<-c("nSamples","readDepth")
 
     param.combis$nCells<-sapply(1:nrow(param.combis),
-                                   function(i)cellsPersonBudgetCalculation(param.combis$nSamples[i],
+                                   function(i)cellsBudgetCalculation(param.combis$nSamples[i],
                                                                           param.combis$readDepth[i],
                                                                           totalBudget,
                                                                           costKit,samplesPerLane,
@@ -697,7 +697,7 @@ optimize.constant.budget<-function(totalBudget,type,
 #' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
 #' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param samplesPerLane Maximal number of persons per 10X lane
+#' @param samplesPerLane Maximal number of individuals per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
@@ -707,13 +707,13 @@ optimize.constant.budget<-function(totalBudget,type,
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
-#' @param nCellsRange Range of cells per person that should be tested (vector)
+#' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per person and cell type is required to defined it as expressed in one individual
+#' gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
@@ -756,14 +756,14 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                                                                            param.combis$readDepth[i],
                                                                                            totalBudget,prepCostCell,
                                                                                            costFlowCell,readsPerFlowcell)))
-    #Case 2: estimate the number of cells per persons
+    #Case 2: estimate the number of cells per individuals
   } else if (is.null(nCellsRange)){
     #Build a frame of all possible combinations
     param.combis<-expand.grid(nSamplesRange,readDepthRange)
     colnames(param.combis)<-c("nSamples","readDepth")
 
     param.combis$nCells<-sapply(1:nrow(param.combis),
-                                function(i)cellsPersonBudgetCalculation.libPrepCell(param.combis$nSamples[i],
+                                function(i)cellsBudgetCalculation.libPrepCell(param.combis$nSamples[i],
                                                                                     param.combis$readDepth[i],
                                                                                     totalBudget, prepCostCell,
                                                                                     costFlowCell,readsPerFlowcell))
@@ -842,13 +842,13 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
-#' @param nCellsRange Range of cells per person that should be tested (vector)
+#' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per person and cell type is required to defined it as expressed in one individual
+#' gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
@@ -892,14 +892,14 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                                                                  totalBudget,
                                                                                                  costKit,cellsPerLane,
                                                                                                  costFlowCell,readsPerFlowcell)))
-    #Case 2: estimate the number of cells per persons
+    #Case 2: estimate the number of cells per individuals
   } else if (is.null(nCellsRange)){
     #Build a frame of all possible combinations
     param.combis<-expand.grid(nSamplesRange,readDepthRange)
     colnames(param.combis)<-c("nSamples","readDepth")
 
     param.combis$nCells<-sapply(1:nrow(param.combis),
-                                function(i)cellsPersonBudgetCalculation.restrictedDoublets(param.combis$nSamples[i],
+                                function(i)cellsBudgetCalculation.restrictedDoublets(param.combis$nSamples[i],
                                                                                           param.combis$readDepth[i],
                                                                                           totalBudget,
                                                                                           costKit,cellsPerLane,
@@ -980,13 +980,13 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
 #' @param disp.linear.fit Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
 #' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
-#' @param nCellsRange Range of cells per person that should be tested (vector)
+#' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletFraction Multiplet fraction in the experiment as a constant factor
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #' @param min.norm.count Expression defition parameter: more than is number of counts per kilobase transcript for each
-#' gene per person and cell type is required to defined it as expressed in one individual
+#' gene per individual and cell type is required to defined it as expressed in one individual
 #' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
@@ -1026,14 +1026,14 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
                                                                                            param.combis$readDepth[i],
                                                                                            totalBudget,prepCostCell,
                                                                                            costFlowCell,readsPerFlowcell)))
-    #Case 2: estimate the number of cells per persons
+    #Case 2: estimate the number of cells per individuals
   } else if (is.null(nCellsRange)){
     #Build a frame of all possible combinations
     param.combis<-expand.grid(nSamplesRange,readDepthRange)
     colnames(param.combis)<-c("nSamples","readDepth")
 
     param.combis$nCells<-sapply(1:nrow(param.combis),
-                                function(i)cellsPersonBudgetCalculation.libPrepCell(param.combis$nSamples[i],
+                                function(i)cellsBudgetCalculation.libPrepCell(param.combis$nSamples[i],
                                                                                     param.combis$readDepth[i],
                                                                                     totalBudget, prepCostCell,
                                                                                     costFlowCell,readsPerFlowcell))
@@ -1147,10 +1147,10 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 #' Calculate total cost dependent on parameters for 10X design
 #'
 #' @param nSamples Number of samples
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param readDepth Read depth per cell
 #' @param costKit Cost for one 10X kit
-#' @param samplesPerLane Number of persons sequenced per lane
+#' @param samplesPerLane Number of individuals sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #' @param rounding Rounds up the number of used kits and flow cells
@@ -1179,11 +1179,11 @@ budgetCalculation<-function(nSamples,nCells,readDepth,
 #'
 #' A balanced design with two classes is assumed for the sample size calculation.
 #'
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param readDepth Read depth per cell
 #' @param totalCost Experimental budget
 #' @param costKit Cost for one 10X kit
-#' @param samplesPerLane Number of persons sequenced per lane
+#' @param samplesPerLane Number of individuals sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #'
@@ -1202,21 +1202,21 @@ sampleSizeBudgetCalculation<-function(nCells,readDepth,totalCost,
   return(floor(samples / 2) * 2)
 }
 
-#' Estimate possible number of cells per person depending on the total cost
+#' Estimate possible number of cells per individual depending on the total cost
 #' and the other parameters for 10X design
 #'
 #' @param nSamples Number of samples
 #' @param readDepth Read depth per cell
 #' @param totalCost Experimental budget
 #' @param costKit Cost for one 10X kit
-#' @param samplesPerLane Number of persons sequenced per lane
+#' @param samplesPerLane Number of individuals sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #'
-#' @return Cells per person that can be measured with this budget and other parameters
+#' @return Cells per individual that can be measured with this budget and other parameters
 #'
 #' @export
-cellsPersonBudgetCalculation<-function(nSamples,readDepth,totalCost,
+cellsBudgetCalculation<-function(nSamples,readDepth,totalCost,
                                      costKit,samplesPerLane,
                                      costFlowCell,readsPerFlowcell){
 
@@ -1230,10 +1230,10 @@ cellsPersonBudgetCalculation<-function(nSamples,readDepth,totalCost,
 #' and the other parameters for 10X design
 #'
 #' @param nSamples Number of samples
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param totalCost Experimental budget
 #' @param costKit Cost for one 10X kit
-#' @param samplesPerLane Number of persons sequenced per lane
+#' @param samplesPerLane Number of individuals sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #'
@@ -1253,7 +1253,7 @@ readDepthBudgetCalculation<-function(nSamples,nCells,totalCost,
 #' Calculate total cost dependent on parameters (adaptation with cells per lane instead of samples)
 #'
 #' @param nSamples Number of samples
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param readDepth Read depth per cell
 #' @param costKit Cost for one 10X kit
 #' @param cellsPerLane Number of cells sequenced per lane
@@ -1270,7 +1270,7 @@ budgetCalculation.restrictedDoublets<-function(nSamples,nCells,readDepth,
                                                costFlowCell,readsPerFlowcell,
                                                rounding=FALSE){
 
-  #Estimate persons per lane
+  #Estimate individuals per lane
   samplesPerLane<-floor(cellsPerLane/nCells)
 
   return(budgetCalculation(nSamples,nCells,readDepth,
@@ -1282,10 +1282,10 @@ budgetCalculation.restrictedDoublets<-function(nSamples,nCells,readDepth,
 #' Estimate possible sample size depending on the total cost and the other parameters
 #' (with a restricted number of cells per lane)
 #'
-#' Variant of sampleSizeBudgetCalculation, which restricts the cells per lane instead the persons
+#' Variant of sampleSizeBudgetCalculation, which restricts the cells per lane instead the individuals
 #' per lane.
 #'
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param readDepth Read depth per cell
 #' @param totalCost Experimental budget
 #' @param costKit Cost for one 10X kit
@@ -1300,15 +1300,15 @@ sampleSizeBudgetCalculation.restrictedDoublets<-function(nCells,readDepth,totalC
                                                         costKit,cellsPerLane,
                                                         costFlowCell,readsPerFlowcell){
 
-  #Estimate persons per lane
+  #Estimate individuals per lane
   samplesPerLane<-floor(cellsPerLane/nCells)
 
-  #Calculate sample size dependent on the estimated number of persons per lane
+  #Calculate sample size dependent on the estimated number of individuals per lane
   return(sampleSizeBudgetCalculation(nCells,readDepth,totalCost,costKit,samplesPerLane,
                                costFlowCell,readsPerFlowcell))
 }
 
-#' Estimate possible number of cells per person depending on the total cost
+#' Estimate possible number of cells per individual depending on the total cost
 #' and the other parameters (with a restricted number of cells per lane)
 #'
 #' Approximation without rounding
@@ -1321,10 +1321,10 @@ sampleSizeBudgetCalculation.restrictedDoublets<-function(nCells,readDepth,totalC
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #'
-#' @return Cells per person that can be measured with this budget and other parameters
+#' @return Cells per individual that can be measured with this budget and other parameters
 #'
 #' @export
-cellsPersonBudgetCalculation.restrictedDoublets<-function(nSamples,readDepth,totalCost,
+cellsBudgetCalculation.restrictedDoublets<-function(nSamples,readDepth,totalCost,
                                                           costKit,cellsPerLane,
                                                           costFlowCell,readsPerFlowcell){
 
@@ -1340,7 +1340,7 @@ cellsPersonBudgetCalculation.restrictedDoublets<-function(nSamples,readDepth,tot
 #' and the other parameters (with a restricted number of cells per lane)
 #'
 #' @param nSamples Number of samples
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param totalCost Experimental budget
 #' @param costKit Cost for one 10X kit
 #' @param cellsPerLane Number of cells sequenced per lane
@@ -1354,7 +1354,7 @@ readDepthBudgetCalculation.restrictedDoublets<-function(nSamples,nCells,totalCos
                                                         costKit,cellsPerLane,
                                                         costFlowCell,readsPerFlowcell){
 
-  #Estimate persons per lane
+  #Estimate individuals per lane
   samplesPerLane<-floor(cellsPerLane/nCells)
 
   return(readDepthBudgetCalculation(nSamples,nCells,totalCost,costKit,samplesPerLane,
@@ -1366,7 +1366,7 @@ readDepthBudgetCalculation.restrictedDoublets<-function(nSamples,nCells,totalCos
 #' using library preparation costs per cell
 #'
 #' @param nSamples Number of samples
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param readDepth Read depth per cell
 #' @param prepCostCell Library preparation costs per cell
 #' @param costFlowCell Cost of one flow cells for sequencing
@@ -1398,7 +1398,7 @@ budgetCalculation.libPrepCell<-function(nSamples,nCells,readDepth,
 #'
 #' A balanced design with two classes is assumed for the sample size calculation.
 #'
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param readDepth Read depth per cell
 #' @param totalCost Experimental budget
 #' @param prepCostCell Library preparation costs per cell
@@ -1420,7 +1420,7 @@ sampleSizeBudgetCalculation.libPrepCell<-function(nCells,readDepth,totalCost,
 }
 
 
-#' Estimate possible number of cells per person depending on the total cost,
+#' Estimate possible number of cells per individual depending on the total cost,
 #' using library preparation costs per cell
 #'
 #' @param nSamples Number of samples
@@ -1430,10 +1430,10 @@ sampleSizeBudgetCalculation.libPrepCell<-function(nCells,readDepth,totalCost,
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #'
-#' @return Cells per person that can be measured with this budget and other parameters
+#' @return Cells per individual that can be measured with this budget and other parameters
 #'
 #' @export
-cellsPersonBudgetCalculation.libPrepCell<-function(nSamples,readDepth,totalCost,
+cellsBudgetCalculation.libPrepCell<-function(nSamples,readDepth,totalCost,
                                                    prepCostCell, costFlowCell,readsPerFlowcell){
 
   nCells <- totalCost / (prepCostCell * nSamples +
@@ -1447,7 +1447,7 @@ cellsPersonBudgetCalculation.libPrepCell<-function(nSamples,readDepth,totalCost,
 #' using library preparation costs per cell
 #'
 #' @param nSamples Number of samples
-#' @param nCells Cells per person
+#' @param nCells Cells per individual
 #' @param totalCost Experimental budget
 #' @param prepCostCell Library preparation costs per cell
 #' @param costFlowCell Cost of one flow cells for sequencing

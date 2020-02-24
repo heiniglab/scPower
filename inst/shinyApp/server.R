@@ -174,7 +174,6 @@ shinyServer(
       costKit<-input$costKit
       costFlowCell<-input$costFlowCell
       readsPerFlowcell<-input$readsPerFlowcell
-      personsPerLane<-input$personsLane
 
       s<-event_data("plotly_click", source = "powerMap")
       if (length(s)) {

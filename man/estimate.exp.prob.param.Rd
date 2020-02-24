@@ -24,7 +24,7 @@ estimate.exp.prob.param(
 
 \item{readDepth}{Target read depth per cell}
 
-\item{nCellsCt}{Mean number of cells per person and cell type}
+\item{nCellsCt}{Mean number of cells per individual and cell type}
 
 \item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 (required columns: intercept, reads (slope))}
@@ -40,7 +40,7 @@ estimate.exp.prob.param(
 \item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean
 (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))}
 
-\item{min.counts}{More than is number of UMI counts for each gene per person and cell type is required to defined it as expressed in one individual}
+\item{min.counts}{More than is number of UMI counts for each gene per individual and cell type is required to defined it as expressed in one individual}
 
 \item{perc.indiv}{Percentage of individuals that need to have this gene expressed to define it as globally expressed}
 

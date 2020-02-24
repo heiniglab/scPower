@@ -28,7 +28,7 @@ power.smartseq(
 \arguments{
 \item{nSamples}{Sample size}
 
-\item{nCells}{Number of cells per person}
+\item{nCells}{Number of cells per individual}
 
 \item{readDepth}{Target read depth per cell}
 
@@ -59,7 +59,7 @@ power.smartseq(
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
 \item{min.norm.count}{Expression defition parameter: more than is number of counts per kilobase transcript for each
-gene per person and cell type is required to defined it as expressed in one individual}
+gene per individual and cell type is required to defined it as expressed in one individual}
 
 \item{perc.indiv.expr}{Expression defition parameter: percentage of individuals that need to have this gene expressed
 to define it as globally expressed}
@@ -74,5 +74,5 @@ Power to detect the DE/eQTL genes from the reference study in a single cell expe
 \description{
 This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study,
 in a single cell Smart-seq RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
-per person and read depth.
+per individual and read depth.
 }

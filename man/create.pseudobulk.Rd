@@ -18,6 +18,6 @@ the data frame must be sorted in the same way as the expression matrix (required
 3d matrix of genes x individuals x cell type
 }
 \description{
-Sum up the counts per cell type and person for each gene and create a
+Sum up the counts per cell type and individual for each gene and create a
 3 dimensional matrix of genes x individuals x cell types
 }
