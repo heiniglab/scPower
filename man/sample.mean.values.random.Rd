@@ -2,7 +2,7 @@
 % Please edit documentation in R/expression_fit.R
 \name{sample.mean.values.random}
 \alias{sample.mean.values.random}
-\title{Randomly sample the mean values using a gamma mixed distribution}
+\title{Randomly sample the mean values using the gamma mixed distribution}
 \usage{
 sample.mean.values.random(gamma.parameters, nGenes = 21000)
 }
@@ -16,5 +16,5 @@ sample.mean.values.random(gamma.parameters, nGenes = 21000)
 Vector with simulated mean values
 }
 \description{
-Randomly sample the mean values using a gamma mixed distribution
+Randomly sample the mean values using the gamma mixed distribution
 }

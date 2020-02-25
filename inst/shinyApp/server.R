@@ -3,6 +3,7 @@ library(plotly)
 library(ggplot2)
 library(gridExtra)
 library(reshape)
+library(scPower)
 
 shinyServer(
 
@@ -78,9 +79,9 @@ shinyServer(
       #Get the parameters
       totalBudget<-input$budget
       readDepthRange<-round(seq(input$rangeReads[1],input$rangeReads[2],
-                                length.out = 10))
+                                length.out = 6))
       cellPersRange<-round(seq(input$rangeCells[1],input$rangeCells[2],
-                               length.out = 10))
+                               length.out = 6))
       type<-input$study
       ref.study.name<-input$ref.study
       ct.freq<-input$ct.freq
@@ -112,17 +113,24 @@ shinyServer(
         ref.study<-de.ref.study
       }
 
-      power.study.plot<-optimize.constant.budget.restrictedDoublets(totalBudget, readDepthRange,
-                                                                    cellPersRange,
-                                                 costKit,costFlowCell,readsPerFlowcell,
-                                                 ct.freq,type,ref.study,ref.study.name,
-                                                 cellsPerLane,
-                                                 read.umi.fit,gamma.mixed.fits,
-                                                 gamma.probs,ct,
-                                                 disp.fun.param,mappingEfficiency,
-                                                 multipletRate,multipletFactor,
-                                                 min.UMI.counts,perc.indiv.expr,
-                                                 samplingMethod="quantiles")
+      power.study.plot<-optimize.constant.budget.restrictedDoublets(totalBudget,type,
+                                                                    ct, ct.freq,
+                                                                    costKit,costFlowCell,readsPerFlowcell,
+                                                                    ref.study,ref.study.name,
+                                                                    cellsPerLane,
+                                                                    read.umi.fit,gamma.mixed.fits,
+                                                                    gamma.probs,
+                                                                    disp.fun.param,
+                                                                    nCellsRange=cellPersRange,
+                                                                    readDepthRange=readDepthRange,
+                                                                    mappingEfficiency=mappingEfficiency,
+                                                                    multipletRate=multipletRate,
+                                                                    multipletFactor=multipletFactor,
+                                                                    min.UMI.counts=min.UMI.counts,
+                                                                    perc.indiv.expr=perc.indiv.expr,
+                                                                    samplingMethod="quantiles")
+
+      head(power.study.plot)
 
       message("Calculation finished.")
 
@@ -164,7 +172,6 @@ shinyServer(
                legend=list(title="Detection power"))
 
     })
-
 
     output$readPlot<-renderPlotly({
       power.study<-powerFrame()
@@ -249,7 +256,6 @@ shinyServer(
       subplot(p.cp,p.rd,shareY=TRUE,titleX=TRUE)
 
     })
-
 
   }
 )

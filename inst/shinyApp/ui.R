@@ -53,7 +53,7 @@ shinyUI(
 
          h4("Expression cutoffs"),
          numericInput("minUMI", label = "Minimal number of UMI per gene",
-                      value = 10, step=1,min=1),
+                      value = 3, step=1,min=1),
          numericInput("percIndiv", label = "Fraction of individuals",
                       value = 0.5,step=0.05,min=0,max=1),
          width = 3

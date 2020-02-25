@@ -4,10 +4,13 @@
 \alias{nbinom.estimation}
 \title{Estimate the mean and dispersion parameter for each gene}
 \usage{
-nbinom.estimation(counts.ct)
+nbinom.estimation(counts.ct, sizeFactors = "standard")
 }
 \arguments{
 \item{counts.ct}{Count matrix as in import for DEseq}
+
+\item{sizeFactors}{Use to different size factor normalization methods, either the "standard"
+method from DEseq or "poscounts" of DESeq2}
 }
 \value{
 list with three data frame containing the normalized mean values,
@@ -15,5 +18,5 @@ the dispersion parameters and the parameters for the mean-dispersion function
 estimated from DESeq
 }
 \description{
-Use the DEseq together with the size factor normalization poscounts of DESeq2
+Estimate the mean and dispersion parameter for each gene
 }

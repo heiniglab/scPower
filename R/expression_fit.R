@@ -203,9 +203,10 @@ estimate.exp.prob.values<-function(mu,size,nCellsCt,nSamples,
 
 #' Estimate the mean and dispersion parameter for each gene
 #'
-#' Use the DEseq together with the size factor normalization poscounts of DESeq2
 #'
 #' @param counts.ct Count matrix as in import for DEseq
+#' @param sizeFactors Use to different size factor normalization methods, either the "standard"
+#' method from DEseq or "poscounts" of DESeq2
 #'
 #' @return list with three data frame containing the normalized mean values,
 #' the dispersion parameters and the parameters for the mean-dispersion function
@@ -215,15 +216,21 @@ estimate.exp.prob.values<-function(mu,size,nCellsCt,nSamples,
 #'
 #' @export
 #'
-nbinom.estimation<-function(counts.ct){
+nbinom.estimation<-function(counts.ct, sizeFactors="standard"){
 
   require(DESeq)
 
   #Create a fake condition matrix ...
   cds<-newCountDataSet(counts.ct,rep("celltype",ncol(counts.ct)))
 
-  #Use reimplementation of DEseq2 method for size factor estimation (poscounts)
-  sizeFactors(cds)<-sizeFactorsPosCounts(counts(cds,normalize=FALSE))
+  if(sizeFactors=="standard"){
+    cds<-estimateSizeFactors(cds)
+  } else if (sizeFactors=="poscounts"){
+    #Use reimplementation of DEseq2 method for size factor estimation (poscounts)
+    sizeFactors(cds)<-sizeFactorsPosCounts(counts(cds,normalize=FALSE))
+  } else {
+    stop("Method for size factor estimation not known. Please use either standard or poscounts!")
+  }
 
   #Estimate dispersion curves
   cds <- suppressWarnings(estimateDispersions(cds, sharingMode="gene-est-only"))
@@ -270,68 +277,128 @@ sizeFactorsPosCounts<-function(counts){
 
 #' Estimate the mixed gamma distribution of the mean values
 #'
-#' WARNING: the currently used package mixR has a bug (can not find local variable, but only global ...)
-#' The method estimates the distribution of all gene mean values using a gamma mixed model
-#' of two components. It restricts the total number of fitted genes to a certain number num.genes.kept
-#' (remove additional genes with a mean of 0) to fit the same number of genes
-#' across different conditions (e.g. cell types).
+#' The estimated distribution will be a mixture of a zero component and two left zensored gamma distributions,
+#' using an em fitting procedure implemented in the package. It is recommended to reduce the total number of
+#' fitted genes (often in the count matrix a huge fraction of zero genes) using the parameter num.genes.kept.
 #'
 #' @param mean.vals Vector with all normalized mean values (estimated using nbinom.estimation)
+#' @param censoredPoint Censoring point for left censored gamma distributions (if not set,
+#' the minimal positive value will be chosen)
 #' @param num.genes.kept Total number of genes used for the fit (remove additional genes with a mean of 0)
-#' @param default.zero.val Zero values can not be fitted with gamma curves,
-#' therefore all zero values are replaced by a very small value
 #'
 #' @return Data frame with the six parameters describing the gamma mixed distributions
 #'
 #' @import mixR
 #'
 #' @export
-#'
-mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000,
-                                 default.zero.val=1e-5){
-
-  require(mixR)
+mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
+                                 num.genes.kept=21000){
 
   #Check how many 0 genes are in the sample
   zeroGenes<-mean.vals==0
-  #cat(paste("Number genes with a mean of 0:",sum(zeroGenes),"\n"))
 
   #Remove some of the zero genes but keep enough to get num.genes.kept genes in the end
   num.zeros.keep<-num.genes.kept-sum(!zeroGenes)
 
   if(num.zeros.keep<0){
     stop(paste("There are",sum(!zeroGenes),"genes with positive expression.",
-               "Increase the num.genes.kept parameter to a value larger than that!"))
+              "Increase the num.genes.kept parameter to a value larger than that!"))
   } else if (num.zeros.keep>0){
     zeroGenes[zeroGenes][1:num.zeros.keep]<-FALSE
   }
 
   mean.vals<-mean.vals[!zeroGenes]
 
-  #Set zero values to a very small number because zero values can not be fitted ...
-  mean.vals[mean.vals==0]<-default.zero.val
+  #Set proportions of the distributions
+  zero.prop<-sum(means==0)/(length(means)*4) #assume 25% of the zeros from the zero component
+  outlier.prop<-0.05
 
-  #Split value to speed up the fitting procedure
-  split.value<<-0.95
+  #Set censored point to the minimal positive value if was not set before
+  if(is.null(censoredPoint)){
+    censoredPoint<-min(means[means>0])
+  }
 
-  #Get quantile value for split
-  max.q<<-quantile(mean.vals,split.value)
+  #Initialize first gamma component
+  y<-means[means > 0 & means<quantile(1-outlier.prop)]
+  Gamma1<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
 
-  #Fit the gamma mixed distribution
-  mean.vals<<-mean.vals
-  fit.mixed<-mixfit(mean.vals,ncomp=2,family="gamma",
-                    pi=c(split.value,1-split.value),
-                    mu=c(mean(mean.vals[mean.vals<max.q]),mean(mean.vals[mean.vals>max.q])),
-                    sd=c(sd(mean.vals[mean.vals<max.q]),sd(mean.vals[mean.vals>max.q])))
+  #Initialize second gamma component
+  y<-means[means>=quantile(1-outlier.prop)]
+  Gamma2<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
 
-  gamma.mixed.fits<-data.frame(pi.c1=fit.mixed$pi[1],pi.c2=fit.mixed$pi[2],
-                               mu.c1=fit.mixed$mu[1],mu.c2=fit.mixed$mu[2],
-                               sd.c1=fit.mixed$sd[1],sd.c2=fit.mixed$sd[2])
+  log<-capture.output({emfit <-em(means, ncomp=3,
+                                  prop=c(zero.prop,1-(zero.prop+outlier.prop),outlier.prop),
+                                  model.constructor=c("Zero","Gamma","Gamma"),
+                                  models=c(Zero(),Gamma1,Gamma2))})
 
-  return(gamma.mixed.fits)
+  return(emfit)
 }
 
-#' Randomly sample the mean values using a gamma mixed distribution
+# Old version of fitting the mean values using the package mixR
+# #' Estimate the mixed gamma distribution of the mean values
+# #'
+# #' WARNING: the currently used package mixR has a bug (can not find local variable, but only global ...)
+# #' The method estimates the distribution of all gene mean values using a gamma mixed model
+# #' of two components. It restricts the total number of fitted genes to a certain number num.genes.kept
+# #' (remove additional genes with a mean of 0) to fit the same number of genes
+# #' across different conditions (e.g. cell types).
+# #'
+# #' @param mean.vals Vector with all normalized mean values (estimated using nbinom.estimation)
+# #' @param num.genes.kept Total number of genes used for the fit (remove additional genes with a mean of 0)
+# #' @param default.zero.val Zero values can not be fitted with gamma curves,
+# #' therefore all zero values are replaced by a very small value
+# #'
+# #' @return Data frame with the six parameters describing the gamma mixed distributions
+# #'
+# #' @import mixR
+# #'
+# #' @export
+# #'
+# mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000,
+#                                  default.zero.val=1e-5){
+#
+#   require(mixR)
+#
+#   #Check how many 0 genes are in the sample
+#   zeroGenes<-mean.vals==0
+#   #cat(paste("Number genes with a mean of 0:",sum(zeroGenes),"\n"))
+#
+#   #Remove some of the zero genes but keep enough to get num.genes.kept genes in the end
+#   num.zeros.keep<-num.genes.kept-sum(!zeroGenes)
+#
+#   if(num.zeros.keep<0){
+#     stop(paste("There are",sum(!zeroGenes),"genes with positive expression.",
+#                "Increase the num.genes.kept parameter to a value larger than that!"))
+#   } else if (num.zeros.keep>0){
+#     zeroGenes[zeroGenes][1:num.zeros.keep]<-FALSE
+#   }
+#
+#   mean.vals<-mean.vals[!zeroGenes]
+#
+#   #Set zero values to a very small number because zero values can not be fitted ...
+#   mean.vals[mean.vals==0]<-default.zero.val
+#
+#   #Split value to speed up the fitting procedure
+#   split.value<<-0.95
+#
+#   #Get quantile value for split
+#   max.q<<-quantile(mean.vals,split.value)
+#
+#   #Fit the gamma mixed distribution
+#   mean.vals<<-mean.vals
+#   fit.mixed<-mixfit(mean.vals,ncomp=2,family="gamma",
+#                     pi=c(split.value,1-split.value),
+#                     mu=c(mean(mean.vals[mean.vals<max.q]),mean(mean.vals[mean.vals>max.q])),
+#                     sd=c(sd(mean.vals[mean.vals<max.q]),sd(mean.vals[mean.vals>max.q])))
+#
+#   gamma.mixed.fits<-data.frame(pi.c1=fit.mixed$pi[1],pi.c2=fit.mixed$pi[2],
+#                                mu.c1=fit.mixed$mu[1],mu.c2=fit.mixed$mu[2],
+#                                sd.c1=fit.mixed$sd[1],sd.c2=fit.mixed$sd[2])
+#
+#  return(gamma.mixed.fits)
+# }
+
+#' Randomly sample the mean values using the gamma mixed distribution
 #'
 #' @param gamma.parameters Data frame with gamma parameters
 #' (fitted using mixed.gamma.estimation)
@@ -339,21 +406,81 @@ mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000,
 #'
 #' @return Vector with simulated mean values
 #'
-#' @import mixR
-#'
 #' @export
 #'
 sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
 
-  require(mixR)
+  #Zero Component
+  nZeros<-round(nGenes*gamma.parameters$p1)
+  vals<-rep(0,nZeros)
 
-  #Sample the mean values
-  mean.vals<-rmixgamma(nGenes,
-                       pi=c(gamma.parameters$pi.c1,gamma.parameters$pi.c2),
-                       mu=c(gamma.parameters$mu.c1,gamma.parameters$mu.c2),
-                       sd=c(gamma.parameters$sd.c1,gamma.parameters$sd.c2))
-  return(mean.vals)
+  #First Gamma component
+  nGamma1<-round(nGenes*gamma.parameters$p2)
+  vals<-c(vals,rgamma(n = nGamma1,shape = gamma.parameters$s1,
+                      rate = gamma.parameters$r1))
+
+  #Second Gamma component
+  nGamma2<-nGenes-nZeros-nGamma1
+  vals<-c(vals,rgamma(n = nGamma2,shape = gamma.parameters$s2,
+                      rate = gamma.parameters$r2))
+
+  return(vals)
 }
+
+# #' Randomly sample the mean values using a gamma mixed distribution
+# #'
+# #' @param gamma.parameters Data frame with gamma parameters
+# #' (fitted using mixed.gamma.estimation)
+# #' @param nGenes Number of genes to sample
+# #'
+# #' @return Vector with simulated mean values
+# #'
+# #' @import mixR
+# #'
+# #' @export
+# #'
+# sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
+#
+#   require(mixR)
+#
+#   #Sample the mean values
+#   mean.vals<-rmixgamma(nGenes,
+#                        pi=c(gamma.parameters$pi.c1,gamma.parameters$pi.c2),
+#                        mu=c(gamma.parameters$mu.c1,gamma.parameters$mu.c2),
+#                        sd=c(gamma.parameters$sd.c1,gamma.parameters$sd.c2))
+#   return(mean.vals)
+# }
+
+# #' Draw the mean values using the quantile distributions of the gamma mixed distribution
+# #'
+# #' @param gamma.parameters Data frame with gamma parameters
+# #' (fitted using mixed.gamma.estimation)
+# #' @param nGenes Number of genes to sample
+# #'
+# #' @return Vector with simulated mean values
+# #'
+# #' @export
+# #'
+# sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
+#
+#   #Zero Component
+#   nZeros<-round(nGenes*gamma.parameters$p1)
+#   vals<-rep(0,nZeros)
+#
+#   #First Gamma component
+#   nGamma1<-round(nGenes*gamma.parameters$p2)
+#   quantiles.c1<-seq(1/(nGamma1+1),1-1/(nGamma1+1),by=1/(nGamma1+1))
+#   vals<-c(vals,qgamma(quantiles.c1,shape = gamma.parameters$s1,
+#                       rate = gamma.parameters$r1))
+#
+#   #Second Gamma component
+#   nGamma2<-nGenes-nZeros-nGamma1
+#   quantiles.c2<-seq(1/(nGamma2+1),1-1/(nGamma2+1),by=1/(nGamma2+1))
+#   vals<-c(vals,qgamma(quantiles.c2,shape = gamma.parameters$s2,
+#                       rate = gamma.parameters$r2))
+#
+#   return(vals)
+# }
 
 #' Draw the mean values using the two quantile distributions of the gamma mixed distribution
 #'

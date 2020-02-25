@@ -4,27 +4,21 @@
 \alias{mixed.gamma.estimation}
 \title{Estimate the mixed gamma distribution of the mean values}
 \usage{
-mixed.gamma.estimation(
-  mean.vals,
-  num.genes.kept = 21000,
-  default.zero.val = 1e-05
-)
+mixed.gamma.estimation(mean.vals, censoredPoint = NULL, num.genes.kept = 21000)
 }
 \arguments{
 \item{mean.vals}{Vector with all normalized mean values (estimated using nbinom.estimation)}
 
-\item{num.genes.kept}{Total number of genes used for the fit (remove additional genes with a mean of 0)}
+\item{censoredPoint}{Censoring point for left censored gamma distributions (if not set,
+the minimal positive value will be chosen)}
 
-\item{default.zero.val}{Zero values can not be fitted with gamma curves,
-therefore all zero values are replaced by a very small value}
+\item{num.genes.kept}{Total number of genes used for the fit (remove additional genes with a mean of 0)}
 }
 \value{
 Data frame with the six parameters describing the gamma mixed distributions
 }
 \description{
-WARNING: the currently used package mixR has a bug (can not find local variable, but only global ...)
-The method estimates the distribution of all gene mean values using a gamma mixed model
-of two components. It restricts the total number of fitted genes to a certain number num.genes.kept
-(remove additional genes with a mean of 0) to fit the same number of genes
-across different conditions (e.g. cell types).
+The estimated distribution will be a mixture of a zero component and two left zensored gamma distributions,
+using an em fitting procedure implemented in the package. It is recommended to reduce the total number of
+fitted genes (often in the count matrix a huge fraction of zero genes) using the parameter num.genes.kept.
 }
