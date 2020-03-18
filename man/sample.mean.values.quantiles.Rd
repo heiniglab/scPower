@@ -2,7 +2,7 @@
 % Please edit documentation in R/expression_fit.R
 \name{sample.mean.values.quantiles}
 \alias{sample.mean.values.quantiles}
-\title{Draw the mean values using the two quantile distributions of the gamma mixed distribution}
+\title{Draw the mean values using the quantile distributions of the gamma mixed distribution}
 \usage{
 sample.mean.values.quantiles(gamma.parameters, nGenes = 21000)
 }
@@ -16,5 +16,5 @@ sample.mean.values.quantiles(gamma.parameters, nGenes = 21000)
 Vector with simulated mean values
 }
 \description{
-Draw the mean values using the two quantile distributions of the gamma mixed distribution
+Draw the mean values using the quantile distributions of the gamma mixed distribution
 }

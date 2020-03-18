@@ -15,7 +15,6 @@ optimize.constant.budget.smartseq(
   ref.study,
   ref.study.name,
   gamma.mixed.fits,
-  gamma.probs,
   disp.linear.fit,
   nSamplesRange = NULL,
   nCellsRange = NULL,
@@ -51,9 +50,6 @@ optimize.constant.budget.smartseq(
 
 \item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type
 (required columns: parameter, ct (cell type), intercept, meanReads (slope))}
-
-\item{gamma.probs}{Data frame with probability parameter of the gamma distributions
-(required columns:ct (cell type), pi.c1 (probability of component 1))}
 
 \item{disp.linear.fit}{Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
 (required columns: parameter, ct (cell type), intercept, meanReads (slope))}

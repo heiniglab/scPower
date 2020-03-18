@@ -22,7 +22,7 @@ shinyUI(
          numericInput("ct.freq", label = "Cell type frequency",
                       value = 0.25,step=0.05,min=0,max=1),
          selectInput("ref.study", label = "Reference study",
-                     choices = list("Blueprint (Monocytes)", "TODO"),
+                     choices = list(),
                      selected = "Blueprint (Monocytes)"),
          numericInput("budget", label = "Total budget", value = 30000, step=1000,min=0),
          sliderInput("rangeReads", "Read depth",

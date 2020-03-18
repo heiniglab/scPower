@@ -55,8 +55,6 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param gamma.probs Data frame with probability parameter of the gamma distributions
-#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
@@ -82,9 +80,8 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #'
 power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      type,ref.study,ref.study.name,
-                                     samplesPerLane,
-                                     read.umi.fit,gamma.mixed.fits,
-                                     gamma.probs,ct,
+                                     samplesPerLane,read.umi.fit,
+                                     gamma.mixed.fits,ct,
                                      disp.fun.param,
                                      mappingEfficiency=0.8,
                                      multipletRate=7.67e-06,multipletFactor=1.82,
@@ -133,18 +130,15 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
 
-  #Check if gamma probability data for the cell type exists
-  if(! any(gamma.probs$ct==ct)){
-    stop(paste("No gene curve fitting data in the data frame gamma.probs fits to the specified cell type",
-               ct,". Check that the cell type is correctly spelled and the right gamma.probs object used."))
-  }
+  gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
+                               p2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p2"],
+                               mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
+                               mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
+                               sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
+                               sd2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd2"])
 
-  gamma.parameters<-data.frame(pi.c1=gamma.probs$pi.c1[gamma.probs$ct==ct],
-                               pi.c2=1-gamma.probs$pi.c1[gamma.probs$ct==ct],
-                               mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
-                               mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
-                               sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
-                               sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
+  #Convert them to the rateshape variant
+  gamma.parameters<-convert.gamma.parameters(gamma.parameters,type="rateshape")
 
   #Sample means values
   if(samplingMethod=="random"){
@@ -276,8 +270,6 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param gamma.probs Data frame with probability parameter of the gamma distributions
-#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
@@ -298,9 +290,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @export
 power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            type,ref.study,ref.study.name,
-                                           cellsPerLane,
-                                           read.umi.fit,gamma.mixed.fits,
-                                           gamma.probs,ct,
+                                           cellsPerLane,read.umi.fit,
+                                           gamma.mixed.fits,ct,
                                            disp.fun.param,
                                            mappingEfficiency=0.8,
                                            multipletRate=7.67e-06,multipletFactor=1.82,
@@ -318,8 +309,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   return(power.general.withDoublets(nSamples,nCells,readDepth,ct.freq,
                              type,ref.study,ref.study.name,
                              samplesPerLane,
-                             read.umi.fit,gamma.mixed.fits,
-                             gamma.probs,ct,
+                             read.umi.fit,gamma.mixed.fits,ct,
                              disp.fun.param,
                              mappingEfficiency,
                              multipletRate,multipletFactor,
@@ -343,8 +333,6 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
-#' @param gamma.probs Data frame with probability parameter of the gamma distributions
-#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.linear.fit Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
 #' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
@@ -363,7 +351,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @export
 power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                          type,ref.study,ref.study.name,
-                         gamma.mixed.fits,gamma.probs,ct,
+                         gamma.mixed.fits,ct,
                          disp.linear.fit,
                          mappingEfficiency=0.8,
                          multipletFraction=0,multipletFactor=1.82,
@@ -394,18 +382,15 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
          "Choose a higher read depth or a different gamma - read fit.")
   }
 
-  #Check if gamma probability data for the cell type exists
-  if(! any(gamma.probs$ct==ct)){
-    stop(paste("No gene curve fitting data in the data frame gamma.probs fits to the specified cell type",
-               ct,". Check that the cell type is correctly spelled and the right gamma.probs object used."))
-  }
+  gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
+                               p2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p2"],
+                               mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
+                               mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
+                               sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
+                               sd2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd2"])
 
-  gamma.parameters<-data.frame(pi.c1=gamma.probs$pi.c1[gamma.probs$ct==ct],
-                               pi.c2=1-gamma.probs$pi.c1[gamma.probs$ct==ct],
-                               mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
-                               mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
-                               sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
-                               sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
+  #Convert them to the rateshape variant
+  gamma.parameters<-convert.gamma.parameters(gamma.parameters,type="rateshape")
 
   #Sample means values
   if(samplingMethod=="random"){
@@ -557,8 +542,6 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param gamma.probs Data frame with probability parameter of the gamma distributions
-#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
@@ -589,7 +572,7 @@ optimize.constant.budget<-function(totalBudget,type,
                                    ref.study,ref.study.name,
                                    samplesPerLane,
                                    read.umi.fit,gamma.mixed.fits,
-                                   gamma.probs, disp.fun.param,
+                                   disp.fun.param,
                                    nSamplesRange=NULL,
                                    nCellsRange=NULL, readDepthRange=NULL,
                                    mappingEfficiency=0.8,
@@ -663,7 +646,6 @@ optimize.constant.budget<-function(totalBudget,type,
                                     samplesPerLane=samplesPerLane,
                                     read.umi.fit=read.umi.fit,
                                     gamma.mixed.fits=gamma.mixed.fits,
-                                    gamma.probs=gamma.probs,
                                     ct=ct,
                                     disp.fun.param=disp.fun.param,
                                     mappingEfficiency=mappingEfficiency,
@@ -702,8 +684,6 @@ optimize.constant.budget<-function(totalBudget,type,
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param gamma.probs Data frame with probability parameter of the gamma distributions
-#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
@@ -728,7 +708,7 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                                ref.study,ref.study.name,
                                                samplesPerLane,
                                                read.umi.fit,gamma.mixed.fits,
-                                               gamma.probs, disp.fun.param,
+                                               disp.fun.param,
                                                nSamplesRange=NULL,
                                                nCellsRange=NULL, readDepthRange=NULL,
                                                mappingEfficiency=0.8,
@@ -799,7 +779,6 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                     samplesPerLane=samplesPerLane,
                                     read.umi.fit=read.umi.fit,
                                     gamma.mixed.fits=gamma.mixed.fits,
-                                    gamma.probs=gamma.probs,
                                     ct=ct,
                                     disp.fun.param=disp.fun.param,
                                     mappingEfficiency=mappingEfficiency,
@@ -837,8 +816,6 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param gamma.probs Data frame with probability parameter of the gamma distributions
-#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
@@ -863,7 +840,7 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                      ref.study,ref.study.name,
                                                      cellsPerLane,
                                                      read.umi.fit,gamma.mixed.fits,
-                                                     gamma.probs,disp.fun.param,
+                                                     disp.fun.param,
                                                      nSamplesRange=NULL,
                                                      nCellsRange=NULL, readDepthRange=NULL,
                                                      mappingEfficiency=0.8,
@@ -939,7 +916,6 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                     cellsPerLane=cellsPerLane,
                                     read.umi.fit=read.umi.fit,
                                     gamma.mixed.fits=gamma.mixed.fits,
-                                    gamma.probs=gamma.probs,
                                     ct=ct,
                                     disp.fun.param=disp.fun.param,
                                     mappingEfficiency=mappingEfficiency,
@@ -975,8 +951,6 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
 #' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
-#' @param gamma.probs Data frame with probability parameter of the gamma distributions
-#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param disp.linear.fit Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
 #' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
@@ -998,7 +972,7 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
                                            ct,ct.freq,
                                            prepCostCell,costFlowCell,readsPerFlowcell,
                                            ref.study,ref.study.name,
-                                           gamma.mixed.fits,gamma.probs,
+                                           gamma.mixed.fits,
                                            disp.linear.fit,
                                            nSamplesRange=NULL,
                                            nCellsRange=NULL, readDepthRange=NULL,
@@ -1067,7 +1041,6 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
                                     ref.study=ref.study,
                                     ref.study.name=ref.study.name,
                                     gamma.mixed.fits=gamma.mixed.fits,
-                                    gamma.probs=gamma.probs,
                                     ct=ct,
                                     disp.linear.fit=disp.linear.fit,
                                     mappingEfficiency=mappingEfficiency,

@@ -90,8 +90,6 @@ calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
 #' (required columns: intercept, reads (slope))
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param gamma.probs Data frame with probability parameter of the gamma distributions
-#' (required columns:ct (cell type), pi.c1 (probability of component 1))
 #' @param ct Cell type of interest (name from the gamma mixed models)
 #' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
@@ -106,7 +104,7 @@ calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
 #'
 estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
                                   read.umi.fit,gamma.mixed.fits,
-                                  gamma.probs,ct,disp.fun.param,
+                                  ct,disp.fun.param,
                                   min.counts=10,perc.indiv=0.5,
                                   nGenes=21000,samplingMethod="quantiles"){
 
@@ -127,18 +125,15 @@ estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
 
-  #Check if gamma probability data for the cell type exists
-  if(! any(gamma.probs$ct==ct)){
-    stop(paste("No gene curve fitting data in the data frame gamma.probs fits to the specified cell type",
-               ct,". Check that the cell type is correctly spelled and the right gamma.probs object used."))
-  }
+  gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
+                               p2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p2"],
+                               mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
+                               mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
+                               sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
+                               sd2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd2"])
 
-  gamma.parameters<-data.frame(pi.c1=gamma.probs$pi.c1[gamma.probs$ct==ct],
-                               pi.c2=1-gamma.probs$pi.c1[gamma.probs$ct==ct],
-                               mu.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c1"],
-                               mu.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mu.c2"],
-                               sd.c1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c1"],
-                               sd.c2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd.c2"])
+  #Convert them to the rateshape variant
+  gamma.parameters<-convert.gamma.parameters(gamma.parameters,type="rateshape")
 
   #Sample means values
   if(samplingMethod=="random"){
@@ -285,6 +280,8 @@ sizeFactorsPosCounts<-function(counts){
 #' @param censoredPoint Censoring point for left censored gamma distributions (if not set,
 #' the minimal positive value will be chosen)
 #' @param num.genes.kept Total number of genes used for the fit (remove additional genes with a mean of 0)
+#' @param return.df If true return data frame with fitted parameters, otherwise an object of class EMResult
+#' (containing also the loglikelihoods)
 #'
 #' @return Data frame with the six parameters describing the gamma mixed distributions
 #'
@@ -292,7 +289,7 @@ sizeFactorsPosCounts<-function(counts){
 #'
 #' @export
 mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
-                                 num.genes.kept=21000){
+                                 num.genes.kept=21000, return.df=TRUE){
 
   #Check how many 0 genes are in the sample
   zeroGenes<-mean.vals==0
@@ -310,93 +307,36 @@ mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
   mean.vals<-mean.vals[!zeroGenes]
 
   #Set proportions of the distributions
-  zero.prop<-sum(means==0)/(length(means)*4) #assume 25% of the zeros from the zero component
+  zero.prop<-sum(mean.vals==0)/(length(mean.vals)*4) #assume 25% of the zeros from the zero component
   outlier.prop<-0.05
 
   #Set censored point to the minimal positive value if was not set before
   if(is.null(censoredPoint)){
-    censoredPoint<-min(means[means>0])
+    censoredPoint<-min(mean.vals[mean.vals>0])
   }
 
   #Initialize first gamma component
-  y<-means[means > 0 & means<quantile(1-outlier.prop)]
+  y<-mean.vals[mean.vals > 0 & mean.vals<quantile(1-outlier.prop)]
   Gamma1<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
 
   #Initialize second gamma component
-  y<-means[means>=quantile(1-outlier.prop)]
+  y<-mean.vals[mean.vals>=quantile(1-outlier.prop)]
   Gamma2<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
 
-  log<-capture.output({emfit <-em(means, ncomp=3,
+  log<-capture.output({emfit <-em(mean.vals, ncomp=3,
                                   prop=c(zero.prop,1-(zero.prop+outlier.prop),outlier.prop),
                                   model.constructor=c("Zero","Gamma","Gamma"),
                                   models=c(Zero(),Gamma1,Gamma2))})
 
-  return(emfit)
+  if(return.df){
+    df<-data.frame(p1=emfit@proportions[1],p2=emfit@proportions[2],
+                   s1=emfit@models[[2]]@shape,s2=emfit@models[[3]]@shape,
+                   r1=emfit@models[[2]]@rate,r2=emfit@models[[3]]@rate)
+    return(df)
+  } else {
+    return(emfit)
+  }
 }
-
-# Old version of fitting the mean values using the package mixR
-# #' Estimate the mixed gamma distribution of the mean values
-# #'
-# #' WARNING: the currently used package mixR has a bug (can not find local variable, but only global ...)
-# #' The method estimates the distribution of all gene mean values using a gamma mixed model
-# #' of two components. It restricts the total number of fitted genes to a certain number num.genes.kept
-# #' (remove additional genes with a mean of 0) to fit the same number of genes
-# #' across different conditions (e.g. cell types).
-# #'
-# #' @param mean.vals Vector with all normalized mean values (estimated using nbinom.estimation)
-# #' @param num.genes.kept Total number of genes used for the fit (remove additional genes with a mean of 0)
-# #' @param default.zero.val Zero values can not be fitted with gamma curves,
-# #' therefore all zero values are replaced by a very small value
-# #'
-# #' @return Data frame with the six parameters describing the gamma mixed distributions
-# #'
-# #' @import mixR
-# #'
-# #' @export
-# #'
-# mixed.gamma.estimation<-function(mean.vals, num.genes.kept=21000,
-#                                  default.zero.val=1e-5){
-#
-#   require(mixR)
-#
-#   #Check how many 0 genes are in the sample
-#   zeroGenes<-mean.vals==0
-#   #cat(paste("Number genes with a mean of 0:",sum(zeroGenes),"\n"))
-#
-#   #Remove some of the zero genes but keep enough to get num.genes.kept genes in the end
-#   num.zeros.keep<-num.genes.kept-sum(!zeroGenes)
-#
-#   if(num.zeros.keep<0){
-#     stop(paste("There are",sum(!zeroGenes),"genes with positive expression.",
-#                "Increase the num.genes.kept parameter to a value larger than that!"))
-#   } else if (num.zeros.keep>0){
-#     zeroGenes[zeroGenes][1:num.zeros.keep]<-FALSE
-#   }
-#
-#   mean.vals<-mean.vals[!zeroGenes]
-#
-#   #Set zero values to a very small number because zero values can not be fitted ...
-#   mean.vals[mean.vals==0]<-default.zero.val
-#
-#   #Split value to speed up the fitting procedure
-#   split.value<<-0.95
-#
-#   #Get quantile value for split
-#   max.q<<-quantile(mean.vals,split.value)
-#
-#   #Fit the gamma mixed distribution
-#   mean.vals<<-mean.vals
-#   fit.mixed<-mixfit(mean.vals,ncomp=2,family="gamma",
-#                     pi=c(split.value,1-split.value),
-#                     mu=c(mean(mean.vals[mean.vals<max.q]),mean(mean.vals[mean.vals>max.q])),
-#                     sd=c(sd(mean.vals[mean.vals<max.q]),sd(mean.vals[mean.vals>max.q])))
-#
-#   gamma.mixed.fits<-data.frame(pi.c1=fit.mixed$pi[1],pi.c2=fit.mixed$pi[2],
-#                                mu.c1=fit.mixed$mu[1],mu.c2=fit.mixed$mu[2],
-#                                sd.c1=fit.mixed$sd[1],sd.c2=fit.mixed$sd[2])
-#
-#  return(gamma.mixed.fits)
-# }
 
 #' Randomly sample the mean values using the gamma mixed distribution
 #'
@@ -427,62 +367,7 @@ sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
   return(vals)
 }
 
-# #' Randomly sample the mean values using a gamma mixed distribution
-# #'
-# #' @param gamma.parameters Data frame with gamma parameters
-# #' (fitted using mixed.gamma.estimation)
-# #' @param nGenes Number of genes to sample
-# #'
-# #' @return Vector with simulated mean values
-# #'
-# #' @import mixR
-# #'
-# #' @export
-# #'
-# sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
-#
-#   require(mixR)
-#
-#   #Sample the mean values
-#   mean.vals<-rmixgamma(nGenes,
-#                        pi=c(gamma.parameters$pi.c1,gamma.parameters$pi.c2),
-#                        mu=c(gamma.parameters$mu.c1,gamma.parameters$mu.c2),
-#                        sd=c(gamma.parameters$sd.c1,gamma.parameters$sd.c2))
-#   return(mean.vals)
-# }
-
-# #' Draw the mean values using the quantile distributions of the gamma mixed distribution
-# #'
-# #' @param gamma.parameters Data frame with gamma parameters
-# #' (fitted using mixed.gamma.estimation)
-# #' @param nGenes Number of genes to sample
-# #'
-# #' @return Vector with simulated mean values
-# #'
-# #' @export
-# #'
-# sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
-#
-#   #Zero Component
-#   nZeros<-round(nGenes*gamma.parameters$p1)
-#   vals<-rep(0,nZeros)
-#
-#   #First Gamma component
-#   nGamma1<-round(nGenes*gamma.parameters$p2)
-#   quantiles.c1<-seq(1/(nGamma1+1),1-1/(nGamma1+1),by=1/(nGamma1+1))
-#   vals<-c(vals,qgamma(quantiles.c1,shape = gamma.parameters$s1,
-#                       rate = gamma.parameters$r1))
-#
-#   #Second Gamma component
-#   nGamma2<-nGenes-nZeros-nGamma1
-#   quantiles.c2<-seq(1/(nGamma2+1),1-1/(nGamma2+1),by=1/(nGamma2+1))
-#   vals<-c(vals,qgamma(quantiles.c2,shape = gamma.parameters$s2,
-#                       rate = gamma.parameters$r2))
-#
-#   return(vals)
-# }
-
-#' Draw the mean values using the two quantile distributions of the gamma mixed distribution
+#' Draw the mean values using the quantile distributions of the gamma mixed distribution
 #'
 #' @param gamma.parameters Data frame with gamma parameters
 #' (fitted using mixed.gamma.estimation)
@@ -494,29 +379,23 @@ sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
 #'
 sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
 
-  #Distribution of genes between the quantiles
-  nGenes.c1<-round(nGenes*gamma.parameters$pi.c1)
-  nGenes.c2<-nGenes-nGenes.c1
+  #Zero Component
+  nZeros<-round(nGenes*gamma.parameters$p1)
+  vals<-rep(0,nZeros)
 
-  #Reformate the gamma parameters
-  gamma.parameters$rate.c1<-gamma.parameters$mu.c1/gamma.parameters$sd.c1^2
-  gamma.parameters$shape.c1<-gamma.parameters$mu.c1*gamma.parameters$rate.c1
-  gamma.parameters$rate.c2<-gamma.parameters$mu.c2/gamma.parameters$sd.c2^2
-  gamma.parameters$shape.c2<-gamma.parameters$mu.c2*gamma.parameters$rate.c2
+  #First Gamma component
+  nGamma1<-round(nGenes*gamma.parameters$p2)
+  quantiles.c1<-seq(1/(nGamma1+1),1-1/(nGamma1+1),by=1/(nGamma1+1))
+  vals<-c(vals,qgamma(quantiles.c1,shape = gamma.parameters$s1,
+                      rate = gamma.parameters$r1))
 
-  #Calculate which quantile values should be checked to get the total number of genes
-  quantiles.c1<-seq(1/(nGenes.c1+1),1-1/(nGenes.c1+1),by=1/(nGenes.c1+1))
-  quantiles.c2<-seq(1/(nGenes.c2+1),1-1/(nGenes.c2+1),by=1/(nGenes.c2+1))
+  #Second Gamma component
+  nGamma2<-nGenes-nZeros-nGamma1
+  quantiles.c2<-seq(1/(nGamma2+1),1-1/(nGamma2+1),by=1/(nGamma2+1))
+  vals<-c(vals,qgamma(quantiles.c2,shape = gamma.parameters$s2,
+                      rate = gamma.parameters$r2))
 
-  #Sample from each component the quantiles
-  means.c1<-qgamma(quantiles.c1,shape=gamma.parameters$shape.c1,
-                   rate=gamma.parameters$rate.c1)
-  means.c2<-qgamma(quantiles.c2,shape=gamma.parameters$shape.c2,
-                   rate=gamma.parameters$rate.c2)
-
-  mean.vals<-c(means.c1,means.c2)
-
-  return(mean.vals)
+  return(vals)
 }
 
 #' Sample the dispersion values dependent on mean values using the DESeq function parametrization
@@ -547,36 +426,74 @@ meanUMI.calculation<-function(countMatrix){
   return(mean(colSums(countMatrix)))
 }
 
-#' Estimate linear relationship between the gamma mixed parameter and the mean UMI counts
+#' Converts two different gamma parameterizations, one using rate
+#' and shape (rateshape) and one using mean and sd (meansd)
 #'
-#' @param gamma.fits Parameters from the fitted gamma function (pi.c1,pi.c2,mu.c1,mu.c2,sd.c1,sd.c2),
-#' calculated in mixed.gamma.estimation, and a column with mean UMI values, can be calculated in
-#' mean.umi.calculation
+#' The distributions of the mean values are fitted using the rateshape
+#' version, the parameterization over the UMI counts is done using the
+#' meansd version.
 #'
-#' @return List with linear fit for gamma parameters mean and sd and mean values for gamma parameters probability
+#' @param gamma.fits Parameters from the fitted gamma function (mixture of two gamma components),
+#' either with mean and sd values or with rate and shape values
+#' @param type Way of conversion, either to meansd or to rateshape variant
+#'
+#' @return Converted parameters of the gamma function
 #'
 #' @export
 #'
-umi.gamma.relation<-function(gamma.fits){
+convert.gamma.parameters<-function(gamma.fits,type="meansd"){
+  #Convert rateshape parameterization to meansd
+  if(type=="meansd"){
+    gamma.fits$mean1<-gamma.fits$s1/gamma.fits$r1
+    gamma.fits$sd1<-sqrt(gamma.fits$s1/gamma.fits$r1^2)
+    gamma.fits$mean2<-gamma.fits$s2/gamma.fits$r2
+    gamma.fits$sd2<-sqrt(gamma.fits$s2/gamma.fits$r2^2)
+  #Convert meansd parameterization to rateshape
+  } else if (type=="rateshape"){
+    gamma.fits$r1<-gamma.fits$mean1 / gamma.fits$sd1^2
+    gamma.fits$s1<-gamma.fits$mean1 * gamma.fits$r1
+    gamma.fits$r2<-gamma.fits$mean2 / gamma.fits$sd2^2
+    gamma.fits$s2<-gamma.fits$mean2 * gamma.fits$r2
+  } else {
+    stop("Type of gamma conversion not known! Use either meansd or rateshape")
+  }
+
+  return(gamma.fits)
+}
+
+#' Estimate linear relationship between the gamma mixed parameter and the mean UMI counts
+#' or mean read counts (for smartseq data)
+#'
+#' @param gamma.fits Parameters from the fitted gamma function (p1,p2,mean1,mean2,sd1,sd2),
+#' calculated in mixed.gamma.estimation and converted with convert.gamma.parameters,
+#' and a column with mean UMI values, can be calculated in mean.umi.calculation
+#' @param variable Name of the variable to fit the parameters against (should contain umi counts or read counts)
+#'
+#' @return Linear fit for each gamma parameter
+#'
+#' @export
+#'
+umi.gamma.relation<-function(gamma.fits, variable="mean.umi"){
 
   #Fit mean and standard deviation parameters linear dependent on the mean UMI values
   parameter.fits<-NULL
-  for(param in c("mu.c1","mu.c2","sd.c1","sd.c2")){
+  for(param in c("p1","p2","mean1","mean2","sd1","sd2")){
 
     #Fit a linear relationship
-    fit<-lm(data=gamma.fits,as.formula(paste0(param," ~ mean.umi")))
+    fit<-lm(data=gamma.fits,as.formula(paste(param,"~",variable)))
 
     parameter.fits<-rbind(parameter.fits,
                           data.frame(parameter=param,
                                      intercept=fit$coefficients["(Intercept)"],
-                                     meanUMI=fit$coefficients["mean.umi"]))
+                                     meanUMI=fit$coefficients[variable]))
   }
 
-  #Set probability parameter independent of the mean UMI values
-  probability<-data.frame(pi.c1=mean(gamma.fits$pi.c1))
+  #Delete row names
+  rownames(parameter.fits)<-NULL
 
-  return(list(parameter.fits,probability))
+  return(parameter.fits)
 }
+
 
 #' Estimate logarithmic relationship between mean UMI counts and mean mapped read counts per cell
 #'

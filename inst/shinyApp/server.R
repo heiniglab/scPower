@@ -1,8 +1,6 @@
 library(shiny)
 library(plotly)
-library(ggplot2)
-library(gridExtra)
-library(reshape)
+library(reshape2)
 library(scPower)
 
 shinyServer(

@@ -17,7 +17,6 @@ optimize.constant.budget.restrictedDoublets(
   cellsPerLane,
   read.umi.fit,
   gamma.mixed.fits,
-  gamma.probs,
   disp.fun.param,
   nSamplesRange = NULL,
   nCellsRange = NULL,
@@ -59,9 +58,6 @@ optimize.constant.budget.restrictedDoublets(
 
 \item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type
 (required columns: parameter, ct (cell type), intercept, meanUMI (slope))}
-
-\item{gamma.probs}{Data frame with probability parameter of the gamma distributions
-(required columns:ct (cell type), pi.c1 (probability of component 1))}
 
 \item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean
 (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))}

@@ -4,7 +4,12 @@
 \alias{mixed.gamma.estimation}
 \title{Estimate the mixed gamma distribution of the mean values}
 \usage{
-mixed.gamma.estimation(mean.vals, censoredPoint = NULL, num.genes.kept = 21000)
+mixed.gamma.estimation(
+  mean.vals,
+  censoredPoint = NULL,
+  num.genes.kept = 21000,
+  return.df = TRUE
+)
 }
 \arguments{
 \item{mean.vals}{Vector with all normalized mean values (estimated using nbinom.estimation)}
@@ -13,6 +18,9 @@ mixed.gamma.estimation(mean.vals, censoredPoint = NULL, num.genes.kept = 21000)
 the minimal positive value will be chosen)}
 
 \item{num.genes.kept}{Total number of genes used for the fit (remove additional genes with a mean of 0)}
+
+\item{return.df}{If true return data frame with fitted parameters, otherwise an object of class EMResult
+(containing also the loglikelihoods)}
 }
 \value{
 Data frame with the six parameters describing the gamma mixed distributions

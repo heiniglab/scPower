@@ -2,18 +2,22 @@
 % Please edit documentation in R/expression_fit.R
 \name{umi.gamma.relation}
 \alias{umi.gamma.relation}
-\title{Estimate linear relationship between the gamma mixed parameter and the mean UMI counts}
+\title{Estimate linear relationship between the gamma mixed parameter and the mean UMI counts
+or mean read counts (for smartseq data)}
 \usage{
-umi.gamma.relation(gamma.fits)
+umi.gamma.relation(gamma.fits, variable = "mean.umi")
 }
 \arguments{
-\item{gamma.fits}{Parameters from the fitted gamma function (pi.c1,pi.c2,mu.c1,mu.c2,sd.c1,sd.c2),
-calculated in mixed.gamma.estimation, and a column with mean UMI values, can be calculated in
-mean.umi.calculation}
+\item{gamma.fits}{Parameters from the fitted gamma function (p1,p2,mean1,mean2,sd1,sd2),
+calculated in mixed.gamma.estimation and converted with convert.gamma.parameters,
+and a column with mean UMI values, can be calculated in mean.umi.calculation}
+
+\item{variable}{Name of the variable to fit the parameters against (should contain umi counts or read counts)}
 }
 \value{
-List with linear fit for gamma parameters mean and sd and mean values for gamma parameters probability
+Linear fit for each gamma parameter
 }
 \description{
 Estimate linear relationship between the gamma mixed parameter and the mean UMI counts
+or mean read counts (for smartseq data)
 }
