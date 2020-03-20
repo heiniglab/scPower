@@ -34,5 +34,6 @@ Power to detect the DE gene
 }
 \description{
 This function calculates the power to detect an DE gene (comparsion of two groups 0 and 1)
-by using the function power.nb.test of the package MKmisc.
+by using the function power.nb.test of the package MKmisc. The power for a gene with mean of 0
+is defined as 0 (the gene will have an expression probability of 0, so the overall detection power is also 0).
 }

@@ -227,6 +227,12 @@ nbinom.estimation<-function(counts.ct, sizeFactors="standard"){
     stop("Method for size factor estimation not known. Please use either standard or poscounts!")
   }
 
+  #Check if size factors were calculated correctly
+  if(any(is.na(sizeFactors(cds)))){
+    stop(paste("Size factor estimation failed! Probably due to sparsity of the matrix!",
+               "Try poscounts instead as variable sizeFactors."))
+  }
+
   #Estimate dispersion curves
   cds <- suppressWarnings(estimateDispersions(cds, sharingMode="gene-est-only"))
 
@@ -350,6 +356,16 @@ mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
 #'
 sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
 
+  if(gamma.parameters$p1<0){
+    stop(paste0("Gamma parameter p1 has a value of",
+                   gamma.parameters$p1,"smaller than 0!"))
+  }
+
+  if(gamma.parameters$p2>1){
+    stop(paste0("Gamma parameter p2 has a value of",
+                gamma.parameters$p2,"larger than 1!"))
+  }
+
   #Zero Component
   nZeros<-round(nGenes*gamma.parameters$p1)
   vals<-rep(0,nZeros)
@@ -378,6 +394,16 @@ sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
 #' @export
 #'
 sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
+
+  if(gamma.parameters$p1<0){
+    stop(paste0("Gamma parameter p1 has a value of",
+                gamma.parameters$p1,"smaller than 0!"))
+  }
+
+  if(gamma.parameters$p2>1){
+    stop(paste0("Gamma parameter p2 has a value of",
+                gamma.parameters$p2,"larger than 1!"))
+  }
 
   #Zero Component
   nZeros<-round(nGenes*gamma.parameters$p1)

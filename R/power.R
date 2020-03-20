@@ -221,14 +221,14 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     #Set the fold change respectively
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
 
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) scPower:::power.de(
       floor(nSamples/2),
       foundSignGenes$mean.sum[i],
       foundSignGenes$FoldChange[i],
       1/foundSignGenes$disp.sum[i],
       alpha,3,ssize.ratio=1))
   } else  {
-    print('For type parameter only "eqtl" or "de" possible!')
+    stop('For type parameter only "eqtl" or "de" possible!')
   }
 
   #Calculate total probability as the DE power times the expression probability
@@ -497,7 +497,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
       1/foundSignGenes$disp.sum[i],
       alpha,3,ssize.ratio=1))
   } else  {
-    print('For type parameter only "eqtl" or "de" possible!')
+    stop('For type parameter only "eqtl" or "de" possible!')
   }
 
   #Calculate total probability as the DE power times the expression probability
@@ -902,7 +902,6 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
     param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
   }
 
-
   power.study<-mapply(power.general.restrictedDoublets,
                       param.combis$nSamples,
                       param.combis$nCells,
@@ -1095,7 +1094,9 @@ power.eqtl<-function(heritability, sig.level, nSamples) {
 #' Power calculation for a DE gene
 #'
 #' This function calculates the power to detect an DE gene (comparsion of two groups 0 and 1)
-#' by using the function power.nb.test of the package MKmisc.
+#' by using the function power.nb.test of the package MKmisc. The power for a gene with mean of 0
+#' is defined as 0 (the gene will have an expression probability of 0, so the overall detection power is also 0).
+#'
 #' @param nSamples.group0 Sample size for group 0
 #' @param mu.grou0 Mean value of group 0
 #' @param RR effect size of group 1 vs group 0
@@ -1112,9 +1113,13 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 
   require(MKmisc)
 
-  calc<-power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,theta=theta, ssize.ratio=ssize.ratio,
-                      sig.level=sig.level,alternative="two.sided",approach=approach)
-  return(calc$power)
+  if(mu.group0 == 0){
+    return(0)
+  } else {
+    calc<-power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,theta=theta, ssize.ratio=ssize.ratio,
+                        sig.level=sig.level,alternative="two.sided",approach=approach)
+    return(calc$power)
+  }
 }
 
 #' Calculate total cost dependent on parameters for 10X design
