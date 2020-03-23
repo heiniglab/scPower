@@ -126,7 +126,7 @@ estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
 
   gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
-                               p2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p2"],
+                               p3=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p3"],
                                mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
                                mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
                                sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
@@ -286,6 +286,9 @@ sizeFactorsPosCounts<-function(counts){
 #' @param censoredPoint Censoring point for left censored gamma distributions (if not set,
 #' the minimal positive value will be chosen)
 #' @param num.genes.kept Total number of genes used for the fit (remove additional genes with a mean of 0)
+#' @param proportion.values Possibility to initialize the proportion values for the first component (zero component)
+#' and the third component (second gamma distribution) with a numeric vector of length 2. Default setting the proportion of the
+#' first component to 25% of all zero values and the proportion of the third component to 5%.
 #' @param return.df If true return data frame with fitted parameters, otherwise an object of class EMResult
 #' (containing also the loglikelihoods)
 #'
@@ -295,7 +298,8 @@ sizeFactorsPosCounts<-function(counts){
 #'
 #' @export
 mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
-                                 num.genes.kept=21000, return.df=TRUE){
+                                 num.genes.kept=21000, proportion.values=NULL,
+                                 return.df=TRUE){
 
   #Check how many 0 genes are in the sample
   zeroGenes<-mean.vals==0
@@ -313,8 +317,13 @@ mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
   mean.vals<-mean.vals[!zeroGenes]
 
   #Set proportions of the distributions
-  zero.prop<-sum(mean.vals==0)/(length(mean.vals)*4) #assume 25% of the zeros from the zero component
-  outlier.prop<-0.05
+  if(is.null(proportion.values)){
+    zero.prop<-sum(mean.vals==0)/(length(mean.vals)*4) #assume 25% of the zeros from the zero component
+    outlier.prop<-0.05
+  } else {
+    zero.prop<-proportion.values[1]
+    outlier.prop<-proportion.values[2]
+  }
 
   #Set censored point to the minimal positive value if was not set before
   if(is.null(censoredPoint)){
@@ -356,14 +365,12 @@ mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
 #'
 sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
 
-  if(gamma.parameters$p1<0){
-    stop(paste0("Gamma parameter p1 has a value of",
-                   gamma.parameters$p1,"smaller than 0!"))
-  }
+  #Set p1 to a minimal value of 0.01
+  gamma.parameters$p1<-max(gamma.parameters$p1,0.01)
 
-  if(gamma.parameters$p2>1){
-    stop(paste0("Gamma parameter p2 has a value of",
-                gamma.parameters$p2,"larger than 1!"))
+  #Calculate p2 given the other two parameters if it is not provided
+  if(! "p2" %in% colnames(gamma.parameters)){
+    gamma.parameters$p2<-1-gamma.parameters$p1-gamma.parameters$p3
   }
 
   #Zero Component
@@ -395,14 +402,12 @@ sample.mean.values.random<-function(gamma.parameters, nGenes=21000){
 #'
 sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
 
-  if(gamma.parameters$p1<0){
-    stop(paste0("Gamma parameter p1 has a value of",
-                gamma.parameters$p1,"smaller than 0!"))
-  }
+  #Set p1 to a minimal value of 0.01
+  gamma.parameters$p1<-max(gamma.parameters$p1,0.01)
 
-  if(gamma.parameters$p2>1){
-    stop(paste0("Gamma parameter p2 has a value of",
-                gamma.parameters$p2,"larger than 1!"))
+  #Calculate p2 given the other two parameters if it is not provided
+  if(! "p2" %in% colnames(gamma.parameters)){
+    gamma.parameters$p2<-1-gamma.parameters$p1-gamma.parameters$p3
   }
 
   #Zero Component
@@ -490,7 +495,7 @@ convert.gamma.parameters<-function(gamma.fits,type="meansd"){
 #' Estimate linear relationship between the gamma mixed parameter and the mean UMI counts
 #' or mean read counts (for smartseq data)
 #'
-#' @param gamma.fits Parameters from the fitted gamma function (p1,p2,mean1,mean2,sd1,sd2),
+#' @param gamma.fits Parameters from the fitted gamma function (p1,p2/p3,mean1,mean2,sd1,sd2),
 #' calculated in mixed.gamma.estimation and converted with convert.gamma.parameters,
 #' and a column with mean UMI values, can be calculated in mean.umi.calculation
 #' @param variable Name of the variable to fit the parameters against (should contain umi counts or read counts)
@@ -503,7 +508,7 @@ umi.gamma.relation<-function(gamma.fits, variable="mean.umi"){
 
   #Fit mean and standard deviation parameters linear dependent on the mean UMI values
   parameter.fits<-NULL
-  for(param in c("p1","p2","mean1","mean2","sd1","sd2")){
+  for(param in c("p1","mean1","mean2","sd1","sd2")){
 
     #Fit a linear relationship
     fit<-lm(data=gamma.fits,as.formula(paste(param,"~",variable)))
@@ -513,6 +518,17 @@ umi.gamma.relation<-function(gamma.fits, variable="mean.umi"){
                                      intercept=fit$coefficients["(Intercept)"],
                                      meanUMI=fit$coefficients[variable]))
   }
+
+  #Calculate p3 from p1 and p2, if it is not given directly
+  if(! "p3" %in% colnames(gamma.fits)){
+    gamma.fits$p3<-1-gamma.fits$p1-gamma.fits$p2
+  }
+
+  #Set parameter p3 linear dependent on the other parameter
+  parameter.fits<-rbind(parameter.fits,
+                        data.frame(parameter="p3",
+                                   intercept=median(gamma.fits$p3),
+                                   meanUMI=0))
 
   #Delete row names
   rownames(parameter.fits)<-NULL

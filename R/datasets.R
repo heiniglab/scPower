@@ -116,63 +116,6 @@
 #' head(gamma.mixed.fits.smart)
 "gamma.mixed.fits.smart"
 
-#' Probability parameter for the gamma umi fit
-#'
-#' Probability parameter of the first component of the gamma mixed model,
-#' in contrast to the other parameters independent of the mean UMI counts per cell,
-#' fitted from example PBMC 10X data set (mean value per cell type)
-#'
-#' @docType data
-#'
-#' @usage data(gammaProbs)
-#'
-#' @format Data frame with probability parameter of UMI-gamma parameter fit
-#'
-#' @keywords datasets
-#'
-#' @examples
-#' data(gammaProbs)
-#' head(gamma.probs)
-"gamma.probs"
-
-#' Probability parameter for the gamma umi fit - Drop-seq data
-#'
-#' Probability parameter of the first component of the gamma mixed model,
-#' in contrast to the other parameters independent of the mean UMI counts per cell,
-#' fitted from example PBMC 10X data set (mean value per cell type)
-#'
-#' @docType data
-#'
-#' @usage data(gammaProbsDrop)
-#'
-#' @format Data frame with probability parameter of UMI-gamma parameter fit
-#'
-#' @keywords datasets
-#'
-#' @examples
-#' data(gammaProbsDrop)
-#' head(gamma.probs.drop)
-"gamma.probs.drop"
-
-#' Probability parameter for the gamma read fit - Smart-seq2 data
-#'
-#' Probability parameter of the first component of the gamma mixed model,
-#' in contrast to the other parameters independent of the mean read counts per cell,
-#' fitted from pancreas Smart-seq2 data (mean value per cell type)
-#'
-#' @docType data
-#'
-#' @usage data(gammaProbs)
-#'
-#' @format Data frame with probability parameter of read-gamma parameter fit
-#'
-#' @keywords datasets
-#'
-#' @examples
-#' data(gammaProbsSmart)
-#' head(gamma.probs.smart)
-"gamma.probs.smart"
-
 #' Parameters for mean dispersion fit
 #'
 #' Parameters to estimate the dispersion parameter of each gene with the

@@ -8,7 +8,7 @@ or mean read counts (for smartseq data)}
 umi.gamma.relation(gamma.fits, variable = "mean.umi")
 }
 \arguments{
-\item{gamma.fits}{Parameters from the fitted gamma function (p1,p2,mean1,mean2,sd1,sd2),
+\item{gamma.fits}{Parameters from the fitted gamma function (p1,p2/p3,mean1,mean2,sd1,sd2),
 calculated in mixed.gamma.estimation and converted with convert.gamma.parameters,
 and a column with mean UMI values, can be calculated in mean.umi.calculation}
 

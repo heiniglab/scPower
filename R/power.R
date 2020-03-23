@@ -131,7 +131,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
 
   gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
-                               p2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p2"],
+                               p3=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p3"],
                                mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
                                mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
                                sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
@@ -377,13 +377,14 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
   gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanReads*mappedReadDepth
 
-  if(any(gamma.fits.ct$fitted.value<=0)){
+  if(any(gamma.fits.ct$fitted.value[gamma.fits.ct$parameter %in%
+                                    c("mean1","mean2","sd1","sd2")]<=0)){
     stop("At least one of the gamma parameter got negative for this read depth.",
          "Choose a higher read depth or a different gamma - read fit.")
   }
 
   gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
-                               p2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p2"],
+                               p3=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p3"],
                                mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
                                mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
                                sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
