@@ -246,7 +246,7 @@ fit.Gamma <- function(model, x, logExpectation) {
   control <- list(parscale = c(1, start$rate))
 
   ## define the objective function
-  obj <- function(par) -sum(weight * dgamma(x[x > 0], shape=par[["shape"]], rate=par[["rate"]], log=TRUE)) / n
+  obj <- function(par) -sum(weight[x > 0] * dgamma(x[x > 0], shape=par[["shape"]], rate=par[["rate"]], log=TRUE)) / n
 
   fit <- optim(start, obj)
   if (fit$convergence != 0) {
@@ -290,7 +290,7 @@ fit.LeftCensoredGamma <- function(model, x, logExpectation) {
   n<-length(x)
   weight <- exp(logExpectation)
   m <- x %*% weight / n
-  v <- sum(weight * (x - m)^2) / n
+  v <- sum(weight * (x - c(m))^2) / n
 
   start <- list(shape = m^2/v, rate = m/v)
   control <- list(parscale = c(1, start$rate))
@@ -301,7 +301,9 @@ fit.LeftCensoredGamma <- function(model, x, logExpectation) {
                                      dgamma(x, shape=par[["shape"]], rate=par[["rate"]], log=TRUE),
                                      pgamma(model@cutoff,shape=par[["shape"]], rate=par[["rate"]],log.p=TRUE))) / n
 
-  fit <- optim(start, obj)
+  #Sometimes NA warnings appear
+  suppressWarnings(fit <- optim(start, obj))
+
   if (fit$convergence != 0) {
     warning("fit did not converge")
   }

@@ -13,9 +13,9 @@ scPower is a R package for design and power analysis of single cell transcriptom
 
 The tool was evaluated with data from different tissues and single cell technologies.
 
-A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis".
+A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments".
 
-In the first part of this tutorial, the estimation of power and optimal design with the example data sets are shown, in the second part, the fitting of new priors from own data is described.
+In the first part of this tutorial, the estimation of power and optimal design with the example priors of scPower is shown, in the second part, the fitting of new priors using own data is described.
 
 We will show the analysis for an eQTL study, for a DE study it works completely analogously.
 
@@ -47,7 +47,7 @@ Exemplarily, we will set the number of samples to 100, the cells per sample to 1
 
 Additionally, the expected effect sizes and the expression ranks of the eQTL genes are important. To get realistic estimates for them, we used FACS sorted bulk RNA-seq data. We will use here data from the Blueprint project, which estimated eQTLs in FACS sorted Monocytes.
 
-In general, the goal of the analysis is the detection of cell-type specific DE and eQTL genes. It needs to be defined, how often the target cells appear in the sample, i.e. the cell type frequency, and how the expression distribution of the genes in this cell type looks like. We will choose here CD14+ Monocytes and assume a cell type frequency of 10%. Expression distribution fits from an example PBMC data set are available in the package. The fitted distribution is a mixed distribution of with two gamma components parameterized over the UMI counts, for which the data frames gamma.mixed.fits and gamma.probs are necessary (the first one saving the rate and shape parameter, the second the probability parameter). Furthermore, the relationship between gene expression means and dispersion is modelled using DESeq fits, an example fit is available in the data frame disp.fun.param.
+In general, the goal of the analysis is the detection of cell-type specific DE and eQTL genes. It needs to be defined, how often the target cells appear in the sample, i.e. the cell type frequency, and how the expression distribution of the genes in this cell type looks like. We will choose here CD14+ Monocytes and assume a cell type frequency of 20%. Expression distribution fits from an example PBMC data set are available in the package. The fitted distribution is a mixed distribution of with a zero component and two left censored gamma components parameterized over the UMI counts, for which the data frame gamma.mixed.fits is necessary. Furthermore, the relationship between gene expression means and dispersion is modelled using DESeq fits, an example fit is available in the data frame disp.fun.param.
 
 The relationship between read depth and UMI counts is modelled logarithmic, an example fit is available in the data frame read.umi.fit. Additionally, the mapping efficiency of the reads is important, we assume a efficiency of 80%.
 
@@ -57,7 +57,7 @@ In the following, different example scenarios for different single cell technolo
 
 #### Case 1: Droplet-based method with flexible overloading
 
-For droplet-based methods, the so called overloading is possible. Loading more cells on a lane the recommended increases the multiplet rate, but reduces the cost.
+For droplet-based methods, the so called overloading is possible. Loading more cells on a lane than recommended increases the multiplet rate, but reduces the cost.
 
 We modelled the multiplet rate linear increasing with the number of cells loaded per lane, using data from the 10X Genomics user guide V3. A doublet gets on average more reads than a singlet, for this, a model of Satija lab is used (https://satijalab.org/costpercell). The multiplet factor describes the ratio of reads in multiplets compared to reads in singlets.
 
@@ -66,13 +66,12 @@ In this model, we permit an independent overloading of the lane, setting instead
 ```{r}
 
 power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
-                                  ct.freq=0.1,type="eqtl",
+                                  ct.freq=0.2,type="eqtl",
                                   ref.study=scPower::eqtl.ref.study,
                                   ref.study.name="Blueprint (Monocytes)",
                                   samplesPerLane=4,
                                   read.umi.fit = scPower::read.umi.fit,
                                   gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                  gamma.probs = scPower::gamma.probs,
                                   ct="CD14+ Monocytes",
                                   disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,
@@ -83,22 +82,21 @@ print(power)
 
 ```
 
-The output shows an overall detection power for this parameter combination of 30.4%, which is the product of the expression probability of 47.9% and the eQTL power of 64.2%. Of in total 1,500 cells, 1,431 are "usable", which means that they are singlets (estimating a multiplet fraction of 4%). Of this, 143 cells are estimated to be cells of the correct cell type "CD14+ Monocytes". The read depth declines with more multiplets, resulting in an average read depth of 24,091 for a singlet and an average mapped read depths of 19,273. 7019 genes are estimated to be expressed, i.e. to have more than 3 counts in more than 50% of the 100 samples.
+The output shows an overall detection power for this parameter combination of 35.0%, which is the product of the expression probability of 55.6% and the eQTL power of 63.5%. Of in total 1,500 cells, 1,431 are "usable", which means that they are singlets (estimating a multiplet fraction of 5%). Of this, 286 cells are estimated to be cells of the correct cell type "CD14+ Monocytes". The read depth declines with more multiplets, resulting in an average read depth of 24,091 for a singlet and an average mapped read depths of 19,273. 8094 genes are estimated to be expressed, i.e. to have more than 3 counts in more than 50% of the 100 samples.
 
 #### Case 2: Droplet-based method with restricted overloading
 
-We implemented a second variant of the power function, where instead of the number of samples per lane the number of cells per lane is set. This restricts the overloading and gives the possibility to set the mutliplet rate. For example, setting the cells per lane to 20,000 results in a multiplet rate of 15.4%.
+We implemented a second variant of the power function, where instead of the number of samples per lane the number of cells per lane is set. This restricts the overloading and gives the possibility to set the mutliplet rate. For example, setting the cells per lane to 20,000 results in a multiplet rate of 15%.
 
 ```{r}
 
 power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
-                                        ct.freq=0.1,type="eqtl",
+                                        ct.freq=0.2,type="eqtl",
                                         ref.study=scPower::eqtl.ref.study,
                                         ref.study.name="Blueprint (Monocytes)",
                                         cellsPerLane=20000,
                                         read.umi.fit = scPower::read.umi.fit,
                                         gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                        gamma.probs = scPower::gamma.probs,
                                         ct="CD14+ Monocytes",
                                         disp.fun.param=scPower::disp.fun.param,
                                         mappingEfficiency = 0.8,
@@ -138,18 +136,17 @@ print(paste("Costs for case 2:",round(cost)))
 
 #### Case 3: Droplet-based method with constant multiplet rate
 
-If data is missing to model the overloading of the lane, a constant multiplet rate can be used instead. This is influenced by the parameter multipletRateGrowth, which is either "linear" (for a linera increase with cells per lane during overloading) or "constant". The parameter multipletRate will be interpreted correspondingly.
+If data is missing to model the overloading of the lane, a constant multiplet rate can be used instead. This is influenced by the parameter multipletRateGrowth, which is either "linear" (for a linear increase with cells per lane during overloading) or "constant". The parameter multipletRate will be interpreted correspondingly.
 
 ```{r}
 
 power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
-                                        ct.freq=0.1,type="eqtl",
+                                        ct.freq=0.2,type="eqtl",
                                         ref.study=scPower::eqtl.ref.study,
                                         ref.study.name="Blueprint (Monocytes)",
                                         cellsPerLane=8000,
                                         read.umi.fit = scPower::read.umi.fit,
                                         gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                        gamma.probs = scPower::gamma.probs,
                                         ct="CD14+ Monocytes",
                                         disp.fun.param=scPower::disp.fun.param,
                                         mappingEfficiency = 0.8,
@@ -169,11 +166,10 @@ Read based technologies, such as smart-seq2, need to be modelled slightly differ
 ```{r}
 
 power<-power.smartseq(nSamples=100,nCells=1500,readDepth=25000,
-                      ct.freq=0.1,type="de",
+                      ct.freq=0.2,type="de",
                       ref.study=scPower::de.ref.study,
                       ref.study.name="Pancreas_alphabeta",
                       gamma.mixed.fits = scPower::gamma.mixed.fits.smart,
-                      gamma.probs = scPower::gamma.probs.smart,
                       ct="alpha",
                       disp.linear.fit = scPower::disp.fun.param.smart,
                       mappingEfficiency = 0.8,
@@ -192,7 +188,6 @@ The detection power is the product of the expression probabilities and the power
 exp.probs<-scPower::estimate.exp.prob.param(nSamples=100,readDepth=25000,nCellsCt=150,
                                                 read.umi.fit = scPower::read.umi.fit,
                                                 gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                                gamma.probs = scPower::gamma.probs,
                                                 ct="CD14+ Monocytes",
                                                 disp.fun.param=scPower::disp.fun.param,
                                                 min.counts = 3,
@@ -206,14 +201,14 @@ print(paste("Expected number of expressed genes:",round(sum(exp.probs))))
 
 ### Selection of optimal parameter combination for a restricted budget
 
-scPower give the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. For two of three parameters, sample size, cells per individual and read depth, vectors with potential values are required, the third variable is the determined uniquely given the other two and the overall budget. Which of the variables is left out, can be freely chosen. In this example we set the number of cells per individual and read depths in the parameters readDepthRange and cellPersRange, and leave out the sample size, which will be determined by the algorithm
+scPower give the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. For two of three parameters, sample size, cells per individual and read depth, vectors with potential values are required, the third variable is determined uniquely given the other two and the overall budget. Which of the variables is left out, can be freely chosen. In this example we set the number of cells per individual and read depths in the parameters readDepthRange and cellPersRange, and leave out the sample size, which will be determined by the algorithm
 
 For the function to calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before, such as gamma and dispersion fits.
 
 ```{r,fig.width=6}
 
 opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
-                                     ct="CD14+ Monocytes",ct.freq=0.1,
+                                     ct="CD14+ Monocytes",ct.freq=0.2,
                                      costKit=5600,
                                      costFlowCell=14032,
                                      readsPerFlowcell = 4100*10^6,
@@ -222,7 +217,6 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      samplesPerLane=4,
                                      read.umi.fit = scPower::read.umi.fit,
                                      gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                     gamma.probs = scPower::gamma.probs,
                                      disp.fun.param=scPower::disp.fun.param,
                                      nSamplesRange=NULL,
                                      nCellsRange=seq(1000,10000,by=1000),
@@ -280,13 +274,13 @@ print(g)
 
 The function returns for each combination of read depth and cells per individual, how many samples can be measured with the given budget and which detection power can be reached. The combination in the data frame with the maximal detection power is the optimal experimental design.
 
-Instead of the sample size, the flexible parameter can also be the number of cells per individual or the read depth. We set here the sample size to values between 50 and 300 and leave each of the other two parameters out.
+Instead of the sample size, the flexible parameter can also be the number of cells per individual or the read depth. We set here the sample size to values between 50 and 300 and leave one of the other two parameters out.
 
 ```{r}
 
 #Infer cells per sample
 opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
-                                     ct="CD14+ Monocytes",ct.freq=0.1,
+                                     ct="CD14+ Monocytes",ct.freq=0.2,
                                      costKit=5600,
                                      costFlowCell=14032,
                                      readsPerFlowcell = 4100*10^6,
@@ -295,7 +289,6 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      samplesPerLane=4,
                                      read.umi.fit = scPower::read.umi.fit,
                                      gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                     gamma.probs = scPower::gamma.probs,
                                      disp.fun.param=scPower::disp.fun.param,
                                      nSamplesRange=seq(100,300,by=25),
                                      nCellsRange=NULL,
@@ -307,7 +300,7 @@ print(opt.design[which.max(opt.design$powerDetect),])
 
 #Infer read depth
 opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
-                                     ct="CD14+ Monocytes",ct.freq=0.1,
+                                     ct="CD14+ Monocytes",ct.freq=0.2,
                                      costKit=5600,
                                      costFlowCell=14032,
                                      readsPerFlowcell = 4100*10^6,
@@ -316,7 +309,6 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      samplesPerLane=4,
                                      read.umi.fit = scPower::read.umi.fit,
                                      gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                     gamma.probs = scPower::gamma.probs,
                                      disp.fun.param=scPower::disp.fun.param,
                                      nSamplesRange=seq(100,300,by=25),
                                      nCellsRange=seq(1000,10000,by=1000),
@@ -354,7 +346,9 @@ sapply(count.matrix.example,dim)
 
 ```
 
-As a first step, the negative binomial fit for each gene, i.e. the mean and disperion parameter, are estimated. The function uses DESeq for library normalization and parameter estimation and returns a list with three elements: the normalized mean values, the dispersion values and the parameters of the mean-dispersion function fitted from DESeq. We will save the mean values and the parameters of the mean-dispersion function for further processing.
+As a first step, the negative binomial fit for each gene, i.e. the mean and disperion parameter, are estimated. The function uses DESeq for library normalization and parameter estimation.  For the normalization, the standard normalization of DEseq can be used or a variant of it called poscounts. It can be set in the parameter "sizeFactors" of the function. Default is "standard", but for very sparse data, "poscounts" might be the better option. For too sparse data, "standard" is not working and will give an error message. 
+
+The function returns a list with three elements: the normalized mean values, the dispersion values and the parameters of the mean-dispersion function fitted from DESeq. We will save the mean values and the parameters of the mean-dispersion function for further processing.
 
 ```{r}
 
@@ -382,17 +376,20 @@ print(disp.param)
 
 ```
 
-A mixed distribution with two gamma components is fitted for each mean value vector (one fit per count matrix). The count matrix contains often a large number of genes with a mean of zero. To reduce the matrix size and faciliate so the fit, the parameter of num.genes.kept regulates the number of mean values for the fit (it removes only genes with a mean of zero). The number should however never be smaller than the number of means values larger than zero. As a fraction of the zero values can be expressed genes below the detection threshold of the experiment, zero values are set to a very small value instead of kept zero (value should be below the smallest detected mean value) and so incorporated in the tail fo the gamma experiment.
+A mixed distribution of a zero component and two left zensored gamma components is fitted for each mean value vector (one fit per count matrix). The count matrix contains often a large number of genes with a mean of zero. To reduce the matrix size and faciliate so the fit, the parameter of num.genes.kept regulates the number of mean values for the fit (it removes only genes with a mean of zero). The number should however never be smaller than the number of means values larger than zero. As a fraction of the zero values can be expressed genes below the detection threshold of the experiment, the gamma distributions are modelled as left censored. If no censoring point is set in the variable "censoredPoint", the smallest positive value in the data set is taken as the censoring point. For our models, we use 1/num_cells_celltype as the censoring point.
 
 ```{r}
 
 gamma.fits<-NULL
 for(name in names(count.matrix.example)){
   
+  #Number of cells per cell type as censoring point
+  censoredPoint<- 1 / ncol(count.matrix.example[[name]])
+  
   norm.mean.values.temp<-norm.mean.values[norm.mean.values$matrix==name,]
   gamma.fit.temp<-mixed.gamma.estimation(norm.mean.values.temp$mean,
                                          num.genes.kept = 21000,
-                                         default.zero.val = 10e-5)
+                                         censoredPoint = censoredPoint)
   gamma.fit.temp$matrix<-name
   gamma.fits<-rbind(gamma.fits,gamma.fit.temp)
 }
@@ -429,19 +426,19 @@ print(umi.values)
 
 gamma.fits<-merge(gamma.fits,umi.values,by="matrix")
 
+#Convert the gamma fits from the shape-rate parametrization to the mean-sd parametrization
+gamma.fits<-convert.gamma.parameters(gamma.fits)
+
 #Plot linear relationship between gamma parameters and UMI values
 plot.values<-melt(gamma.fits,id.vars=c("matrix","mean.umi"))
-plot.values<-plot.values[plot.values$variable %in% c("mu.c1","mu.c2","sd.c1","sd.c2"),]
+plot.values<-plot.values[plot.values$variable %in% c("mean1","mean2","sd1","sd2","p1","p2"),]
 ggplot(plot.values,aes(x=mean.umi,y=value))+
   geom_point()+geom_line()+
   facet_wrap(~variable,ncol=2,scales="free")
 
 #Fit relationship between gamma parameters and UMI values
-fits<-umi.gamma.relation(gamma.fits)
-gamma.linear.fit.new<-fits[[1]]
+gamma.linear.fit.new<-umi.gamma.relation(gamma.fits)
 print(gamma.linear.fit.new)
-gamma.prob.fit.new<-fits[[2]]
-print(gamma.prob.fit.new)
 
 ```
 
@@ -457,7 +454,6 @@ Multiple fits, e.g. from different cell types or other cell states, can be combi
 
 ```{r}
 gamma.linear.fit.new$ct<-"New_ct"
-gamma.prob.fit.new$ct<-"New_ct"
 disp.fun.general.new$ct<-"New_ct"
 ```
 
@@ -484,13 +480,12 @@ All fitted values are used to adapt the power calculation to the specific condit
 ```{r}
 
 power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000,
-                                        ct.freq=0.1,type="eqtl",
+                                        ct.freq=0.2,type="eqtl",
                                         ref.study=scPower::eqtl.ref.study,
                                         ref.study.name="Blueprint (Monocytes)",
                                         cellsPerLane=20000,
                                         read.umi.fit = read.umi.fit.new,
                                         gamma.mixed.fits = gamma.linear.fit.new,
-                                        gamma.probs = gamma.prob.fit.new,
                                         ct="New_ct",
                                         disp.fun.param=disp.fun.general.new,
                                         mappingEfficiency = 0.8,
@@ -508,7 +503,7 @@ To use other effect size and expression rank priors either data from other DE / 
 
 #### Priors from DE / eQTL studies
 
-Effect sizes from other studies can be taken directly from the summary statistics of the study (FoldChange for DE genes and R^2 value for eQTL genes). A function of poweScPop extracts the gene ranks, if Ta normalized (!) count matrix is provided and a vector with the names of the significante DE / eQTL genes. To show the function, an example count matrix of scPower is processed in the following. For normalization, a simple normalization by counts per cell is done here. Depending on the data, other normalization strategies, e.g. incorporating also the gene length, might be more appropriate.
+Effect sizes from other studies can be taken directly from the summary statistics of the study (FoldChange for DE genes and R^2 value for eQTL genes). A function of poweScPop extracts the gene ranks, if the normalized (!) count matrix is provided and a vector with the names of the significante DE / eQTL genes. To show the function, an example count matrix of scPower is processed in the following. For normalization, a simple normalization by counts per cell is done here. Depending on the data, other normalization strategies, e.g. incorporating also the gene length, might be more appropriate.
 
 ```{r}
 
@@ -554,13 +549,12 @@ simulated.eqtl.genes<-data.frame(ranks=ranks,
                                name="Simulated")
 
 power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
-                                  ct.freq=0.1,type="eqtl",
+                                  ct.freq=0.2,type="eqtl",
                                   ref.study=simulated.eqtl.genes,
                                   ref.study.name="Simulated",
                                   samplesPerLane=4,
                                   read.umi.fit = scPower::read.umi.fit,
                                   gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                  gamma.probs = scPower::gamma.probs,
                                   ct="CD14+ Monocytes",
                                   disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,
@@ -584,13 +578,12 @@ simulated.de.genes<-data.frame(ranks=ranks,
                                name="Simulated")
 
 power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
-                                  ct.freq=0.1,type="de",
+                                  ct.freq=0.2,type="de",
                                   ref.study=simulated.de.genes,
                                   ref.study.name="Simulated",
                                   samplesPerLane=4,
                                   read.umi.fit = scPower::read.umi.fit,
                                   gamma.mixed.fits = scPower::gamma.mixed.fits,
-                                  gamma.probs = scPower::gamma.probs,
                                   ct="CD14+ Monocytes",
                                   disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,

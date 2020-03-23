@@ -111,13 +111,13 @@ shinyServer(
         ref.study<-de.ref.study
       }
 
-      power.study.plot<-optimize.constant.budget.restrictedDoublets(totalBudget,type,
+      withProgress(
+        expr=power.study.plot<-optimize.constant.budget.restrictedDoublets(totalBudget,type,
                                                                     ct, ct.freq,
                                                                     costKit,costFlowCell,readsPerFlowcell,
                                                                     ref.study,ref.study.name,
                                                                     cellsPerLane,
                                                                     read.umi.fit,gamma.mixed.fits,
-                                                                    gamma.probs,
                                                                     disp.fun.param,
                                                                     nCellsRange=cellPersRange,
                                                                     readDepthRange=readDepthRange,
@@ -126,7 +126,9 @@ shinyServer(
                                                                     multipletFactor=multipletFactor,
                                                                     min.UMI.counts=min.UMI.counts,
                                                                     perc.indiv.expr=perc.indiv.expr,
-                                                                    samplingMethod="quantiles")
+                                                                    samplingMethod="quantiles"),
+        message="Calculating power optimization!", value=0.5
+      )
 
       head(power.study.plot)
 
