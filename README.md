@@ -31,7 +31,7 @@ library(scPower)
 runShiny()
 ```
 
-The shiny app is also available at the webpage [scpower] (scpower.helmholtz-muenchen.de) .
+The shiny app is also available at the webpage [scpower](scpower.helmholtz-muenchen.de) .
 
 ## Vignettes for introduction and for reproduction of paper plots
 
