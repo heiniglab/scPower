@@ -167,7 +167,8 @@ shinyServer(
                             '<br> Sample size: ', sampleSize,
                             '<br> Detection power: ', Detection.power))%>%
         layout(annotations =  list(showarrow=TRUE, x = max.study$readDepth,
-                                   y = max.study$totalCells,text = "Selected <br> study"),
+                                   y = max.study$totalCells,text = "Selected <br> study",
+                                   bgcolor  ="white"),
                xaxis = list(title="Read depth"), yaxis = list(title="Cells per individuum"),
                legend=list(title="Detection power"))
 
@@ -207,7 +208,7 @@ shinyServer(
       #Replace column names
       colnames(power.study.plot)[2:4]<-c("Detection power","Expression probability",powerName)
 
-      power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","readDepth","totalCells",
+      power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","readDepth","totalCells",
                                                         "usableCells","multipletFraction",
                                                         "ctCells","readDepthSinglet",
                                                         "mappedReadDepth","expressedGenes"))
@@ -234,7 +235,7 @@ shinyServer(
       #Replace column names
       colnames(power.study.plot)[2:4]<-c("Detection power","Expression probability",powerName)
 
-      power.study.plot<-melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
+      power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
                                                         "usableCells","multipletFraction",
                                                         "ctCells","readDepth","readDepthSinglet",
                                                         "mappedReadDepth","expressedGenes"))

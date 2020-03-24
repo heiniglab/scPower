@@ -168,16 +168,33 @@ print(g)
 
 ```
 
-## Figure 4: Optimal parameters for varying budgets
+## Figure 4: Optimal parameters for varying budgets and 10X data
 
 ```{r}
-#Not sure if 
+
+```
+
+## Figure 5: Optimal parameters for varying budgets and drop-seq and smart-seq data
+
+```{r}
 
 ```
 
 # Supplementary Figures
 
-## Detectable genes
+## Figure S1: PBMC data set
+
+## Figure S2: Evaluation of gamma mixture fits for expression means
+
+## Figure S3: Relationship between the parameters of the gamma mixed fit and the mean number of UMI counts per cell
+
+## Figure S4: Relationship between UMI counts per cell and average number of reads that were uniquely mapped to the transcriptome
+
+## Figure S5: Expression probability model for a count threshold larger than zero.
+
+## Figure S6: Expression probability model for a count threshold larger than ten.
+
+## Figure S7: Influence of the number of measured cells per cell type and individual and the mean reads per cell on the number of detectable genes.
 
 ```{r,fig.width=6}
 
@@ -227,13 +244,13 @@ print(g)
 
 ```
 
-## Expression rank priors from bulk studies
+## Figure S8: Expression rank priors from cell type sorted bulk studies
 
 ```{r, fig.width=8, fig.height=8}
 #Load precalculated results
 eqtl.ranks<-scPower::eqtl.ref.study
 de.ranks<-scPower::de.ref.study[de.ref.study$type=="PBMC",]
-de.rank.lung<-scPower::de.ref.study[de.ref.study$type=="lung",]
+de.ranks.lung<-scPower::de.ref.study[de.ref.study$type=="lung",]
 de.ranks.panc<-scPower::de.ref.study[de.ref.study$type=="pancreas",]
   
 #Add on the y-axis also absolute numbers (second plot)
@@ -262,8 +279,8 @@ de.g<-ggplot(de.ranks, aes(rank, col=name)) + stat_ecdf(geom = "step") +
         aspect.ratio = 0.8)+
   guides(col=guide_legend(nrow=4,byrow=TRUE))
 
-de.rank.lung$name<-gsub("_"," ",de.rank.lung$name)
-de.lung<-ggplot(de.rank.lung, aes(rank, col=name)) + stat_ecdf(geom = "step") +
+de.ranks.lung$name<-gsub("_"," ",de.ranks.lung$name)
+de.lung<-ggplot(de.ranks.lung, aes(rank, col=name)) + stat_ecdf(geom = "step") +
   xlab("Number of expressed genes") +ylab("Percentage of DE genes")+
   scale_color_manual("Study", values=col.set2)+
   theme_bw() + xlim(0,30000) + 
@@ -294,7 +311,75 @@ g<-ggarrange(eqtl.g,de.g,de.lung,de.panc,ncol=2,nrow=2,labels=c("A","B","C","D")
 print(g)
 ```
 
-## Parameter optimization for constant budget
+## Figure S9: Effect size priors from cell type sorted bulk studies
+
+```{r, fig.width=8, fig.height=8}
+
+eqtl.ranks$name<-paste0("Blueprint (",eqtl.ranks$cellType,")")
+eqtl.g<-ggplot(eqtl.ranks, aes(x=beta, fill=name))+
+  geom_histogram(position="dodge")+
+  xlab("Beta values") +ylab("Counts")+
+  scale_fill_manual("Study", values=col.set2[5:6])+
+  theme_bw() +
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=7),
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        legend.position = "bottom")+
+  guides(fill=guide_legend(nrow=2,byrow=TRUE,
+                           override.aes = list(size = 0.5)))
+
+de.ranks$log2FoldChange<-log2(de.ranks$FoldChange)
+de.g<-ggplot(de.ranks, aes(x=log2FoldChange, fill=name)) + 
+  geom_histogram(position="dodge")+
+  xlab("Log fold change") +ylab("Counts")+
+  scale_fill_manual("Study", values=col.set2)+
+  theme_bw() +
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=7),
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        legend.position = "bottom")+
+  guides(fill=guide_legend(nrow=4,byrow=TRUE,
+                           override.aes = list(size = 0.5)))
+
+de.ranks.lung$log2FoldChange<-log2(de.ranks.lung$FoldChange)  
+de.lung<-ggplot(de.ranks.lung, aes(x=log2FoldChange, fill=name)) + 
+  geom_histogram(position="dodge")+
+  xlab("Log fold change") +ylab("Counts")+
+  scale_fill_manual("Study", values=col.set2)+
+  theme_bw() +
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=7),
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        legend.position = "bottom")+
+  guides(fill=guide_legend(nrow=1,byrow=TRUE,
+                           override.aes = list(size = 0.5)))
+
+de.ranks.panc$log2FoldChange<-log2(de.ranks.panc$FoldChange) 
+de.panc<-ggplot(de.ranks.panc, aes(x=log2FoldChange, fill=name)) + 
+  geom_histogram(position="dodge")+
+  xlab("Log fold change") +ylab("Counts")+
+  scale_fill_manual("Study", values=col.set2)+
+  theme_bw() +
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=7),
+        legend.title=element_text(size=6),
+        legend.text=element_text(size=6),
+        legend.position = "bottom")+
+  guides(fill=guide_legend(nrow=2,byrow=TRUE,
+                           override.aes = list(size = 0.5)))
+
+g<-ggarrange(eqtl.g,de.g,de.lung,de.panc,ncol=2,nrow=2,
+             labels=c("A","B","C","D"),align="hv")
+
+print(g)
+```
+
+## Figure S10: Detection power using observed priors from reference studies
+
+## Figure S11: Parameter optimization for constant budget
 
 ```{r,fig.width=8,fig.height=8}
 
@@ -314,7 +399,7 @@ readDepth<-c(2000,5000,10000,15000,20000,30000,50000,70000)
 cellsPerIndividual<-c(100,200,500,700,seq(1000,12000,500))
 totalBudget<-10000
 
-power.study<-optimize.constant.budget(totalBudget,comp.type,
+power.study.de<-optimize.constant.budget(totalBudget,comp.type,
                                       ct,ct.freq,
                                       costKit,costFlowCell,readsPerFlowcell,
                                       de.ref.study,ref.study.name,
@@ -326,14 +411,14 @@ power.study<-optimize.constant.budget(totalBudget,comp.type,
                                       mappingEfficiency=mappingEfficiency)
 
 #Print maximal combination of values
-max.study<-power.study[which.max(power.study$powerDetect),]
+max.study<-power.study.de[which.max(power.study.de$powerDetect),]
 
 #Replace subsampling
-colnames(power.study)[2:4]<-c("Detection power","Expression probability","DE power")
+colnames(power.study.de)[2:4]<-c("Detection power","Expression probability","DE power")
 
 #Show two-dimensional plots with always one parameter fixed
 #Fixed read depths
-power.study.plot<-power.study[power.study$readDepth==max.study$readDepth,]
+power.study.plot<-power.study.de[power.study.de$readDepth==max.study$readDepth,]
 power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
                                              "usableCells","multipletFraction",
                                              "ctCells","readDepth","readDepthSinglet",
@@ -359,7 +444,7 @@ g.rd<-g.rd + scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., bre
         legend.text=element_text(size=8))
 
 #Fixed number of cells
-power.study.plot<-power.study[power.study$totalCells==max.study$totalCells,]
+power.study.plot<-power.study.de[power.study.de$totalCells==max.study$totalCells,]
 power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
                                              "usableCells","multipletFraction",
                                              "ctCells","readDepth","readDepthSinglet",
@@ -396,7 +481,7 @@ readDepth<-c(2000,5000,10000,15000,20000,30000,50000)
 cellsPerIndividual<-c(100,200,500,700,seq(1000,9000,500))
 totalBudget<-30000
 
-power.study<-optimize.constant.budget(totalBudget,comp.type,
+power.study.eqtl<-optimize.constant.budget(totalBudget,comp.type,
                                       ct,ct.freq,
                                       costKit,costFlowCell,readsPerFlowcell,
                                       eqtl.ref.study,ref.study.name,
@@ -408,14 +493,14 @@ power.study<-optimize.constant.budget(totalBudget,comp.type,
                                       mappingEfficiency=mappingEfficiency)
 
 #Print maximal combination of values
-max.study<-power.study[which.max(power.study$powerDetect),]
+max.study<-power.study.eqtl[which.max(power.study.eqtl$powerDetect),]
 
 #Replace subsampling
-colnames(power.study)[2:4]<-c("Detection power","Expression probability","eQTL power")
+colnames(power.study.eqtl)[2:4]<-c("Detection power","Expression probability","eQTL power")
 
 #Show two-dimensional plots with always one parameter fixed
 #Fixed read depths
-power.study.plot<-power.study[power.study$readDepth==max.study$readDepth,]
+power.study.plot<-power.study.eqtl[power.study.eqtl$readDepth==max.study$readDepth,]
 power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
                                              "usableCells","multipletFraction",
                                              "ctCells","readDepth","readDepthSinglet",
@@ -441,7 +526,7 @@ g.rd<-g.rd + scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., bre
         legend.text=element_text(size=8))
 
 #Fixed number of cells
-power.study.plot<-power.study[power.study$totalCells==max.study$totalCells,]
+power.study.plot<-power.study.eqtl[power.study.eqtl$totalCells==max.study$totalCells,]
 power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
                                              "usableCells","multipletFraction",
                                              "ctCells","readDepth","readDepthSinglet",
@@ -475,4 +560,104 @@ print(g)
 
 ```
 
+## Figure S12: Parameter optimization grid
+
+```{r,fig.width=10}
+
+power.study.plot<-power.study.de
+power.study.plot$totalCells<-as.factor(power.study.plot$totalCells)
+power.study.plot$readDepth<-as.factor(power.study.plot$readDepth)
+g.de<-ggplot(power.study.plot,aes(x=readDepth,y=totalCells,fill=`Detection power`))+
+  geom_tile()+ylab("Cells per individual")+xlab("Read depth")+
+  scale_fill_viridis("Detection power")+
+  theme_bw()+
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=8),
+        legend.title=element_text(size=8),
+        legend.text=element_text(size=8))
+
+power.study.plot<-power.study.eqtl
+power.study.plot$totalCells<-as.factor(power.study.plot$totalCells)
+power.study.plot$readDepth<-as.factor(power.study.plot$readDepth)
+g.eqtl<-ggplot(power.study.plot,aes(x=readDepth,y=totalCells,fill=`Detection power`))+
+  geom_tile()+ylab("Cells per individual")+xlab("Read depth")+
+  scale_fill_viridis("Detection power")+
+  theme_bw()+
+  theme(axis.title=element_text(size=10),
+        axis.text=element_text(size=8),
+        legend.title=element_text(size=8),
+        legend.text=element_text(size=8))
+
+g<-ggarrange(g.de,g.eqtl,ncol=2,nrow=1, labels=c("A","B"),
+             common.legend = TRUE, legend="right")
+print(g)
+
+```
+
+## Figure S13: Gene curve fits for different single cell technologies
+
+## Figure S14: Power to detect rare cell types
+
+```{r, fig.width=8, fig.height=6}
+
+prob=0.95
+
+#Sample size
+Nind <- c(100, 150, 200, 300)
+
+#Number of cells required
+N.min.cells<-c(1,10,20,50)
+
+#Take cell type frequencies estimated from BioRad (see above)
+cell.types.biorad<-data.frame(ct=c("B cells", "Monocytes", "NK cells",
+                                   "Dendritic cells","CD4 T cells","CD8 T cells"),
+                              freq=c(13,13,7,1.5,30,13)/100)
+
+
+filter.ct<-c("CD4 T cells", "NK cells", "Dendritic cells", "Monocytes")
+cell.type.comp<-cell.types.biorad[cell.types.biorad$ct %in% filter.ct,]
+
+#Set frequency behind the cell type labels (add a small number to round up at 0.5)
+cell.type.comp$ct<-paste0(cell.type.comp$ct,
+                                   " (",round(cell.type.comp$freq*100+0.01,1),"%)")
+
+
+#Arrange the cell types in the order of frequency
+cell.type.comp<-cell.type.comp[order(cell.type.comp$freq),]
+cell.type.comp$ct<-factor(cell.type.comp$ct,levels=cell.type.comp$ct)
+
+#Test each possible parameter combination
+parameter.combinations<-expand.grid(prob,N.min.cells,cell.type.comp$ct,Nind)
+colnames(parameter.combinations)<-c("prob.cutoff","min.num.cells","ct","num.indivs")
+
+#Merge cell types with frequencies
+parameter.combinations<-merge(parameter.combinations,cell.type.comp)
+
+parameter.combinations$result.ssize<-mapply(scPower::number.cells.detect.celltype,
+                                           parameter.combinations$prob.cutoff,
+                                           parameter.combinations$min.num.cells,
+                                           parameter.combinations$freq,
+                                           parameter.combinations$num.indivs)
+
+
+
+#Labels samples
+axis.labeller<-function(variable,value){
+  return(paste(value,"individuals"))
+}
+
+g<-ggplot(parameter.combinations,aes(x=min.num.cells,y=result.ssize,col=ct))+
+  geom_line()+geom_point()+facet_wrap(~num.indivs,ncol=2, labeller = axis.labeller)+
+  xlab("Minimal number of cells from target cell type per individual")+ylab("Cells per individual")+
+  scale_color_manual("Cell type",values=col.set2)+
+  scale_y_log10()+
+  theme_bw() +
+  theme(axis.title=element_text(size=12),
+        axis.text=element_text(size=8),
+        aspect.ratio = 0.8,
+        legend.position = "bottom")+
+  guides(col=guide_legend(nrow=2,byrow=TRUE))
+
+print(g)
+```
 

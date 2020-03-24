@@ -1,6 +1,6 @@
 # scPower
 
-R package for the manuscript "Design of single cell transcriptomics experiments for differential expression and eQTL analysis between samples"
+R package for the manuscript "Design and power analysis for multi-sample single cell genomics experiments"
 
 ## Installation
 
@@ -30,6 +30,8 @@ Run the Shiny app of the package with the following commands:
 library(scPower)
 runShiny()
 ```
+
+The shiny app is also available at the webpage: scpower.helmholtz-muenchen.de
 
 ## Vignettes for introduction and for reproduction of paper plots
 

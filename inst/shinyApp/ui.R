@@ -4,7 +4,9 @@ library(plotly)
 options(width = 250)
 
 shinyUI(
-  navbarPage('Single cell design help',
+  navbarPage('scPower',
+    tabPanel("Description",
+    "scPower is statistical framework for ..."),
     tabPanel("Power to detect DE/eQTL genes",
      sidebarLayout(
        sidebarPanel(
