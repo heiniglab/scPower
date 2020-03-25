@@ -29,6 +29,7 @@ knitr::opts_chunk$set(
 ```{r setup}
 library(scPower)
 library(reshape2)
+library(ggplot2)
 ```
 
 ## Part 1: Power estimation and experimental design selection with example data sets

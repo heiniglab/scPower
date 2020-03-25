@@ -56,8 +56,6 @@ create.pseudobulk<-function(expr.singlets, annotation, colName="cell.type"){
 #' @return Data frame with all expressed genes per cell type (columns: gene name, cell type,
 #' fraction in how many samples the gene is expressed)
 #'
-#' @import reshape2
-#'
 #' @export
 #'
 calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
@@ -67,7 +65,7 @@ calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
   ## get the percentage of individuals with counts > min.count per gene and cell type
   pct.expr <- t(apply(expr.array > min.counts, 1, apply, 2, sum) / dim(expr.array)[2])
 
-  pct.expr.reformated <- melt(pct.expr)
+  pct.expr.reformated <- reshape2::melt(pct.expr)
   colnames(pct.expr.reformated) <- c("gene", "cell.type", "percent.expressed")
 
   #Delete all, which are not expressed in at least half of the individuals
@@ -294,8 +292,6 @@ sizeFactorsPosCounts<-function(counts){
 #'
 #' @return Data frame with the six parameters describing the gamma mixed distributions
 #'
-#' @import mixR
-#'
 #' @export
 mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
                                  num.genes.kept=21000, proportion.values=NULL,
@@ -435,8 +431,6 @@ sample.mean.values.quantiles<-function(gamma.parameters, nGenes=21000){
 #' @param disp.parameter Data frame with parameter of mean-dispersion function
 #'
 #' @return Vector with simulated mean values
-#'
-#' @import mixR
 #'
 #' @export
 #'

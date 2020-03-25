@@ -1062,8 +1062,6 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
 #' @param sig.level Significane threshold
 #' @param nSamples Sample size
 #'
-#' @import pwr
-#'
 #' @return Power to detect the eQTL gene
 power.eqtl<-function(heritability, sig.level, nSamples) {
   require(pwr)
@@ -1076,7 +1074,7 @@ power.eqtl<-function(heritability, sig.level, nSamples) {
   f2 <- heritability / (1 - heritability)
   df.num <- 1 ## dfs of the full model
   df.denom <- nSamples - df.num - 1 ## error dfs
-  power<-pwr.f2.test(u=df.num, v=df.denom, f2=f2, sig.level=sig.level)$power
+  power<-pwr::pwr.f2.test(u=df.num, v=df.denom, f2=f2, sig.level=sig.level)$power
   return(power)
 }
 
@@ -1108,8 +1106,6 @@ power.eqtl<-function(heritability, sig.level, nSamples) {
 #'
 #' @return Power to detect the DE gene
 #'
-#' @import MKmisc
-#'
 power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize.ratio=1){
 
   require(MKmisc)
@@ -1117,7 +1113,7 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
   if(mu.group0 == 0){
     return(0)
   } else {
-    calc<-power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,theta=theta, ssize.ratio=ssize.ratio,
+    calc<-MKmisc::power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,theta=theta, ssize.ratio=ssize.ratio,
                         sig.level=sig.level,alternative="two.sided",approach=approach)
     return(calc$power)
   }
