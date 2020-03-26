@@ -25,13 +25,13 @@ library(ggpubr)
 library(RColorBrewer)
 ```
 
-This vignette shows how the plots of the paper "" can be reproduce using this package.
+This vignette shows how the plots of the paper "Design and power analysis for multi-sample single cell genomics experiments" can be reproduced using scPower. For an introduction into the package with detailed explanations, please have a look at the second vignette "introduction-scPower.Rmd". Due to runtime reasons, not the complete analysis is performed in this vignette and instead sometimes precalculated values provided from the package. However, for all steps it is explained how the precalculated values are generated.
+
+We imported additionally the same color schemes and plotting packages (ggplot2 and ggpubr) to be able to create exactly the same plots as in the paper.
 
 ```{r}
-#Color specifications (taken from Ines)
 
-HMGU.blue <- "#003E6E"
-mygray <- "#C6DDEA"
+#Color specifications
 col.paired <- brewer.pal(n = 12, "Paired")
 col.set <- col.paired[c(2,8,9)]
 col.set2 <- col.paired[c(9,5,7,3,8,2)]
@@ -39,7 +39,6 @@ col.set3 <- brewer.pal(n = 11, "PRGn")[c(4,6,8)]
 col.set3 <- c(col.set[3], "#F7F7F7", col.set[1])
 col.set4 <- c(col.set[1], col.set[3])
 col.set5<-col.paired[seq(2,12,2)]
-
 
 ```
 
@@ -49,6 +48,10 @@ Figure 1 is an overview figure showing the dependence of experimental design par
 
 ## Figure 2: Expression probability model parameterized by UMI counts per cell
 
+Figure 2 shows how the fit of our expression probabilty model for two example data sets. The model is fitted using our own PBMC data set. The fits are provided in the scPower package in the data frames "disp.fun.param" and "gamma.mixed.fits". Ths fits are not shown here due to runtime limitations, but the fits were exactly produced as described in the introduction-scPower" vignette in section "Expression probability curves" (using the same functions and in the same order). The only difference is that in the introduction vignette it is only shown for one cell type, we performed the fit separately for all celltypes with at least 50 cells.
+
+
+
 ```{r}
 #Get original numbers (save in a tmp folder ...)
 
@@ -56,6 +59,9 @@ Figure 1 is an overview figure showing the dependence of experimental design par
 
 
 ```
+
+Figure 2: Expression probability model parameterized by UMI counts per cell. Plot A and B show the observed (solid) number of expressed genes and the number of expressed genes expected under our model (dashed) on the y-axis and the number of cells per cell type (cell type indicated by the point symbol) on the x-axis for Run 5 of the PBMC data set (Additional file 1: Table S1). The data is subsampled to different read depths (indicated by the color). Similarly, plot C and D show expressed genes for the three batches of the Ye data set. The definition for an expressed gene is based on a flexible user defined cutoff. Here it was parameterized: in Figure A and C, a gene is called expressed with count > 10 in more than 50% of the individuals, in Figure B and D, count > 0 in more than 50% of the individuals.
+
 
 ## Figure 3: Expression probability, DE/eQTL power and overall detection power
 

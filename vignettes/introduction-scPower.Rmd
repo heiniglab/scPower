@@ -13,7 +13,7 @@ scPower is a R package for design and power analysis of single cell transcriptom
 
 The tool was evaluated with data from different tissues and single cell technologies.
 
-A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments".
+A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments". A explanation how the plots in the paper were generated can be found in the second vignette "reproduce-paper-plots".
 
 In the first part of this tutorial, the estimation of power and optimal design with the example priors of scPower is shown, in the second part, the fitting of new priors using own data is described.
 
@@ -347,6 +347,10 @@ sapply(count.matrix.example,dim)
 
 ```
 
+#### Estimation of the number of expressed genes 
+
+#### Estimation of negative binomial paramters for each gene
+
 As a first step, the negative binomial fit for each gene, i.e. the mean and disperion parameter, are estimated. The function uses DESeq for library normalization and parameter estimation.  For the normalization, the standard normalization of DEseq can be used or a variant of it called poscounts. It can be set in the parameter "sizeFactors" of the function. Default is "standard", but for very sparse data, "poscounts" might be the better option. For too sparse data, "standard" is not working and will give an error message. 
 
 The function returns a list with three elements: the normalized mean values, the dispersion values and the parameters of the mean-dispersion function fitted from DESeq. We will save the mean values and the parameters of the mean-dispersion function for further processing.
@@ -377,6 +381,8 @@ print(disp.param)
 
 ```
 
+### Estimation of a gamma mixed distribution over all means
+
 A mixed distribution of a zero component and two left zensored gamma components is fitted for each mean value vector (one fit per count matrix). The count matrix contains often a large number of genes with a mean of zero. To reduce the matrix size and faciliate so the fit, the parameter of num.genes.kept regulates the number of mean values for the fit (it removes only genes with a mean of zero). The number should however never be smaller than the number of means values larger than zero. As a fraction of the zero values can be expressed genes below the detection threshold of the experiment, the gamma distributions are modelled as left censored. If no censoring point is set in the variable "censoredPoint", the smallest positive value in the data set is taken as the censoring point. For our models, we use 1/num_cells_celltype as the censoring point.
 
 ```{r}
@@ -398,6 +404,8 @@ for(name in names(count.matrix.example)){
 print(gamma.fits)
 ```
 
+#### Comparison of gamma mixed fits with original means
+
 The fit can be evaluated by simulating mean values using this gamma distribution. In general, the package provides two options for the sampling the values, either random (sample.mean.values.random) or using the quantiles of the gamma mixed distribution (sample.mean.values.quantiles).
 
 ```{r,fig.width=4}
@@ -412,6 +420,8 @@ ggplot(plot.values,aes(x=means,fill=type))+geom_histogram(position="dodge")+
   scale_x_log10(limits=c(1e-4,1e2))
 
 ```
+
+#### Parameterization of the parameters of the gamma fits by the mean UMI counts per cell
 
 The gamma fits over all matrices are parameterized by the mean UMI counts per cell. The values are calculated from the original count matrices.
 
@@ -443,6 +453,8 @@ print(gamma.linear.fit.new)
 
 ```
 
+#### Estimation of median dispersion function for each cell type
+
 For the dispersion parameter, no relation with the UMI counts was found. Therefore, simply the median value over all subsampling runs is taken for each parameter of the mean-dispersion function.
 
 ```{r}
@@ -450,6 +462,7 @@ disp.fun.general.new<-dispersion.function.estimation(disp.param)
 print(disp.fun.general.new)
 ```
 
+#### Annotation of cell type for all fitted data frames
 
 Multiple fits, e.g. from different cell types or other cell states, can be combined in the gamma fit and disperion fit data frames. To extract the correct fits for a specific cell type in the power calculation later, an additional column ct is required.
 
@@ -457,6 +470,8 @@ Multiple fits, e.g. from different cell types or other cell states, can be combi
 gamma.linear.fit.new$ct<-"New_ct"
 disp.fun.general.new$ct<-"New_ct"
 ```
+
+#### Fitting a functions for UMI counts dependent on read depth
 
 As a last point, the relationship between reads and UMIs is fitted logarithmically. Therefore, the number of mapped reads is necessary, which can be gained from summary statistics after the mapping (e.g. in the cellranger summary statistics).
 
@@ -475,6 +490,16 @@ ggplot(read.umis,aes(x=transcriptome.mapped.reads,y=mean.umi))+
 read.umi.fit.new<-umi.read.relation(read.umis)
 print(read.umi.fit.new)
 ```
+
+#### Validation of expression probability model
+
+The estimation of expressed genes is performed in a so called pseudobulk approach.
+
+```{r}
+
+```
+
+#### Use of expression probability model for power calculation
 
 All fitted values are used to adapt the power calculation to the specific conditions of the experiment, e.g. a specific cell type of interest. The new data frames are added as parameter instead of the standard example fits of the package. The cell type is set to "New_ct", as saved in the dispersion and gamma fit data frames above.
 

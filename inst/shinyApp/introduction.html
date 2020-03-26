@@ -1,0 +1,71 @@
+<h3>Introduction</h3>
+
+Welcome to scPower, the statistical framework for design and power analysis of multi-sample single cell genomics experiments! The tools supports the user to set the experimental parameters of cell type specific inter-individual DE and eQTL analysis using single cell RNA-seq data. Experimental design suggestions are made in a way to optimize the power of the experiment. Thereby, the power is split into two subcategories:
+
+<ul>
+    <li>Power to detect DE/eQTL genes</li>
+    <li>Power to detect cell types</li>
+</ul>
+
+For each power, an own section exists in the header of this website. A short explanation for each is given in the following sections:
+
+<h4>Short explanation of "Power to detect DE/eQTL genes"</h4>
+The "Power to detect DE/eQTL genes" evaluates the parameter combination which maximizes the detection power of DE / eQTL genes. The main plot on the right side shows a grid of parameter combinations. Always two parameter axis are defined by the user, the third parameter is defined uniquely given the other two parameters and the overall budget. The color visualizes the detection power of each combination. A arrow called "selected study" points on the study with the highest detection power and the two plots below visualize the power curves for this study. The arrow can be set to any parameter combination by clicking on the main plot.</br>
+
+The detection power is the product of the expression probability and the DE/eQTL power. The expression probability shows how likely it is that the DE/eQTL genes are expressed, while the DE/eQTL power shows how likely it is to find the genes as significant, given that they are expressed. The two plots below the main plot shows the influence of the parameters on each of the probabilities. The plot on the left depicts the influence of the parameter on the y axis, while the parameter on the x axis is kept constant (taking the value of the selected study). The plots on the right shows the same for the parameter on the x axis.</br>
+
+To update the plots with the currently selected parameter combination set on the left bar, please press the calculate button on the left side.</br>
+
+The power analysis can be specific exactly for the specific use case with a lot of different parameters. However, for all parameters, default values are given which can be used. The parameters are divided into different categories.</br>
+<h5>General parameters</h5>
+<ul>
+    <li>Study type: DE or eQTL study</li>
+    <li>Target cell type: for the cell-type specific analysis. The expression distribution is selected for this cell type. Only one cell type at once can be analysed. If multiple cell types are of interest (which is often the case), try different cell types, focusing especially on the ones with small cell type frequencies.</li>
+    <li>Cell type frequency: of the target cell type</li>
+    <li>Reference study: effect sizes and expression ranks are taken from a reference study, performed on FACS sorted bulk RNA-seq data. Different examples are available for DE as well as eQTL studies</li>
+    <li>Total budget: of the experiment</li>
+    <li>Cost parameters:</li>
+</ul>
+<h5>Cost and experimental parameters</h5>
+The cost function influences how many parameters can be measured for the given overall budget.
+<ul>
+    <li>Cost for one 10X Genomics kit</li>
+    <li>Cost for one flow cell</li>
+    <li>Number of reads per flow cell</li>
+    <li>Cells per lane: Number of cells meassured on one 10X lane, assuming 6 lanes per kit.</li>
+</ul>
+<h5>Mapping and multiplet estimation</h5>
+The more cells are loaded on a lane, the more multiplets are produced. These need to be discared before the analysis. Furthermore, the reads are not evenly distributed, but multiplets have a higher fraction of reads per cell than singlets, so the target read depth is reduced with more multiplet.
+<ul>
+    <li>Mapping efficiency</li>
+    <li>Multiplet rate: Rate factor to calculate the number of multiplets dependent on the number of cells loaded per lane. We assume a linear relation ship of: multiplet fraction = cells per lane * multiplet rate</li>
+    <li>Multiplet factor: multiplets have a higher fraction of reads per cell than singlets, the multiplet factor shows the ratio between the reads</li>
+</ul>
+<h5>Expression cutoffs</h5>
+A gene is defined as expressed, if it has a certain fraction of UMI counts per gene in a certain fraction of individuals (both parameters can be set). This influences the expression probability.
+<ul>
+    <li>Minimal number of UMI per gene</li>
+    <li>Fraction of individuals</li>
+</ul>
+
+<h4>Short explanation of "Power to detect cell types"</h4>
+The "Power to detect cell types" describes the power to detect a sufficient number of cells from a cell type of interest in each individuum. This is important as a cell-type specific DE or eQTL analysis is only possible if enough cells of this cell type are detected. The method calculates the minimal number of cells per individual which are necessary to reach a sufficient power threshold. The necessary parameters, which can be set on the left side, are:
+
+<ul>
+    <li>Number of samples</li>
+    <li>Frequency of the cell type of interest</li>
+    <li>Probability to detect the cell type: the target power that should be reached with the parameter combination</li>
+    <li>Minimal number of cells: how many cells of the target cell type should at least be detected for each sample</li>
+</ul>
+
+
+<h4>References</h4>
+
+A detailed description of the complete model can be found in our paper</br></br>
+
+"Design and power analysis for multi-sample single cell genomics experiments", Schmid et al., submitted</br></br>
+
+All code including an offline version of this website, build with R shiny, is available as an R package on
+<a href="https://github.com/heiniglab/scPower">Github</a>. With the R package, the user can also fit and incorporate own priors for expression probabilities and effect sizes. This is due to runtime reasons not possible over the webserver. The package contains a detailed introduction vignette explaining all necessary steps for the inclusion of own priors.
+</br>
+

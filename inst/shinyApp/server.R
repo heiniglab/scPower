@@ -68,7 +68,6 @@ shinyServer(
 
     #Calculate power grid for the current version of
     powerFrame <- eventReactive(input$recalc, {
-
       message("Detection power for the current parameter combination is calculated, please wait.")
 
       #Reset data of the click event
@@ -117,7 +116,8 @@ shinyServer(
                                                                     costKit,costFlowCell,readsPerFlowcell,
                                                                     ref.study,ref.study.name,
                                                                     cellsPerLane,
-                                                                    read.umi.fit,gamma.mixed.fits,
+                                                                    read.umi.fit,
+                                                                    gamma.mixed.fits,
                                                                     disp.fun.param,
                                                                     nCellsRange=cellPersRange,
                                                                     readDepthRange=readDepthRange,
@@ -135,7 +135,7 @@ shinyServer(
       message("Calculation finished.")
 
       return(power.study.plot)
-    })
+    }, ignoreNULL = FALSE)
 
     output$powerPlot<-renderPlotly({
 
