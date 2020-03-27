@@ -221,7 +221,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
     #Set the fold change respectively
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
 
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) scPower:::power.de(
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
       floor(nSamples/2),
       foundSignGenes$mean.sum[i],
       foundSignGenes$FoldChange[i],
@@ -634,6 +634,11 @@ optimize.constant.budget<-function(totalBudget,type,
     param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
   }
 
+  #Check if at least one parameter combination remains
+  if(nrow(param.combis)==0){
+    stop("The total budget is too low for parameters in the given range!")
+  }
+
   power.study<-mapply(power.general.withDoublets,
                       param.combis$nSamples,
                       param.combis$nCells,
@@ -765,6 +770,11 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
   if(any(param.combis$nSamples==0) | any(param.combis$nCells<=0) | any(param.combis$readDepth<=0)){
     warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
     param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
+  }
+
+  #Check if at least one parameter combination remains
+  if(nrow(param.combis)==0){
+    stop("The total budget is too low for parameters in the given range!")
   }
 
   power.study<-mapply(power.general.withDoublets,
@@ -903,6 +913,11 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
     param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
   }
 
+  #Check if at least one parameter combination remains
+  if(nrow(param.combis)==0){
+    stop("The total budget is too low for parameters in the given range!")
+  }
+
   power.study<-mapply(power.general.restrictedDoublets,
                       param.combis$nSamples,
                       param.combis$nCells,
@@ -1028,6 +1043,11 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
   if(any(param.combis$nSamples==0) | any(param.combis$nCells<=0) | any(param.combis$readDepth<=0)){
     warning("Some of the parameter combinations are too expensive and removed from the parameter grid.")
     param.combis<-param.combis[param.combis$nSamples>0 & param.combis$nCells>0 & param.combis$readDepth>0,]
+  }
+
+  #Check if at least one parameter combination remains
+  if(nrow(param.combis)==0){
+    stop("The total budget is too low for parameters in the given range!")
   }
 
   power.study<-mapply(power.smartseq,
