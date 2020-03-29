@@ -18,7 +18,7 @@ power.smartseq(
   mappingEfficiency = 0.8,
   multipletFraction = 0,
   multipletFactor = 1.82,
-  min.norm.count = 10,
+  min.norm.count = 3,
   perc.indiv.expr = 0.5,
   nGenes = 21000,
   samplingMethod = "quantiles"

@@ -58,7 +58,7 @@ create.pseudobulk<-function(expr.singlets, annotation, colName="cell.type"){
 #'
 #' @export
 #'
-calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
+calculate.gene.counts<-function(expr.array,min.counts=3,perc.indiv=0.5){
 
   require(reshape2)
 
@@ -103,7 +103,7 @@ calculate.gene.counts<-function(expr.array,min.counts=10,perc.indiv=0.5){
 estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
                                   read.umi.fit,gamma.mixed.fits,
                                   ct,disp.fun.param,
-                                  min.counts=10,perc.indiv=0.5,
+                                  min.counts=3,perc.indiv=0.5,
                                   nGenes=21000,samplingMethod="quantiles"){
 
   #Get mean umi dependent on read depth
@@ -175,7 +175,7 @@ estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
 #' @export
 #'
 estimate.exp.prob.values<-function(mu,size,nCellsCt,nSamples,
-                                   min.counts=10,perc.indiv=0.5){
+                                   min.counts=3,perc.indiv=0.5){
 
   #Generate basis data.frame
   fits.allIndivs<-data.frame(mu=mu,size=size,nCellsCt=nCellsCt)

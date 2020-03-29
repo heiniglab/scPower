@@ -24,7 +24,7 @@ optimize.constant.budget.restrictedDoublets(
   mappingEfficiency = 0.8,
   multipletRate = 7.67e-06,
   multipletFactor = 1.82,
-  min.UMI.counts = 10,
+  min.UMI.counts = 3,
   perc.indiv.expr = 0.5,
   nGenes = 21000,
   samplingMethod = "quantiles",

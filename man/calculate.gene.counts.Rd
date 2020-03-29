@@ -4,7 +4,7 @@
 \alias{calculate.gene.counts}
 \title{Get expressed genes from pseudobulk}
 \usage{
-calculate.gene.counts(expr.array, min.counts = 10, perc.indiv = 0.5)
+calculate.gene.counts(expr.array, min.counts = 3, perc.indiv = 0.5)
 }
 \arguments{
 \item{expr.array}{3d pesudobulk matrix of genes x individuals x cell type (output of create.pseudobulk)}

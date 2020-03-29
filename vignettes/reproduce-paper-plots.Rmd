@@ -50,7 +50,7 @@ Figure 1 is an overview figure showing the dependence of experimental design par
 
 Figure 2 shows how the fit of our expression probabilty model for two example data sets. The model is fitted using our own PBMC data set. The fits are provided in the scPower package in the data frames "disp.fun.param" and "gamma.mixed.fits". Ths fits are not shown here due to runtime limitations, but the fits were exactly produced as described in the introduction-scPower" vignette in section "Expression probability curves" (using the same functions and in the same order). The only difference is that in the introduction vignette it is only shown for one cell type, we performed the fit separately for all celltypes with at least 50 cells.
 
-
+The observed expression curves are calculated using the function ""
 
 ```{r}
 #Get original numbers (save in a tmp folder ...)

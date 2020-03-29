@@ -9,7 +9,7 @@ estimate.exp.prob.values(
   size,
   nCellsCt,
   nSamples,
-  min.counts = 10,
+  min.counts = 3,
   perc.indiv = 0.5
 )
 }

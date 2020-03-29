@@ -85,7 +85,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      disp.fun.param,
                                      mappingEfficiency=0.8,
                                      multipletRate=7.67e-06,multipletFactor=1.82,
-                                     min.UMI.counts=10,perc.indiv.expr=0.5,
+                                     min.UMI.counts=3,perc.indiv.expr=0.5,
                                      nGenes=21000,samplingMethod="quantiles",
                                      multipletRateGrowth="linear"){
 
@@ -168,8 +168,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   sim.genes$mean.sum<-sim.genes$mean*ctCells
   sim.genes$disp.sum<-sim.genes$disp/ctCells
 
-  #Calculate for each gene the expression probability with the definition
-  #expressed in 50% of the individuals with count > 10
+  #Calculate for each gene the expression probability
   sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
                                             nSamples=nSamples,min.counts=min.UMI.counts,
                                             perc.indiv=perc.indiv.expr)
@@ -186,7 +185,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   #Set the simulated DE genes as the genes at the same rank position as the original DE genes
   ranks<-ref.study$rank[ref.study$name==ref.study.name]
 
-  #Set all DE with rank > 21000 to 21000 (expression anyway nearly 0)
+  #Set all DE with rank > nGenes to nGenes (expression anyway nearly 0)
   ranks[ranks>nGenes]<-nGenes
 
   #Calculate alpha parameter corrected for multiple testing
@@ -295,7 +294,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            disp.fun.param,
                                            mappingEfficiency=0.8,
                                            multipletRate=7.67e-06,multipletFactor=1.82,
-                                           min.UMI.counts=10,perc.indiv.expr=0.5,
+                                           min.UMI.counts=3,perc.indiv.expr=0.5,
                                            nGenes=21000,samplingMethod="quantiles",
                                            multipletRateGrowth="linear"){
 
@@ -355,7 +354,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                          disp.linear.fit,
                          mappingEfficiency=0.8,
                          multipletFraction=0,multipletFactor=1.82,
-                         min.norm.count=10,perc.indiv.expr=0.5,
+                         min.norm.count=3,perc.indiv.expr=0.5,
                          nGenes=21000,samplingMethod="quantiles"){
 
   usableCells<-round((1-multipletFraction)*nCells)
@@ -444,8 +443,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   #Fit also length transformed sum
   sim.genes$mean.length.sum<-sim.genes$mean.length.transformed*ctCells
 
-  #Calculate for each gene the expression probability with the definition
-  #expressed in 50% of the individuals with count > 10
+  #Calculate for each gene the expression probability
   sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
                                             nSamples=nSamples,min.counts=min.norm.count,
                                             perc.indiv=perc.indiv.expr)
@@ -456,7 +454,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   #Set the simulated DE genes as the genes at the same rank position as the original DE genes
   ranks<-ref.study$rank[ref.study$name==ref.study.name]
 
-  #Set all DE with rank > 21000 to 21000 (expression anyway nearly 0)
+  #Set all DE with rank > nGEnes to nGenes (expression anyway nearly 0)
   ranks[ranks>nGenes]<-nGenes
 
   #Calculate alpha parameter corrected for multiple testing
@@ -578,7 +576,7 @@ optimize.constant.budget<-function(totalBudget,type,
                                    nCellsRange=NULL, readDepthRange=NULL,
                                    mappingEfficiency=0.8,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
-                                   min.UMI.counts=10,perc.indiv.expr=0.5,
+                                   min.UMI.counts=3,perc.indiv.expr=0.5,
                                    nGenes=21000,samplingMethod="quantiles",
                                    multipletRateGrowth="linear"){
 
@@ -719,7 +717,7 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                                nCellsRange=NULL, readDepthRange=NULL,
                                                mappingEfficiency=0.8,
                                                multipletRate=7.67e-06,multipletFactor=1.82,
-                                               min.UMI.counts=10,perc.indiv.expr=0.5,
+                                               min.UMI.counts=3,perc.indiv.expr=0.5,
                                                nGenes=21000,samplingMethod="quantiles",
                                                multipletRateGrowth="linear"){
 
@@ -856,7 +854,7 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                      nCellsRange=NULL, readDepthRange=NULL,
                                                      mappingEfficiency=0.8,
                                                      multipletRate=7.67e-06,multipletFactor=1.82,
-                                                     min.UMI.counts=10,perc.indiv.expr=0.5,
+                                                     min.UMI.counts=3,perc.indiv.expr=0.5,
                                                      nGenes=21000,samplingMethod="quantiles",
                                                      multipletRateGrowth="linear"){
 
@@ -993,7 +991,7 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
                                            nCellsRange=NULL, readDepthRange=NULL,
                                            mappingEfficiency=0.8,
                                            multipletFraction=0,multipletFactor=1.82,
-                                           min.norm.count=10,perc.indiv.expr=0.5,
+                                           min.norm.count=3,perc.indiv.expr=0.5,
                                            nGenes=21000,samplingMethod="quantiles"){
 
   #Check that exactly two of the parameters are set and the third one is not defined

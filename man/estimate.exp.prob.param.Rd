@@ -12,7 +12,7 @@ estimate.exp.prob.param(
   gamma.mixed.fits,
   ct,
   disp.fun.param,
-  min.counts = 10,
+  min.counts = 3,
   perc.indiv = 0.5,
   nGenes = 21000,
   samplingMethod = "quantiles"
