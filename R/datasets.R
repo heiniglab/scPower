@@ -187,3 +187,35 @@
 #' data(countMatrixExample)
 #' head(count.matrix.example)
 "count.matrix.example"
+
+#' Observed gene counts from multiple data sets to reproduce figures curves in the vignette
+#' reproduce-figure-plots faster
+#'
+#' @docType data
+#'
+#' @usage data(precalculatedObservedGeneCounts)
+#'
+#' @format Data frame with observed gene counts from multiple data sets
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(precalculatedObservedGeneCounts)
+#' head(observed.gene.counts)
+"observed.gene.counts"
+
+#' Optimal parameters for increasing budget and simulated and observed priors from different
+#' single cell technologies to reproduce figures curves in the vignette reproduce-figure-plots faster
+#'
+#' @docType data
+#'
+#' @usage data(precalculatedBudgetOptim)
+#'
+#' @format Data frame with optimal parameter for increasing budget and different priors
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(precalculatedBudgetOptim)
+#' head(budget.optimization)
+"budget.optimization"

@@ -15,7 +15,7 @@ The tool was evaluated with data from different tissues and single cell technolo
 
 A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments". A explanation how the plots in the paper were generated can be found in the second vignette "reproduce-paper-plots".
 
-In the first part of this tutorial, the estimation of power and optimal design with the example priors of scPower is shown, in the second part, the fitting of new priors using own data is described.
+In the first part of this tutorial, the estimation of power and optimal design with the example priors of scPower is shown, in the second part, the fitting of new priors using own data is described. Additionally, in the third part, the power to detect a sufficent number of cells of a specific cell type is explained.
 
 We will show the analysis for an eQTL study, for a DE study it works completely analogously.
 
@@ -347,7 +347,39 @@ sapply(count.matrix.example,dim)
 
 ```
 
-#### Estimation of the number of expressed genes 
+#### Counting observed expressed genes 
+
+The number of expressed genes in the data set can be estimated by reformating the 2d count matrix into a 3d pseudobulk matrix, using the function "create.pseudobulk". Therefor an annotation data frame is required with individual and cell type annotations for each cells. The rows of the annotaiton data frame must match the columns in the count matrix (same ordering of cells). After the pseudobulk matrix is created, the expressed genes are extracted using the function "calculate.gene.counts". Here, we use a threshold of more than 3 counts in more 50% of the individuals.
+
+```{r}
+
+expressed.genes.df<-NULL
+for(name in names(count.matrix.example)){
+  
+  count.matrix<-count.matrix.example[[name]]
+  
+  #Annotation file
+  annot.df<-data.frame(individual=paste0("S",rep(1:14,length.out=ncol(count.matrix))),
+                       cell.type=rep("default_ct",ncol(count.matrix)))
+  #Reformat count matrix into pseudobulk matrix
+  pseudo.bulk<-create.pseudobulk(count.matrix,annot.df)
+  #Calculate expressed genes in the pseudobulk matrix
+  expressed.genes<-calculate.gene.counts(pseudo.bulk,min.counts=3, perc.indiv=0.5)
+  #Get the number of expressed genes
+  num.expressed.genes<-nrow(expressed.genes)
+  
+  #Save expressed genes
+  expressed.genes.df<-rbind(expressed.genes.df,
+                            data.frame(matrix=name,
+                                       num.cells=ncol(count.matrix),
+                                       expressed.genes=num.expressed.genes))
+}
+
+print(expressed.genes.df)
+
+```
+
+As expected, the subsampling of the count matrix leads to an reduction of the number of expressed genes.
 
 #### Estimation of negative binomial paramters for each gene
 
@@ -408,16 +440,40 @@ print(gamma.fits)
 
 The fit can be evaluated by simulating mean values using this gamma distribution. In general, the package provides two options for the sampling the values, either random (sample.mean.values.random) or using the quantiles of the gamma mixed distribution (sample.mean.values.quantiles).
 
-```{r,fig.width=4}
+```{r,fig.width=6}
 #Check fit for the full matrix
-sim.mean.vals<-sample.mean.values.quantiles(gamma.fits[gamma.fits$matrix=="complete",],nGenes=21000)
+sim.mean.vals<-sample.mean.values.quantiles(gamma.fits[gamma.fits$matrix=="complete",],
+                                            nGenes=21000)
+
+#Calculate from which component each value in the simulation originates (ZI + LZG1 + LZG2)
+nGenes<-21000
+nZeros<-round(nGenes*gamma.fits$p1[gamma.fits$matrix=="complete"])
+nGamma1<-round(nGenes*gamma.fits$p2[gamma.fits$matrix=="complete"])
+nGamma2<-nGenes-nZeros-nGamma1
+  
 plot.values<-data.frame(means=c(norm.mean.values$mean[norm.mean.values$matrix=="complete"],
                                 sim.mean.vals),
                         type=c(rep("Observed",sum(norm.mean.values$matrix=="complete")),
-                               rep("Simulated",21000)))
+                               rep("sim.mean.zero",nZeros),
+                               rep("sim.mean.c1",nGamma1),
+                               rep("sim.mean.c2",nGamma2)))
 
-ggplot(plot.values,aes(x=means,fill=type))+geom_histogram(position="dodge")+
-  scale_x_log10(limits=c(1e-4,1e2))
+#Set zero values to a very small value to be able to plot on logarithmic scale
+lower_dist<-1e-5
+zero_pos<-1e-6
+
+plot.values<-plot.values[plot.values$mean==0 | plot.values$mean>=lower_dist,]
+plot.values$mean[plot.values$mean==0]<-zero_pos
+
+#Order estimated means
+plot.values$type<-factor(plot.values$type,
+                         levels=c("Observed","sim.mean.zero","sim.mean.c1","sim.mean.c2"))
+
+ggplot(data=plot.values,aes(x=mean, fill=type))+
+  geom_histogram(position="dodge")+
+  scale_x_log10(limits = c(1e-7,1e2), breaks=c(1e-6,1e-4,1e-2,1e0,1e2),
+                labels=c(0,c(1e-4,1e-2,1e0,1e2)))+geom_vline(xintercept=1e-5)+
+  xlab("Deseq fitted mean value")+ylab("Frequency")
 
 ```
 
@@ -475,7 +531,7 @@ disp.fun.general.new$ct<-"New_ct"
 
 As a last point, the relationship between reads and UMIs is fitted logarithmically. Therefore, the number of mapped reads is necessary, which can be gained from summary statistics after the mapping (e.g. in the cellranger summary statistics).
 
-```{r}
+```{r,fig.width=4}
 #Number of mapped reads taken from cellranger summary statistics
 mapped.reads<-data.frame(matrix=c("complete","subsampled75","subsampled50","subsampled25"),
                          transcriptome.mapped.reads=c(23130,17422,11666,5859))
@@ -493,11 +549,48 @@ print(read.umi.fit.new)
 
 #### Validation of expression probability model
 
-The estimation of expressed genes is performed in a so called pseudobulk approach.
+In the section "Counting observed expressed genes", the number of expressed genes in our example count matrices were calculated and saved in the data frame "expressed.genes.df". To validate our model, we try to predict the same number of expressed genes using our fitted model.
 
-```{r}
+```{r,fig.width=6}
+
+#Merge the observed numbers of expressed genes with the read depth
+expressed.genes.df<-merge(expressed.genes.df,mapped.reads,
+                          by="matrix")
+
+#Get the number of cells per cell type and individual
+expressed.genes.df$cells.indiv<-expressed.genes.df$num.cells/14
+expressed.genes.df$estimated.genes<-NA
+for(i in 1:nrow(expressed.genes.df)){
+  
+  #Vector with the expression probability for each gene
+  expr.prob<-estimate.exp.prob.param(nSamples=14,
+                                    readDepth=expressed.genes.df$transcriptome.mapped.reads[i],
+                                    nCellsCt=expressed.genes.df$cells.indiv[i],
+                                    read.umi.fit = read.umi.fit.new,
+                                    gamma.mixed.fits = gamma.linear.fit.new,
+                                    ct="New_ct",
+                                    disp.fun.param=disp.fun.general.new,
+                                    min.counts = 3,
+                                    perc.indiv = 0.5)
+  
+  #Expected number of expressed genes
+  expressed.genes.df$estimated.genes[i]<-round(sum(expr.prob))
+  
+}
+
+print(expressed.genes.df)
+
+plot.expressed.genes.df<-reshape2::melt(expressed.genes.df,
+                                        id.vars=c("matrix","num.cells","cells.indiv",
+                                                  "transcriptome.mapped.reads"))
+
+ggplot(plot.expressed.genes.df,aes(x=transcriptome.mapped.reads,y=value,
+                                   color=variable))+
+  geom_point()+geom_line()
 
 ```
+
+The estimated number of genes match already in the small example data set quite well the observed numbers. A larger data set with more observations improves of course the fit in general.
 
 #### Use of expression probability model for power calculation
 
@@ -617,5 +710,23 @@ power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                   perc.indiv.expr = 0.5)
 
 print(power)
+```
+
+## Part 3: Power estimation to detect a sufficent number of cells in a specific cell types
+
+To perform the cell type specific DE and eQTL analysis described in part 1 and 2, a sufficient number of cells of the target cell type needs to be detected for each individual. The package provides to functions, either to calculate the power for a specific parameter combination or to calculate the number of cells per sample to reach a certain power. In both cases, important parameters are the cell type frequency of the parameter of interest, which can be gained for example by literature research, here set to 2\%. The minimal number of cells which should be detected was set to 10 and the sample size to 100.
+
+In case of the power calculation, we assume to measure 1000 cells per individual. This leads to a detection power of:
+
+```{r}
+scPower::power.detect.celltype(nCells=1000,min.num.cells = 10,
+                               cell.type.frac=0.02,nSamples=100)
+```
+
+In case of estimating the number of cells, with set the detection threshold to 0.95, i.e. the functions returns the number of cells to reach a detection power of at least 95\%. The required number of cells per person is then:
+
+```{r}
+scPower::number.cells.detect.celltype(prob.cut=0.95,min.num.cells = 10,
+                               cell.type.frac=0.02,nSamples=100)
 ```
 

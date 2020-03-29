@@ -71,6 +71,10 @@ calculate.gene.counts<-function(expr.array,min.counts=3,perc.indiv=0.5){
   #Delete all, which are not expressed in at least half of the individuals
   pct.expr.reformated <- pct.expr.reformated[pct.expr.reformated$percent.expressed > perc.indiv,]
 
+  if(nrow(pct.expr.reformated)==0){
+    warning("No expressed genes with this cut-off found!")
+  }
+
   return(pct.expr.reformated)
 
 }
@@ -154,6 +158,103 @@ estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
 
   return(estimate.exp.prob.values(gene.means,1/gene.disps,nCellsCt,
                            nSamples,min.counts,perc.indiv))
+
+}
+
+#' Estimate gene expression probability based on experimental parameters - variant for smart-seq or when calculating
+#' directly based on UMI counts (without read UMI fit)
+#'
+#' This is an adaption of function estimate.exp.prob.param were directly the mean UMI parameter can be set in the
+#' variable meanCellCount (no read.umi.fit and read depths required). This version can also be used to model read based single cell methods,
+#' such as Smart-seq, by setting the parameter meanCellCounts to their read depth
+#'
+#' @param nSamples Sample size
+#' @param meanCellCount Either mean UMI counts per cell for UMI-based methods or mean read counts per cell for read-based methods
+#' @param nCellsCt Mean number of cells per individual and cell type
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
+#' @param min.counts  More than is number of UMI counts for each gene per individual and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv  Percentage of individuals that need to have this gene expressed to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param countMethod Specify if it is a UMI or read based method (by "UMI" or "read"). For a read based method,
+#' the dispersion function is fitted linear, for a UMI based method constant.
+#'
+#' @return Vector with expression probabilities for each gene
+#'
+#' @export
+#'
+estimate.exp.prob.count.param<-function(nSamples,nCellsCt,meanCellCounts,
+                                        gamma.mixed.fits,
+                                        ct,disp.fun.param,
+                                        min.counts=3,perc.indiv=0.5,
+                                        nGenes=21000,samplingMethod="quantiles",
+                                        countMethod="UMI"){
+
+
+  #Check if gamma fit data for the cell type exists
+  if(! any(gamma.mixed.fits$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.mixed.fits fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.mixed.fits object used."))
+  }
+
+  #Get gamma values dependent on mean umi
+  gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
+  if(countMethod=="UMI"){
+    gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*meanCellCounts
+  } else if (countMethod=="read"){
+    gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanReads*meanCellCounts
+  } else {
+    stop("Current countMethod is not known, please specific 'UMI' or 'read'!")
+  }
+
+
+  gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
+                               p3=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p3"],
+                               mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
+                               mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
+                               sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
+                               sd2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd2"])
+
+  #Convert them to the rateshape variant
+  gamma.parameters<-convert.gamma.parameters(gamma.parameters,type="rateshape")
+
+  #Sample means values
+  if(samplingMethod=="random"){
+    gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
+  } else if (samplingMethod=="quantiles"){
+    gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
+  } else {
+    stop("No known sampling method. Use the options 'random' or 'quantiles'.")
+  }
+
+  #Check if dispersion data for the cell type exists
+  if(! any(disp.fun.param$ct==ct)){
+    stop(paste("No dispersion fitting data in the data frame disp.fun.param fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right disp.fun.param object used."))
+  }
+
+  #Fit dispersion parameter dependent on mean parameter
+  if(countMethod=="UMI"){
+    disp.fun<-disp.fun.param[disp.fun.param$ct==ct,]
+  } else if (countMethod=="read"){
+    #Get dispersion values dependent on mean reads
+    disp.fun.ct<-disp.fun.param[disp.fun.param$ct==ct,]
+    disp.fun.ct$fitted.value<-disp.fun.ct$intercept+disp.fun.ct$meanReads*meanCellCounts
+
+    #Fit dispersion parameter dependent on mean parameter
+    disp.fun<-data.frame(asymptDisp=disp.fun.ct$fitted.value[disp.fun.ct$parameter=="asymptDisp"],
+                         extraPois=disp.fun.ct$fitted.value[disp.fun.ct$parameter=="extraPois"],
+                         ct=ct)
+  }
+
+  gene.disps<-sample.disp.values(gene.means,disp.fun)
+
+  return(estimate.exp.prob.values(gene.means,1/gene.disps,nCellsCt,
+                                  nSamples,min.counts,perc.indiv))
 
 }
 
