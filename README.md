@@ -4,7 +4,7 @@ scPower is a R package for design and power analysis of cell type specific inter
 
 The calculation can also performed using a graphical interface of a shiny app or at our webpage [scpower](http://scpower.helmholtz-muenchen.de).
 
-A short tutorial is given in the vignette [introduction-scPower](vignettes/introduction-scPower.pdf)
+A short tutorial is given in the vignette [introduction-scPower](vignettes/introduction-scPower.pdf).
 
 A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments, Schmid et al, submitted". An explanation how the plots in the paper were generated can be found in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf).
 
@@ -54,13 +54,13 @@ The shiny app is also available at the webpage [scpower](http://scpower.helmholt
 
 ## Vignettes for introduction and for reproduction of paper plots
 
-The package provides two vignettes for the user. The first one, called "introduction-scPower", is a user manual describing all functions with small toy examples. The second one, called "reproduce-paper-plots", shows how all plots in the manuscript were created with the package. The vignettes can be built when downloading the package with setting the option "build_vignettes=TRUE", however, this will take several minutes, as the vignettes are comprehensive. Alternatively, the pdf files are directly uploaded and can be accessed in the github.
+The package provides two vignettes for the user. The first one, called [introduction-scPower](vignettes/introduction-scPower.pdf), is a user manual describing all functions with small toy examples. The second one, called [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf), shows how all plots in the manuscript were created with the package. The vignettes can be built when downloading the package with setting the option "build_vignettes=TRUE", however, this will take several minutes, as the vignettes are quite detailed. Alternatively, the pdf files are directly uploaded and can be accessed in github.
 
 ```{R}
 devtools::install_github("heiniglab/scPower",build_vignettes=TRUE)
 browseVignettes("scPower")
 ```
-Be aware that additional libraries are required for buidling the vignettes:
+Be aware that additional libraries are required for building the vignettes:
 
 ```R
 #CRAN packages

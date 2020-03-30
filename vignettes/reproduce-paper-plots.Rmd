@@ -13,9 +13,9 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-This vignette shows how the plots of the paper "Design and power analysis for multi-sample single cell genomics experiments" can be reproduced using scPower. For an introduction into the package with detailed explanations, please have a look at the second vignette "introduction-scPower". Due to runtime reasons, not the complete analysis is performed in this vignette and instead sometimes precalculated values provided from the package. However, for all steps it is explained how the precalculated values are generated. For more information on the modelling and all citations, please have a look into our publication
+This vignette shows how the plots of the paper "Design and power analysis for multi-sample single cell genomics experiments" can be reproduced using scPower. For an introduction into the package with detailed explanations, please have a look at the second vignette "introduction-scPower". Due to runtime reasons, not the complete analysis is performed in this vignette and instead sometimes precalculated values provided from the package. However, for all steps it is explained how the precalculated values are generated. For more information on the modelling and all citations, please have a look into our publication.
 
-We imported additionally the same color schemes and plotting packages (ggplot2 and ggpubr) to be able to create exactly the same plots as in the paper.
+We imported additionally the same color schemes and plotting packages (ggplot2 and ggpubr) to be able to create exactly the same plots as in the publication.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -53,9 +53,9 @@ Figure 1 is a schematic overview figure showing the dependence of experimental d
 
 ## Figure 2: Expression probability model parameterized by UMI counts per cell
 
-Figure 2 shows how the fit of our expression probabilty model is applied on two example data sets, our own data set and one of Kang et al, 2018. The model is fitted using our own PBMC data set. The fits are provided in the scPower package in the data frames "disp.fun.param" and "gamma.mixed.fits". Ths fitting itself is not shown here due to runtime limitations, but the fits were exactly produced as described in the introduction-scPower" vignette in section "Expression probability curves" (using the same functions in the same order). The only difference is that in the introduction vignette it is only shown for one cell type, we performed the fit separately for all celltypes with at least 50 cells.
+Figure 2 shows how the fit of our expression probabilty model is applied on two example data sets, our own data set and one of Kang et al, 2018. The model is fitted using our own PBMC data set. The fits are provided in the scPower package in the data frames "disp.fun.param" and "gamma.mixed.fits". Also the used UMI-read fit was generated using our own PBMC data set, saved in the data frame "read.umi.fit" as "10X_PBMC_1". The fitting itself is not shown here due to runtime limitations, but the fits were exactly produced as described in the introduction-scPower" vignette in section "Expression probability curves" (using the same functions in the same order). The only difference is that in the introduction vignette it is only shown for one cell type, we performed the fit separately for all celltypes with at least 50 cells.
 
-The observed expression curves were calculated as described in section "Counting observed expressed genes", the percalculated values are saved due to time reasons.
+The observed expression curves were calculated as described in section "Counting observed expressed genes", the percalculated values are saved due to time reasons in the data frame "observed.gene.counts".
 
 ```{r, fig.height=8, fig.width=8}
 #Load observed gene counts (precalculated)
@@ -287,7 +287,7 @@ Figure 2: Expression probability model parameterized by UMI counts per cell. Plo
 
 ## Figure 3: Expression probability, DE/eQTL power and overall detection power
 
-The figure shows the influence of the experimental parameter on the detection power. The same expression probability model as in Figure 2 is taken, the priors for the power taken from different reference studies (see publication for reference and more explanation). The experimental parameters are set to realistic values.
+The figure shows the influence of the experimental parameters on the detection power. The same expression probability model as in Figure 2 is used, the priors for the power, i.e. the effect sizes and expression ranks, are taken from different reference studies (see publication for citation and more explanation). The experimental parameters are set to realistic values.
 
 ```{r, fig.width=8,fig.height=6}
 #General parameters
@@ -295,7 +295,7 @@ transcriptome.mapped.reads<-20000
 nGenes<-21000
 ct<-"CD4 T cells"
 ct.freq<-1
-samplesPerLane<-8
+cellsPerLane<-20000
 
 ########
 # DE subplot
@@ -309,14 +309,17 @@ colnames(param.combis)<-c("cellsPerCelltype","sampleSize")
 
 #Test results for each parameter combination
 res<-lapply(1:nrow(param.combis),function(i)
-  power.general.withDoublets(param.combis$sampleSize[i],
+  power.general.restrictedDoublets(param.combis$sampleSize[i],
                              param.combis$cellsPerCelltype[i],
                              transcriptome.mapped.reads,
                              ct.freq, "de",de.ref.study,ref.study.name,
-                             samplesPerLane,read.umi.fit,
+                             cellsPerLane,read.umi.fit[
+                               read.umi.fit$type=="10X_PBMC_1",],
                              gamma.mixed.fits,ct,
                              disp.fun.param,mappingEfficiency = 1,
                              multipletRate=0,multipletFactor=1,
+                             min.UMI.counts = 10,
+                             perc.indiv.expr = 0.5,
                              nGenes=21000))
 
 power.DE.study<-rbindlist(res)
@@ -361,14 +364,17 @@ colnames(param.combis)<-c("cellsPerCelltype","sampleSize")
 
 #Test results for each parameter combination
 res<-lapply(1:nrow(param.combis),function(i)
-  power.general.withDoublets(param.combis$sampleSize[i],
+  power.general.restrictedDoublets(param.combis$sampleSize[i],
                              param.combis$cellsPerCelltype[i],
                              transcriptome.mapped.reads,
                              ct.freq, "eqtl",eqtl.ref.study,ref.study.name,
-                             samplesPerLane,read.umi.fit,
+                             cellsPerLane,read.umi.fit[
+                               read.umi.fit$type=="10X_PBMC_1",],
                              gamma.mixed.fits,ct,
                              disp.fun.param,mappingEfficiency = 1,
                              multipletRate=0,multipletFactor=1,
+                             min.UMI.counts = 10,
+                             perc.indiv.expr = 0.5,
                              nGenes=21000))
 
 power.eqtl.study<-rbindlist(res)
@@ -412,7 +418,7 @@ Figure 3: Expression probability, DE/eQTL power and overall detection power.  Po
 
 ## Figure 4: Optimal parameters for varying budgets and 10X data
 
-How the optimal parameters develop for an increasing experimental budget, is shown in Figures 4 and 5. As this means running the optimization function many times, this takes too long to run it in the vignette. Instead, the code is given, but the evaluation set to FALSE. Interested user can run the calculation, by setting it to TRUE. Calculations are done for DE and eQTL studies, with observed and simulated priors.
+How the optimal parameters develop for an increasing experimental budget, is shown in Figures 4 and 5. As this means running the optimization function many times, this takes too long to run it in the vignette. Instead, the code is given, but the evaluation set to FALSE. Interested users can run the calculation, by setting it to TRUE. Calculations are done for DE and eQTL studies, with observed and simulated priors.
 
 ```{r}
 
@@ -427,16 +433,16 @@ costKit<-5600
 costFlowCell<-14032
 readsPerFlowcell<-4100*10^6
 
-readDepth<-c(2000,5000,10000,15000,20000,30000,40000,50000,60000,70000,100000)
-cellsPerPerson<-c(100,200,500,700,seq(1000,9000,500))
-
 mapping.efficiency<-0.8
 minUMI<-3
 perc.indiv<-0.5
-
-numGenes<-250
   
 budget<-seq(5000,100000,by=5000)
+
+########
+#Parameters for DE studies
+readDepth<-c(2000,5000,10000,15000,20000,30000,40000,50000,60000,70000,100000)
+cellsPerPerson<-c(100,200,500,700,seq(1000,9000,500))
 
 ```
 
@@ -451,6 +457,9 @@ simulated.parameters<-data.frame(mean.value=c(2,0.5,2,0.5),
                                         "highES_highRank","lowES_highRank"))
 
 print(simulated.parameters)
+
+#Number simulated DE genes
+numGenes<-250
 
 de.raw.values<-NULL
 for(s in 1:nrow(simulated.parameters)){
@@ -475,7 +484,9 @@ for(s in 1:nrow(simulated.parameters)){
     power.study<-optimize.constant.budget.restrictedDoublets(i,"de",ct,ct.freq,
                              costKit,costFlowCell,readsPerFlowcell,
                              sample.DE.genes,"Simulated",
-                             cellsPerChanel,read.umi.fit,gamma.mixed.fits,
+                             cellsPerChanel,read.umi.fit[
+                               read.umi.fit$type=="10X_PBMC_1",],
+                             gamma.mixed.fits,
                              disp.fun.param,
                              nCellsRange = cellsPerPerson,
                              readDepthRange = readDepth,
@@ -490,8 +501,48 @@ for(s in 1:nrow(simulated.parameters)){
   max.values$parameters<-simulated.parameters$name[s]
   
   de.raw.values<-rbind(de.raw.values,max.values)
-}  
+} 
 
+######
+# DE studies with observed priors - PBMC (10X)
+
+#Filter the DE reference study for PBMC data sets
+de.ref.study<-scPower::de.ref.study[de.ref.study$type=="PBMC",]
+
+de.real.values<-NULL
+for(studyName in unique(de.ref.study$name)){
+
+  max.values<-NULL
+  for(i in budget){
+    
+    power.study<-optimize.constant.budget.restrictedDoublets(i,"de",ct,ct.freq,
+                   costKit,costFlowCell,readsPerFlowcell,
+                   de.ref.study,studyName,
+                   cellsPerChanel,read.umi.fit[read.umi.fit$type=="10X_PBMC_1",],
+                   gamma.mixed.fits,
+                   disp.fun.param,
+                   nCellsRange = cellsPerPerson,
+                   readDepthRange = readDepth,
+                   mappingEfficiency = mapping.efficiency,
+                   min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv)
+        
+    max.values<-rbind(max.values,
+                      power.study[which.max(power.study$powerDetect),])
+  }
+  
+  max.values$budget<-budget
+  max.values$parameters<-studyName
+  de.real.values<-rbind(de.real.values,max.values)
+}
+```
+
+```{r}
+#Parameters for eQTL studies
+readDepth<-c(2000,5000,10000,15000,20000,30000,40000,50000,60000,70000,100000)
+cellsPerPerson<-seq(500,9000,500)
+```
+
+```{r, eval=FALSE}
 #####
 #Simulated eQTL studies - PBMC (10X)
 
@@ -501,6 +552,9 @@ simulated.parameters<-data.frame(mean.value=c(0.5,0.2,0.5,0.2),
                                         "highES_highRank","lowES_highRank"))
 
 print(simulated.parameters)
+
+#Number simulated eQTL genes
+numGenes<-2000
 
 eqtl.raw.values<-NULL
 for(s in 1:nrow(simulated.parameters)){
@@ -524,7 +578,9 @@ for(s in 1:nrow(simulated.parameters)){
     power.study<-optimize.constant.budget.restrictedDoublets(i,"eqtl",ct,ct.freq,
                          costKit,costFlowCell,readsPerFlowcell,
                          sample.eqtl.genes,"Simulated",
-                         cellsPerChanel,read.umi.fit,gamma.mixed.fits,
+                         cellsPerChanel,
+                         read.umi.fit[read.umi.fit$type=="10X_PBMC_1",],
+                         gamma.mixed.fits,
                          disp.fun.param,
                          nCellsRange = cellsPerPerson,
                          readDepthRange = readDepth,
@@ -540,36 +596,7 @@ for(s in 1:nrow(simulated.parameters)){
   eqtl.raw.values<-rbind(eqtl.raw.values,max.values)
 }
 
-######
-# DE studies with observed priors - PBMC (10X)
 
-#Filter the DE reference study for PBMC data sets
-de.ref.study<-scPower::de.ref.study[de.ref.study$type=="PBMC",]
-
-de.real.values<-NULL
-for(studyName in unique(de.ref.study$name)){
-
-  max.values<-NULL
-  for(i in budget){
-    
-    power.study<-optimize.constant.budget.restrictedDoublets(i,"de",ct,ct.freq,
-                   costKit,costFlowCell,readsPerFlowcell,
-                   de.ref.study,studyName,
-                   cellsPerChanel,read.umi.fit,gamma.mixed.fits,
-                   disp.fun.param,
-                   nCellsRange = cellsPerPerson,
-                   readDepthRange = readDepth,
-                   mappingEfficiency = mapping.efficiency,
-                   min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv)
-        
-    max.values<-rbind(max.values,
-                      power.study[which.max(power.study$powerDetect),])
-  }
-  
-  max.values$budget<-budget
-  max.values$parameters<-studyName
-  de.real.values<-rbind(de.real.values,max.values)
-}
 
 ######
 # eQTL studies with observed priors - PBMC (10X)
@@ -583,7 +610,8 @@ for(studyName in unique(eqtl.ref.study$name)){
     power.study<-optimize.constant.budget.restrictedDoublets(i,"eqtl",ct,ct.freq,
                    costKit,costFlowCell,readsPerFlowcell,
                    eqtl.ref.study,studyName,
-                   cellsPerChanel,read.umi.fit,gamma.mixed.fits,
+                   cellsPerChanel,read.umi.fit[read.umi.fit$type=="10X_PBMC_1",],
+                   gamma.mixed.fits,
                    disp.fun.param,
                    nCellsRange = cellsPerPerson,
                    readDepthRange = readDepth,
@@ -606,7 +634,7 @@ As mentioned above, percalculated values are loaded in the vignette instead, cre
 ```{r, fig.height=8, fig.width=12}
 
 #Get precalculated values
-data(precalculatedBudgetOptim)
+data(precalculatedBudgetOptim) #budget.optimization
 eqtl.raw.values<-budget.optimization[budget.optimization$type=="eQTL_simulated_PBMC",]
 de.raw.values<-budget.optimization[budget.optimization$type=="DE_simulated_PBMC",]
 eqtl.real.values<-budget.optimization[budget.optimization$type=="eQTL_observed_PBMC",]
@@ -691,12 +719,11 @@ print(g)
 
 Figure 4: Optimal parameters for varying budgets and 10X Genomics data. The figure shows the maximal reachable detection power (y-axis, first column) for a given experimental budget (x-axis) and the corresponding optimal parameter combinations for that budget (y-axis, second till fourth column). The colored lines indicate different effect sizes and gene expression rank distributions. Subplots A-B visualize different simulated effect sizes and rank distributions (simulation names see text) for DEG studies (A) and eQTL studies (B) with models fitted on 10X PBMC data. Subplots C-D visualize effect sizes and rank distributions observed in cell type sorted bulk RNA-seq DEG studies (C) and eQTL studies (D) with model fits analogously to A-B.
 
-## Figure 5: Optimal parameters for varying budgets and drop-seq and smart-seq data
+## Figure 5: Optimal parameters for varying budgets and Drop-seq and Smart-seq data
 
-Similar to Figure 4, the code for the calculation is given, but set to eval=FALSE due to long runtime. Instead, precalculated values are taken for the plotting.
+The same evaluation is done in Figure 5 than in Figure 4, only this time with priors of Drop-seq lung data and Smart-seq pancreas data instead of 10X Genomics PBMC data. Similar to Figure 4, the code for the calculation is given, but set to eval=FALSE due to long runtime. Instead, precalculated values are taken for the plotting.
 
 ```{r}
-
 #Drop-seq parameters
 
 #Cell type
@@ -758,7 +785,8 @@ for(s in 1:nrow(simulated.parameters)){
     power.study<-optimize.constant.budget.libPrepCell(i,"de",ct,ct.freq,
                              libPrepCell,costFlowCell,readsPerFlowcell,
                              sample.DE.genes,"Simulated",
-                             cellsPerChanel,read.umi.fit,
+                             cellsPerChanel,read.umi.fit[
+                               read.umi.fit$type=="10X_PBMC_1",],
                              gamma.mixed.fits.drop,
                              disp.fun.param.drop,
                              nCellsRange = cellsPerPerson,
@@ -793,7 +821,8 @@ for(studyName in unique(de.priors.lung$name)){
     power.study<-optimize.constant.budget.libPrepCell(i,"de",ct,ct.freq,
                            libPrepCell,costFlowCell,readsPerFlowcell,
                            de.priors.lung,studyName,
-                           cellsPerChanel,read.umi.fit,
+                           cellsPerChanel,read.umi.fit[
+                             read.umi.fit$type=="10X_PBMC_1",],
                            gamma.mixed.fits.drop,
                            disp.fun.param.drop,
                            nCellsRange = cellsPerPerson,
@@ -835,6 +864,9 @@ costFlowCell<-14032
 readsPerFlowcell<-4100*10^6
 
 nFittedGenes<-22000
+
+#Number DE genes to be modeled
+numGenes<-250
 
 ```
 
@@ -1010,7 +1042,7 @@ Figure 5: Optimal parameters for varying budgets and Drop-seq and Smart-seq2 dat
 
 ## Figure S1: PBMC data set
 
-Figure S1 shows the UMAP of the PBMC data set with a cell type annotation and marker genes. Due to runtime reasons, the preprocessing is not performed here again. It is in detail described in the methods part of the publication.
+Figure S1 shows the UMAP of the PBMC data set with cell type annotation and marker gene expression. Due to runtime reasons, the preprocessing is not performed here again. It is in detail described in the methods part of the publication.
 
 ## Figure S2 - S4: Steps fitting the gamma mixed model
 
@@ -1090,7 +1122,7 @@ Figure S5: Expression probability model for a count threshold larger than zero. 
 
 ## Figure S6: Expression probability model for a count threshold larger than ten.
 
-The supplementary figure shows the same as Figure S5, but with a count threshold of ten instead of 0.
+The supplementary figure shows the same as Figure S5, but with a count threshold of ten instead of zero.
 
 ```{r, fig.height=12,fig.width=8}
 
@@ -1161,7 +1193,7 @@ Figure S6: Expression probability model for a count threshold larger than ten. G
 
 ## Figure S7: Influence of the number of measured cells per cell type and individual and the mean reads per cell on the number of detectable genes.
 
-The supplemenatry figure shows how the expected number of expressed/detectable genes depends on the parameters. It is an extension of Figure 3, where only the expression probability is shown.
+The supplemenatry figure shows how the expected number of expressed/detectable genes depends on the experimental parameters cells per person and read depth. It is an extension of Figure 3, where only the expression probability is shown.
 
 ```{r,fig.width=6}
 
@@ -1179,7 +1211,8 @@ for(r in readDepths){
   for(c in cellCounts){
     count.est<-scPower::estimate.exp.prob.param(nSamples=measuredIndivs,
                                                    readDepth=r,nCellsCt=c,
-                                                   scPower::read.umi.fit,
+                                                   scPower::read.umi.fit[
+                                                     read.umi.fit$type=="10X_PBMC_1",],
                                                    scPower::gamma.mixed.fits,
                                                    ct=ct,
                                                    scPower::disp.fun.param,
@@ -1216,7 +1249,7 @@ Figure S7: Influence of the number of measured cells per cell type and individua
 
 ## Figure S8: Expression rank priors from cell type sorted bulk studies
 
-Expression rank priors taken from all analysed DE and eQTL studies. Calculated using the function "gene.rank.calculation", as described in the introduction vignette in section "Priors from DE / eQTL studies". For references of all used studies, please look into the publication.
+Figure S8 shows the expression rank priors taken from all analysed DE and eQTL studies. The ranks were calculated using the function "gene.rank.calculation", as described in the introduction vignette in section "Priors from DE / eQTL studies". For citations of all used studies, please look into the publication.
 
 ```{r, fig.width=8, fig.height=8}
 #Load precalculated results
@@ -1287,7 +1320,7 @@ Figure S8: Expression rank priors from cell type sorted bulk studies. Gene expre
 
 ## Figure S9: Effect size priors from cell type sorted bulk studies
 
-Expression sizes taken directly from all analysed DE and eQTL studies, defining significant genes to be below an FDR threshold of 0.05. For references of all used studies, please look into the publication.
+Figure S9 shows effect sizes taken directly from all analysed DE and eQTL studies, defining significant genes to be below an FDR threshold of 0.05. For citations of all used studies, please look into the publication.
 
 ```{r, fig.width=8, fig.height=8}
 
@@ -1357,7 +1390,7 @@ Figure S9: Effect size priors from cell type sorted bulk studies. Effect sizes g
 
 ## Figure S10: Detection power using observed priors from reference studies
 
-Figure S10 is an extension of Figure 3, showing the detection power for all reference studies with PBMC cell types and matched cell type expression model.
+Figure S10 is an extension of Figure 3, showing the detection power for all analysed reference studies with PBMC cell types and matched cell type expression model, while in Figure 3 it is only shown for one DE and one eQTL study.
 
 ```{r, fig.width=6, fig.height=8}
 
@@ -1365,7 +1398,7 @@ Figure S10 is an extension of Figure 3, showing the detection power for all refe
 transcriptome.mapped.reads<-20000
 nGenes<-21000
 ct.freq<-1
-samplesPerLane<-8
+cellsPerLane<-20000
 
 ########
 # DE subplot
@@ -1388,16 +1421,19 @@ param.combis$refStudyName<-as.character(param.combis$refStudyName)
 
 #Test results for each parameter combination
 res<-lapply(1:nrow(param.combis),function(i)
-  power.general.withDoublets(param.combis$sampleSize[i],
+  power.general.restrictedDoublets(param.combis$sampleSize[i],
                              param.combis$cellsPerCelltype[i],
                              transcriptome.mapped.reads,
                              ct.freq, "de",de.ref.study,
                              param.combis$refStudyName[i],
-                             samplesPerLane,read.umi.fit,
+                             cellsPerLane,read.umi.fit[
+                               read.umi.fit$type=="10X_PBMC_1",],
                              gamma.mixed.fits,
                              param.combis$ct[i],
                              disp.fun.param,mappingEfficiency = 1,
                              multipletRate=0,multipletFactor=1,
+                             min.UMI.counts = 10,
+                             perc.indiv.expr = 0.5,
                              nGenes=nGenes))
 
 power.DE.study<-rbindlist(res)
@@ -1437,16 +1473,19 @@ param.combis$refStudyName<-as.character(param.combis$refStudyName)
 
 #Test results for each parameter combination
 res<-lapply(1:nrow(param.combis),function(i)
-  power.general.withDoublets(param.combis$sampleSize[i],
+  power.general.restrictedDoublets(param.combis$sampleSize[i],
                              param.combis$cellsPerCelltype[i],
                              transcriptome.mapped.reads,
                              ct.freq, "eqtl",eqtl.ref.study,
                              param.combis$refStudyName[i],
-                             samplesPerLane,read.umi.fit,
+                             cellsPerLane,read.umi.fit[
+                               read.umi.fit$type=="10X_PBMC_1",],
                              gamma.mixed.fits,
                              param.combis$ct[i],
                              disp.fun.param,mappingEfficiency = 1,
                              multipletRate=0,multipletFactor=1,
+                             min.UMI.counts = 10,
+                             perc.indiv.expr = 0.5,
                              nGenes=21000))
 
 power.eqtl.study<-rbindlist(res)
@@ -1478,14 +1517,14 @@ Figure S10: Detection power using observed priors from reference studies. Detect
 
 ## Figure S11: Parameter optimization for constant budget
 
-Example calculations on how the model finds the optimal parameter combination for a specific budget. For an explanation of all the used parameters, please look into the introduction vignette.
+Figure S11 shows two example calculations on how scPower selects the optimal experimental parameter combination for a specific budget, once for a DE study and once for an eQTL study. For an explanation of all the used parameters, please look into the introduction vignette.
 
 ```{r,fig.width=8,fig.height=8}
 
 costKit<-5600
 costFlowCell<-14032
 readsPerFlowcell<-4100*10^6
-samplesPerLane<-5
+cellsPerLane<-20000
 ct<-"CD4 T cells"
 ct.freq<-0.25
 mappingEfficiency<-0.8
@@ -1498,12 +1537,14 @@ readDepth<-c(2000,5000,10000,15000,20000,30000,50000,70000)
 cellsPerIndividual<-c(100,200,500,700,seq(1000,12000,500))
 totalBudget<-10000
 
-power.study.de<-optimize.constant.budget(totalBudget,comp.type,
-                                      ct,ct.freq,
+power.study.de<-optimize.constant.budget.restrictedDoublets(totalBudget,
+                                      comp.type,ct,ct.freq,
                                       costKit,costFlowCell,readsPerFlowcell,
                                       de.ref.study,ref.study.name,
-                                      samplesPerLane,
-                                      read.umi.fit,gamma.mixed.fits,
+                                      cellsPerLane,
+                                      read.umi.fit[
+                                        read.umi.fit$type=="10X_PBMC_1",],
+                                      gamma.mixed.fits,
                                       disp.fun.param,
                                       nCellsRange=cellsPerIndividual,
                                       readDepthRange=readDepth,
@@ -1531,9 +1572,12 @@ power.study.plot$variable<-factor(power.study.plot$variable,
 g.rd<-ggplot(power.study.plot,aes(totalCells,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
 
-g.rd<-g.rd + scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
-                                                                    labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(c,max.study$readDepth,
-    totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
+g.rd<-g.rd + 
+  scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
+                                              labels=sapply(labels,function(c)floor(
+                                                                      sampleSizeBudgetCalculation.restrictedDoublets(c,max.study$readDepth,
+    totalBudget, costKit, cellsPerLane, costFlowCell,readsPerFlowcell))),                           
+    name="Sample size"))+               
   geom_vline(xintercept = max.study$totalCells)+
   ylab("Probability")+
   scale_color_manual("",values=col.set)+
@@ -1560,8 +1604,9 @@ g.cp<-ggplot(power.study.plot,aes(readDepth,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
 
 g.cp <- g.cp + scale_x_continuous("Read depth",sec.axis=sec_axis(~., breaks=labels,
-                                                      labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
-    c,totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
+                                                      labels=sapply(labels,function(c)floor(
+                                                        sampleSizeBudgetCalculation.restrictedDoublets(max.study$totalCells,
+    c,totalBudget, costKit, cellsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
   geom_vline(xintercept = max.study$readDepth)+
   ylab("Probability")+
   scale_color_manual("",values=col.set)+
@@ -1585,12 +1630,14 @@ readDepth<-c(2000,5000,10000,15000,20000,30000,50000)
 cellsPerIndividual<-c(100,200,500,700,seq(1000,9000,500))
 totalBudget<-30000
 
-power.study.eqtl<-optimize.constant.budget(totalBudget,comp.type,
-                                      ct,ct.freq,
+power.study.eqtl<-optimize.constant.budget.restrictedDoublets(totalBudget,
+                                      comp.type,ct,ct.freq,
                                       costKit,costFlowCell,readsPerFlowcell,
                                       eqtl.ref.study,ref.study.name,
-                                      samplesPerLane,
-                                      read.umi.fit,gamma.mixed.fits,
+                                      cellsPerLane,
+                                      read.umi.fit[
+                                        read.umi.fit$type=="10X_PBMC_1",],
+                                      gamma.mixed.fits,
                                       disp.fun.param,
                                       nCellsRange=cellsPerIndividual,
                                       readDepthRange=readDepth,
@@ -1620,8 +1667,9 @@ labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
 
 g.rd<-g.rd + 
   scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
-                                                              labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
-    c,totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
+                                                              labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation.restrictedDoublets(
+                                                                max.study$totalCells,
+    c,totalBudget, costKit, cellsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
   geom_vline(xintercept = max.study$totalCells)+
   ylab("Probability")+
   scale_color_manual("",values=col.set)+
@@ -1648,8 +1696,9 @@ g.cp<-ggplot(power.study.plot,aes(readDepth,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
 
 g.cp <- g.cp + scale_x_continuous("Read depth",sec.axis=sec_axis(~., breaks=labels,
-                                                      labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
-    c,totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
+                                                      labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation.restrictedDoublets(
+                                                        max.study$totalCells,
+    c,totalBudget, costKit, cellsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
   geom_vline(xintercept = max.study$readDepth)+
   scale_color_manual("",values=col.set)+
   ylab("Probability")+
@@ -1674,7 +1723,7 @@ Figure S11: Parameter optimization for constant budget. Optimized parameters (sa
 
 ## Figure S12: Parameter optimization grid
 
-Showing the parameter grids for the calculations done for Figure S11.
+Figure S12 shows the parameter grids for the calculations done for Figure S11.
 
 ```{r,fig.width=8}
 
@@ -1712,7 +1761,7 @@ Figure S12: Parameter optimization grid. Maximizing detection power by selecting
 
 ## Figure S13: Gene curve fits for different single cell technologies
 
-The figure shows the gene expression model for a drop-seq and a smart-seq data set, corresponding to Figure 2, S5 and S5.
+The figure shows the gene expression model for a Drop-seq lung and a Smart-seq pancreas data set, corresponding to the models shown Figure 2, S5 and S6 for a 10X Genomics PBMC data set.
 
 ```{r, fig.width=8,fig.height=6}
 
@@ -1855,7 +1904,7 @@ Figure S13: Gene curve fits for different single cell technologies. Plot A shows
 
 ## Figure S14: Power to detect rare cell types
 
-Model to calculate the power to detect rare cell types. Please look into the introduction vignette, section "Part 3: Power estimation to detect a sufficent number of cells in a specific cell types" for an explanation of all parameters. The cell type frequencies are taken from BioRad (see reference in publication), all other parameters are set to realistic values.
+Model to calculate the power to detect rare cell types. Please look into the introduction vignette, section "Part 3: Power estimation to detect a sufficent number of cells in a specific cell types" for an explanation of all parameters. The cell type frequencies are taken from BioRad (see citation in the publication), all other parameters are set to realistic values.
 
 ```{r, fig.width=8, fig.height=6}
 
