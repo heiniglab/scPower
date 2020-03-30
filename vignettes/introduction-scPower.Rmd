@@ -2,7 +2,11 @@
 title: "Introduction to scPower"
 author: "Matthias Heinig, Katharina Schmid"
 date:  "`r format(Sys.time(), '%d %B, %Y')`"
-output: rmarkdown::html_vignette
+#output: rmarkdown::html_vignette
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 4
 vignette: >
   %\VignetteIndexEntry{introduction-scPower}
   %\VignetteEngine{knitr::rmarkdown}
@@ -188,7 +192,7 @@ print(power)
 
 As mentioned before, the detection power is the product of the expression probabilities and the power. The expression probabilities can also be calculated independently, using the function estimate.exp.prob.param. However, in this function doublets and cell type frequencies are not taken into account, but instead directly the number of cells per cell type and individual need to be entered.
 
-```{r,fig.width=6}
+```{r,fig.width=4}
 exp.probs<-scPower::estimate.exp.prob.param(nSamples=100,readDepth=25000,nCellsCt=150,
                                                 read.umi.fit = scPower::read.umi.fit,
                                                 gamma.mixed.fits = scPower::gamma.mixed.fits,
@@ -209,7 +213,7 @@ scPower gives the user the opportunity to select the best parameter combination 
 
 To calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before, such as gamma and dispersion fits.
 
-```{r,fig.width=6}
+```{r,fig.width=4}
 
 opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      ct="CD14+ Monocytes",ct.freq=0.2,
@@ -249,7 +253,7 @@ power.DE.study$readDepth<-as.factor(power.DE.study$readDepth)
 g<-ggplot(power.DE.study,aes(x=totalCells,y=readDepth,fill=sampleSize))+
   geom_tile()+
   xlab("Number of measured cells per sample")+ylab("Read depth")+
-  ggtitle("Possible sample size for each parameter combination and a restricted budget")+
+  ggtitle("Possible sample size for each parameter combination \n and a restricted budget")+
   theme_bw()+
   theme(plot.title = element_text(size=10),
         axis.title=element_text(size=8),
@@ -531,7 +535,7 @@ disp.fun.general.new$ct<-"New_ct"
 
 As a last point, the relationship between reads and UMIs is fitted logarithmically. Therefore, the number of mapped reads is necessary, which can be gained from summary statistics after the mapping (e.g. in the cellranger summary statistics).
 
-```{r,fig.width=4}
+```{r,fig.width=3, fig.height=3}
 #Number of mapped reads taken from cellranger summary statistics
 mapped.reads<-data.frame(matrix=c("complete","subsampled75","subsampled50","subsampled25"),
                          transcriptome.mapped.reads=c(23130,17422,11666,5859))
@@ -551,7 +555,7 @@ print(read.umi.fit.new)
 
 In the section "Counting observed expressed genes", the number of expressed genes in our example count matrices were calculated and saved in the data frame "expressed.genes.df". To validate our model, we try to predict the same number of expressed genes using our fitted model.
 
-```{r,fig.width=6}
+```{r,fig.width=5, fig.height=3}
 #Merge the observed numbers of expressed genes with the read depth
 expressed.genes.df<-merge(expressed.genes.df,mapped.reads,
                           by="matrix")
@@ -624,7 +628,7 @@ To use other effect size and expression rank priors either data from other DE / 
 
 Effect sizes from other studies can be taken directly from the summary statistics of the study (FoldChange for DE genes and R^2 value for eQTL genes). A function of scPower extracts the gene ranks, if the normalized (!) count matrix is provided and a vector with the names of the significante DE / eQTL genes. To show the function, an example count matrix of scPower is processed in the following. For normalization, a simple normalization by counts per cell is done here. Depending on the data, other normalization strategies, e.g. incorporating also the gene length, might be more appropriate.
 
-```{r}
+```{r, fig.width=4,fig.height=3}
 
 data(countMatrixExample)
 #Choose one of the example matrices given by scPower

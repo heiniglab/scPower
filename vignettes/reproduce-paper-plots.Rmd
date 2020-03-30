@@ -2,12 +2,20 @@
 title: "Reproduce paper plots with scPower"
 author: "Matthias Heinig, Katharina Schmid"
 date:  "`r format(Sys.time(), '%d %B, %Y')`"
-output: rmarkdown::html_vignette
+#output: rmarkdown::html_vignette
+output:
+  pdf_document:
+    toc: true
+    toc_depth: 4
 vignette: >
   %\VignetteIndexEntry{reproduce-paper-plots}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
+
+This vignette shows how the plots of the paper "Design and power analysis for multi-sample single cell genomics experiments" can be reproduced using scPower. For an introduction into the package with detailed explanations, please have a look at the second vignette "introduction-scPower". Due to runtime reasons, not the complete analysis is performed in this vignette and instead sometimes precalculated values provided from the package. However, for all steps it is explained how the precalculated values are generated. For more information on the modelling and all citations, please have a look into our publication
+
+We imported additionally the same color schemes and plotting packages (ggplot2 and ggpubr) to be able to create exactly the same plots as in the paper.
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
@@ -25,12 +33,7 @@ library(ggpubr)
 library(RColorBrewer)
 ```
 
-This vignette shows how the plots of the paper "Design and power analysis for multi-sample single cell genomics experiments" can be reproduced using scPower. For an introduction into the package with detailed explanations, please have a look at the second vignette "introduction-scPower.Rmd". Due to runtime reasons, not the complete analysis is performed in this vignette and instead sometimes precalculated values provided from the package. However, for all steps it is explained how the precalculated values are generated. For more information on the modelling and detailed references, please have a look into our paper.
-
-We imported additionally the same color schemes and plotting packages (ggplot2 and ggpubr) to be able to create exactly the same plots as in the paper.
-
 ```{r}
-
 #Color specifications
 col.paired <- brewer.pal(n = 12, "Paired")
 col.set <- col.paired[c(2,8,9)]
@@ -46,11 +49,11 @@ col.set5<-col.paired[seq(2,12,2)]
 
 ## Figure 1: Dependence of experimental design parameters
 
-Figure 1 is an schematic overview figure showing the dependence of experimental design parameters.
+Figure 1 is a schematic overview figure showing the dependence of experimental design parameters.
 
 ## Figure 2: Expression probability model parameterized by UMI counts per cell
 
-Figure 2 shows how the fit of our expression probabilty model for two example data sets, our own data set and Kang et al, 2018. The model is fitted using our own PBMC data set. The fits are provided in the scPower package in the data frames "disp.fun.param" and "gamma.mixed.fits". Ths fits are not shown here due to runtime limitations, but the fits were exactly produced as described in the introduction-scPower" vignette in section "Expression probability curves" (using the same functions and in the same order). The only difference is that in the introduction vignette it is only shown for one cell type, we performed the fit separately for all celltypes with at least 50 cells.
+Figure 2 shows how the fit of our expression probabilty model is applied on two example data sets, our own data set and one of Kang et al, 2018. The model is fitted using our own PBMC data set. The fits are provided in the scPower package in the data frames "disp.fun.param" and "gamma.mixed.fits". Ths fitting itself is not shown here due to runtime limitations, but the fits were exactly produced as described in the introduction-scPower" vignette in section "Expression probability curves" (using the same functions in the same order). The only difference is that in the introduction vignette it is only shown for one cell type, we performed the fit separately for all celltypes with at least 50 cells.
 
 The observed expression curves were calculated as described in section "Counting observed expressed genes", the percalculated values are saved due to time reasons.
 
@@ -63,8 +66,9 @@ run<-"Run 5"
 
 ###############
 #Fit for own data and count > 10
-estimates.allSamples<-observed.gene.counts[observed.gene.counts$evaluation=="own_count10" &
-                                  observed.gene.counts$run==run,]
+estimates.allSamples<-observed.gene.counts[
+  observed.gene.counts$evaluation=="own_count10" &
+    observed.gene.counts$run==run,]
 
 estimates.allSamples$estimated.counts<-NA
 for(i in 1:nrow(estimates.allSamples)){
@@ -82,15 +86,17 @@ for(i in 1:nrow(estimates.allSamples)){
   
 }
 
-plot.estimates<-reshape2::melt(estimates.allSamples,id.vars=c("run","sample","cell.type","num.cells",
-                                                              "meanUMI","evaluation"))
+plot.estimates<-reshape2::melt(estimates.allSamples,
+                               id.vars=c("run","sample","cell.type","num.cells",
+                                         "meanUMI","evaluation"))
 #Set the ordering of expressed vs estimated correctly
 plot.estimates$variable<-factor(plot.estimates$variable,
                                 levels=c("expressed.genes","estimated.counts"))
 
 #Replace subsampling
 subsampled.names<-setNames(c("50000","37500","25000","12500"),
-                           c("complete","subsampled75","subsampled50","subsampled25"))
+                           c("complete","subsampled75","subsampled50",
+                             "subsampled25"))
 plot.estimates$sample<-as.character(plot.estimates$sample)
 plot.estimates$sample<-subsampled.names[plot.estimates$sample]
 
@@ -112,8 +118,9 @@ g.run.10<-ggplot(data=plot.estimates,aes(x=num.cells,y=value))+
 
 ###############
 #Fit for own data and count > 0
-estimates.allSamples<-observed.gene.counts[observed.gene.counts$evaluation=="own_count0" &
-                                  observed.gene.counts$run==run,]
+estimates.allSamples<-observed.gene.counts[
+  observed.gene.counts$evaluation=="own_count0" &
+    observed.gene.counts$run==run,]
 
 estimates.allSamples$estimated.counts<-NA
 for(i in 1:nrow(estimates.allSamples)){
@@ -131,15 +138,18 @@ for(i in 1:nrow(estimates.allSamples)){
   
 }
 
-plot.estimates<-reshape2::melt(estimates.allSamples,id.vars=c("run","sample","cell.type","num.cells",
-                                                              "meanUMI","evaluation"))
+plot.estimates<-reshape2::melt(estimates.allSamples,
+                               id.vars=c("run","sample","cell.type","num.cells",
+                                         "meanUMI","evaluation"))
+
 #Set the ordering of expressed vs estimated correctly
 plot.estimates$variable<-factor(plot.estimates$variable,
                                 levels=c("expressed.genes","estimated.counts"))
 
 #Replace subsampling
 subsampled.names<-setNames(c("50000","37500","25000","12500"),
-                           c("complete","subsampled75","subsampled50","subsampled25"))
+                           c("complete","subsampled75","subsampled50",
+                             "subsampled25"))
 plot.estimates$sample<-as.character(plot.estimates$sample)
 plot.estimates$sample<-subsampled.names[plot.estimates$sample]
 
@@ -160,7 +170,8 @@ g.run.0<-ggplot(data=plot.estimates,aes(x=num.cells,y=value))+
 
 ###############
 #Fit for Kang data and count > 10
-estimates.allSamples<-observed.gene.counts[observed.gene.counts$evaluation=="Kang_count10",]
+estimates.allSamples<-observed.gene.counts[
+  observed.gene.counts$evaluation=="Kang_count10",]
 
 personsPerRunKang<-list("A"=4,"B"=4,"C"=8)
 
@@ -182,10 +193,11 @@ for(i in 1:nrow(estimates.allSamples)){
   
 }
 
-plot.estimates<-reshape2::melt(estimates.allSamples,id.vars=c("run","sample","cell.type","num.cells",
-                                                              "meanUMI","evaluation"))
+plot.estimates<-reshape2::melt(estimates.allSamples,
+                               id.vars=c("run","sample","cell.type","num.cells",
+                                         "meanUMI","evaluation"))
 
-#Remove dendritic cell type, as it is only fitted with data from the overloaded run
+#Remove dendritic cell type (only fitted with data from the overloaded run)
 plot.estimates<-plot.estimates[plot.estimates$cell.type!="Dendritic cells",]
 
 g.ye.10<-ggplot(plot.estimates,aes(x=num.cells,y=value))+
@@ -204,7 +216,8 @@ g.ye.10<-ggplot(plot.estimates,aes(x=num.cells,y=value))+
 
 ###############
 #Fit for Kang data and count > 10
-estimates.allSamples<-observed.gene.counts[observed.gene.counts$evaluation=="Kang_count0",]
+estimates.allSamples<-observed.gene.counts[
+  observed.gene.counts$evaluation=="Kang_count0",]
 
 personsPerRunKang<-list("A"=4,"B"=4,"C"=8)
 
@@ -226,10 +239,11 @@ for(i in 1:nrow(estimates.allSamples)){
   
 }
 
-plot.estimates<-reshape2::melt(estimates.allSamples,id.vars=c("run","sample","cell.type","num.cells",
-                                                              "meanUMI","evaluation"))
+plot.estimates<-reshape2::melt(estimates.allSamples,
+                               id.vars=c("run","sample","cell.type","num.cells",
+                                         "meanUMI","evaluation"))
 
-#Remove dendritic cell type, as it is only fitted with data from the overloaded run
+#Remove dendritic cell type (only fitted with data from the overloaded run)
 plot.estimates<-plot.estimates[plot.estimates$cell.type!="Dendritic cells",]
 
 g.ye.0<-ggplot(plot.estimates,aes(x=num.cells,y=value))+
@@ -308,11 +322,14 @@ res<-lapply(1:nrow(param.combis),function(i)
 power.DE.study<-rbindlist(res)
 
 #Plot DE results
-power.DE.study<-reshape2::melt(power.DE.study,id.vars=c("name","sampleSize","totalCells","usableCells",
-                                              "multipletFraction","ctCells","readDepth",
-                                              "readDepthSinglet","mappedReadDepth",
-                                              "expressedGenes"))
-power.DE.study$variable<-factor(power.DE.study$variable,levels=c("exp.probs","power","powerDetect"))
+power.DE.study<-reshape2::melt(power.DE.study,
+                               id.vars=c("name","sampleSize","totalCells",
+                                         "usableCells","multipletFraction",
+                                         "ctCells","readDepth",
+                                         "readDepthSinglet","mappedReadDepth",
+                                         "expressedGenes"))
+power.DE.study$variable<-factor(power.DE.study$variable,
+                                levels=c("exp.probs","power","powerDetect"))
 
 var.labs<-c("Expression probability", "DE power", 
             "Detection power")
@@ -321,8 +338,10 @@ names(var.labs)<-c("exp.probs","power","powerDetect")
 power.DE.study$ctCells<-as.factor(power.DE.study$ctCells)
 power.DE.study$sampleSize<-as.factor(power.DE.study$sampleSize)
 g.DE<-ggplot(power.DE.study,aes(x=ctCells,y=sampleSize,fill=value))+
-  geom_tile()+facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
-  xlab("Number of measured cells per cell type and individual")+ylab("Total sample size")+
+  geom_tile()+
+  facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
+  xlab("Number of measured cells per cell type and individual")+
+  ylab("Total sample size")+
   scale_fill_viridis("Probability")+
   theme_bw()+
   theme(axis.title=element_text(size=10),
@@ -355,11 +374,14 @@ res<-lapply(1:nrow(param.combis),function(i)
 power.eqtl.study<-rbindlist(res)
 
 #Plot eQTL results
-power.eqtl.study<-reshape2::melt(power.eqtl.study,id.vars=c("name","sampleSize","totalCells","usableCells",
-                                              "multipletFraction","ctCells","readDepth",
-                                              "readDepthSinglet","mappedReadDepth",
-                                              "expressedGenes"))
-power.eqtl.study$variable<-factor(power.eqtl.study$variable,levels=c("exp.probs","power","powerDetect"))
+power.eqtl.study<-reshape2::melt(power.eqtl.study,
+                                 id.vars=c("name","sampleSize","totalCells",
+                                           "usableCells","multipletFraction",
+                                            "ctCells","readDepth",
+                                            "readDepthSinglet","mappedReadDepth",
+                                            "expressedGenes"))
+power.eqtl.study$variable<-factor(power.eqtl.study$variable,
+                                  levels=c("exp.probs","power","powerDetect"))
 
 var.labs<-c("Expression probability", "eQTL power", 
             "Detection power")
@@ -368,8 +390,10 @@ names(var.labs)<-c("exp.probs","power","powerDetect")
 power.eqtl.study$ctCells<-as.factor(power.eqtl.study$ctCells)
 power.eqtl.study$sampleSize<-as.factor(power.eqtl.study$sampleSize)
 g.eqtl<-ggplot(power.eqtl.study,aes(x=ctCells,y=sampleSize,fill=value))+
-  geom_tile()+facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
-  xlab("Number of measured cells per cell type and individual")+ylab("Total sample size")+
+  geom_tile()+
+  facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
+  xlab("Number of measured cells per cell type and individual")+
+  ylab("Total sample size")+
   scale_fill_viridis("Probability")+
   theme_bw()+
   theme(axis.title=element_text(size=10),
@@ -439,10 +463,11 @@ for(s in 1:nrow(simulated.parameters)){
   
   #Simulate prior for effect sizes  
   set.seed(1)
-  effectSizes<-effectSize.DE.simulation(mean=simulated.parameters$mean.value[s],sd=1,
-                                        numGenes=numGenes)
+  effectSizes<-effectSize.DE.simulation(mean=simulated.parameters$mean.value[s],
+                                        sd=1,numGenes=numGenes)
   
-  sample.DE.genes<-data.frame(ranks=ranks, FoldChange=effectSizes, name="Simulated")
+  sample.DE.genes<-data.frame(ranks=ranks, FoldChange=effectSizes, 
+                              name="Simulated")
     
   max.values<-NULL
   for(i in budget){
@@ -455,7 +480,8 @@ for(s in 1:nrow(simulated.parameters)){
                              nCellsRange = cellsPerPerson,
                              readDepthRange = readDepth,
                              mappingEfficiency = mapping.efficiency,
-                             min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv)
+                             min.UMI.counts = minUMI, 
+                             perc.indiv.expr = perc.indiv)
     
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -487,8 +513,8 @@ for(s in 1:nrow(simulated.parameters)){
   
   #Simulate prior for effect sizes  
   set.seed(1)
-  effectSizes<-effectSize.eQTL.simulation(mean=simulated.parameters$mean.value[s],sd=0.2,
-                                          numGenes=numGenes)
+  effectSizes<-effectSize.eQTL.simulation(mean=simulated.parameters$mean.value[s],
+                                          sd=0.2,numGenes=numGenes)
   
   sample.eqtl.genes<-data.frame(ranks=ranks,Rsq=effectSizes,name="Simulated")
     
@@ -587,14 +613,16 @@ eqtl.real.values<-budget.optimization[budget.optimization$type=="eQTL_observed_P
 de.real.values<-budget.optimization[budget.optimization$type=="DE_observed_PBMC",]
 
 #Replace probability names
-var.labs<-setNames(c("Detection power","Cells per individual","Read depth","Sample size"),
-                           c("powerDetect","totalCells","readDepth","sampleSize"))
+var.labs<-setNames(c("Detection power","Cells per individual",
+                     "Read depth","Sample size"),
+                   c("powerDetect","totalCells","readDepth","sampleSize"))
 
 #Data frame with dummy values to scale the y axes
 dummy.plot<-data.frame(budget=c(min(budget),max(budget),min(budget),max(budget),
                                 min(budget),max(budget),min(budget),max(budget)),
-                       variable=c("powerDetect","powerDetect","readDepth","readDepth",
-                                  "totalCells","totalCells","sampleSize","sampleSize"),
+                       variable=c("powerDetect","powerDetect","readDepth",
+                                  "readDepth","totalCells","totalCells",
+                                  "sampleSize","sampleSize"),
                        value=c(0,1,min(readDepth),max(readDepth),
                                min(cellsPerPerson),max(cellsPerPerson),0,400))
 
@@ -718,10 +746,11 @@ for(s in 1:nrow(simulated.parameters)){
   
   #Simulate prior for effect sizes  
   set.seed(1)
-  effectSizes<-effectSize.DE.simulation(mean=simulated.parameters$mean.value[s],sd=1,
-                                        numGenes=numGenes)
+  effectSizes<-effectSize.DE.simulation(mean=simulated.parameters$mean.value[s],
+                                        sd=1, numGenes=numGenes)
   
-  sample.DE.genes<-data.frame(ranks=ranks, FoldChange=effectSizes, name="Simulated")
+  sample.DE.genes<-data.frame(ranks=ranks, FoldChange=effectSizes, 
+                              name="Simulated")
     
   max.values<-NULL
   for(i in budget){
@@ -736,7 +765,8 @@ for(s in 1:nrow(simulated.parameters)){
                              readDepthRange = readDepth,
                              mappingEfficiency = mapping.efficiency,
                              multipletRate = multipletRate,
-                             min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv,
+                             min.UMI.counts = minUMI, 
+                             perc.indiv.expr = perc.indiv,
                              nGenes=nFittedGenes,
                              multipletRateGrowth = multipletRateGrowth)
     
@@ -831,8 +861,8 @@ for(s in 1:nrow(simulated.parameters)){
   
   #Simulate prior for effect sizes  
   set.seed(1)
-  effectSizes<-effectSize.DE.simulation(mean=simulated.parameters$mean.value[s],sd=1,
-                                        numGenes=numGenes)
+  effectSizes<-effectSize.DE.simulation(mean=simulated.parameters$mean.value[s],
+                                        sd=1,numGenes=numGenes)
   
   sample.DE.genes<-data.frame(ranks=ranks, FoldChange=effectSizes, 
                               geneLength=5000, name="Simulated")
@@ -841,7 +871,8 @@ for(s in 1:nrow(simulated.parameters)){
   for(i in budget){
     
     power.study<-optimize.constant.budget.smartseq(i,"de",ct,ct.freq,
-                                         prepCostCell,costFlowCell,readsPerFlowcell,
+                                         prepCostCell,costFlowCell,
+                                         readsPerFlowcell,
                                          sample.DE.genes,"Simulated",
                                          gamma.mixed.fits.smart,
                                          disp.fun.param.smart,
@@ -995,10 +1026,12 @@ The supplementary figure shows the expression probability model for all runs of 
 data(precalculatedObservedGeneCounts) #observed.gene.counts
 
 #Number of samples per run
-personsPerRun<-list("Run 1"=14,"Run 2"=7, "Run 3"=7, "Run 4"=14, "Run 5"=14, "Run 6"=14)
+personsPerRun<-list("Run 1"=14,"Run 2"=7, "Run 3"=7, "Run 4"=14, 
+                    "Run 5"=14, "Run 6"=14)
 
 #Fit for own data and count > 10
-estimates.allSamples<-observed.gene.counts[observed.gene.counts$evaluation=="own_count0",]
+estimates.allSamples<-observed.gene.counts[
+  observed.gene.counts$evaluation=="own_count0",]
 
 estimates.allSamples$estimated.counts<-NA
 for(i in 1:nrow(estimates.allSamples)){
@@ -1019,12 +1052,14 @@ for(i in 1:nrow(estimates.allSamples)){
   
 }
 
-plot.estimates<-reshape2::melt(estimates.allSamples,id.vars=c("run","sample","cell.type","num.cells",
-                                                    "meanUMI","evaluation"))
+plot.estimates<-reshape2::melt(estimates.allSamples,
+                               id.vars=c("run","sample","cell.type","num.cells",
+                                         "meanUMI","evaluation"))
 
 #Replace subsampling
 subsampled.names<-setNames(c("50000","37500","25000","12500"),
-                           c("complete","subsampled75","subsampled50","subsampled25"))
+                           c("complete","subsampled75","subsampled50",
+                             "subsampled25"))
 plot.estimates$sample<-as.character(plot.estimates$sample)
 plot.estimates$sample<-subsampled.names[plot.estimates$sample]
 
@@ -1063,10 +1098,12 @@ The supplementary figure shows the same as Figure S5, but with a count threshold
 data(precalculatedObservedGeneCounts) #observed.gene.counts
 
 #Number of samples per run
-personsPerRun<-list("Run 1"=14,"Run 2"=7, "Run 3"=7, "Run 4"=14, "Run 5"=14, "Run 6"=14)
+personsPerRun<-list("Run 1"=14,"Run 2"=7, "Run 3"=7, "Run 4"=14, 
+                    "Run 5"=14, "Run 6"=14)
 
 #Fit for own data and count > 10
-estimates.allSamples<-observed.gene.counts[observed.gene.counts$evaluation=="own_count10",]
+estimates.allSamples<-observed.gene.counts[
+  observed.gene.counts$evaluation=="own_count10",]
 
 estimates.allSamples$estimated.counts<-NA
 for(i in 1:nrow(estimates.allSamples)){
@@ -1087,12 +1124,14 @@ for(i in 1:nrow(estimates.allSamples)){
   
 }
 
-plot.estimates<-reshape2::melt(estimates.allSamples,id.vars=c("run","sample","cell.type","num.cells",
-                                                    "meanUMI","evaluation"))
+plot.estimates<-reshape2::melt(estimates.allSamples,
+                               id.vars=c("run","sample","cell.type","num.cells",
+                                         "meanUMI","evaluation"))
 
 #Replace subsampling
 subsampled.names<-setNames(c("50000","37500","25000","12500"),
-                           c("complete","subsampled75","subsampled50","subsampled25"))
+                           c("complete","subsampled75","subsampled50",
+                             "subsampled25"))
 plot.estimates$sample<-as.character(plot.estimates$sample)
 plot.estimates$sample<-subsampled.names[plot.estimates$sample]
 
@@ -1159,7 +1198,8 @@ g<-ggplot(geneCounts,aes(x=numCells,y=meanReads,fill=count.est))+
   geom_tile()+
   geom_text(aes(label=count.est,color=count.est>8000))+
   scale_colour_manual(values=c("white", "black"))+
-  xlab("Number of measured cells per cell type and individual")+ylab("Mean reads per cell")+
+  xlab("Number of measured cells per cell type and individual")+
+  ylab("Mean reads per cell")+
   scale_fill_viridis("Detectable genes")+
   theme_bw()+
   theme(axis.title=element_text(size=12),
@@ -1338,7 +1378,8 @@ param.combis<-expand.grid(cellsPerCelltype,sampleSize,
 colnames(param.combis)<-c("cellsPerCelltype","sampleSize","refStudyName")
 
 #Match for each study the corresponding cell type
-matched.ct<-data.frame(refStudyName=unique(de.ref.study$name[de.ref.study$type=="PBMC"]),
+matched.ct<-data.frame(refStudyName=unique(de.ref.study$name[de.ref.study$type==
+                                                               "PBMC"]),
                        ct=c(rep("CD4 T cells",3),"CD14+ Monocytes"),
                        stringsAsFactors=FALSE)
 print(matched.ct)
@@ -1367,7 +1408,8 @@ power.DE.study$totalCells<-as.factor(power.DE.study$totalCells)
 
 g.DE<-ggplot(power.DE.study,aes(x=totalCells,y=sampleSize,fill=powerDetect))+
   geom_tile()+facet_wrap(~name,ncol=2)+
-  xlab("Number of measured cells per cell type and individual")+ylab("Total sample size")+
+  xlab("Number of measured cells per cell type and individual")+
+  ylab("Total sample size")+
   scale_fill_viridis("Detection power")+
   theme_bw()+
   theme(axis.title=element_text(size=10),
@@ -1415,7 +1457,8 @@ power.eqtl.study$totalCells<-as.factor(power.eqtl.study$totalCells)
 
 g.eQTL<-ggplot(power.eqtl.study,aes(x=totalCells,y=sampleSize,fill=powerDetect))+
   geom_tile()+facet_wrap(~name,ncol=2)+
-  xlab("Number of measured cells per cell type and individual")+ylab("Total sample size")+
+  xlab("Number of measured cells per cell type and individual")+
+  ylab("Total sample size")+
   scale_fill_viridis("Detection power")+
   theme_bw()+
   theme(axis.title=element_text(size=10),
@@ -1470,17 +1513,20 @@ power.study.de<-optimize.constant.budget(totalBudget,comp.type,
 max.study<-power.study.de[which.max(power.study.de$powerDetect),]
 
 #Replace subsampling
-colnames(power.study.de)[2:4]<-c("Detection power","Expression probability","DE power")
+colnames(power.study.de)[2:4]<-c("Detection power","Expression probability",
+                                 "DE power")
 
 #Show two-dimensional plots with always one parameter fixed
 #Fixed read depths
 power.study.plot<-power.study.de[power.study.de$readDepth==max.study$readDepth,]
-power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
-                                             "usableCells","multipletFraction",
-                                             "ctCells","readDepth","readDepthSinglet",
-                                             "mappedReadDepth","expressedGenes"))
+power.study.plot<-reshape2::melt(power.study.plot,
+                                 id.vars=c("name","sampleSize","totalCells",
+                                           "usableCells","multipletFraction",
+                                           "ctCells","readDepth","readDepthSinglet",
+                                           "mappedReadDepth","expressedGenes"))
 power.study.plot$variable<-factor(power.study.plot$variable,
-                                  levels=c("Expression probability","DE power","Detection power"))
+                                  levels=c("Expression probability","DE power",
+                                           "Detection power"))
 
 g.rd<-ggplot(power.study.plot,aes(totalCells,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
@@ -1501,12 +1547,14 @@ g.rd<-g.rd + scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., bre
 
 #Fixed number of cells
 power.study.plot<-power.study.de[power.study.de$totalCells==max.study$totalCells,]
-power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
-                                             "usableCells","multipletFraction",
-                                             "ctCells","readDepth","readDepthSinglet",
-                                             "mappedReadDepth","expressedGenes"))
+power.study.plot<-reshape2::melt(power.study.plot,
+                                 id.vars=c("name","sampleSize","totalCells",
+                                           "usableCells","multipletFraction",
+                                           "ctCells","readDepth","readDepthSinglet",
+                                           "mappedReadDepth","expressedGenes"))
 power.study.plot$variable<-factor(power.study.plot$variable,
-                                  levels=c("Expression probability","DE power","Detection power"))
+                                  levels=c("Expression probability","DE power",
+                                           "Detection power"))
 
 g.cp<-ggplot(power.study.plot,aes(readDepth,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
@@ -1552,23 +1600,27 @@ power.study.eqtl<-optimize.constant.budget(totalBudget,comp.type,
 max.study<-power.study.eqtl[which.max(power.study.eqtl$powerDetect),]
 
 #Replace subsampling
-colnames(power.study.eqtl)[2:4]<-c("Detection power","Expression probability","eQTL power")
+colnames(power.study.eqtl)[2:4]<-c("Detection power","Expression probability",
+                                   "eQTL power")
 
 #Show two-dimensional plots with always one parameter fixed
 #Fixed read depths
 power.study.plot<-power.study.eqtl[power.study.eqtl$readDepth==max.study$readDepth,]
-power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
-                                             "usableCells","multipletFraction",
-                                             "ctCells","readDepth","readDepthSinglet",
-                                             "mappedReadDepth","expressedGenes"))
+power.study.plot<-reshape2::melt(power.study.plot,
+                                 id.vars=c("name","sampleSize","totalCells",
+                                           "usableCells","multipletFraction",
+                                           "ctCells","readDepth","readDepthSinglet",
+                                           "mappedReadDepth","expressedGenes"))
 power.study.plot$variable<-factor(power.study.plot$variable,
-                                  levels=c("Expression probability","eQTL power","Detection power"))
+                                  levels=c("Expression probability","eQTL power",
+                                           "Detection power"))
 
 g.rd<-ggplot(power.study.plot,aes(totalCells,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
 
-g.rd<-g.rd + scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
-                                                                    labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
+g.rd<-g.rd + 
+  scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
+                                                              labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation(max.study$totalCells,
     c,totalBudget, costKit, samplesPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
   geom_vline(xintercept = max.study$totalCells)+
   ylab("Probability")+
@@ -1583,12 +1635,14 @@ g.rd<-g.rd + scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., bre
 
 #Fixed number of cells
 power.study.plot<-power.study.eqtl[power.study.eqtl$totalCells==max.study$totalCells,]
-power.study.plot<-reshape2::melt(power.study.plot,id.vars=c("name","sampleSize","totalCells",
-                                             "usableCells","multipletFraction",
-                                             "ctCells","readDepth","readDepthSinglet",
-                                             "mappedReadDepth","expressedGenes"))
+power.study.plot<-reshape2::melt(power.study.plot,
+                                 id.vars=c("name","sampleSize","totalCells",
+                                           "usableCells","multipletFraction",
+                                           "ctCells","readDepth","readDepthSinglet",
+                                           "mappedReadDepth","expressedGenes"))
 power.study.plot$variable<-factor(power.study.plot$variable,
-                                  levels=c("Expression probability","eQTL power","Detection power"))
+                                  levels=c("Expression probability","eQTL power",
+                                           "Detection power"))
 
 g.cp<-ggplot(power.study.plot,aes(readDepth,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
@@ -1669,7 +1723,8 @@ data(precalculatedObservedGeneCounts) #observed.gene.counts
 #Drop-seq data
 
 #Fit for own data and count > 10
-estimates.allSamples<-observed.gene.counts[observed.gene.counts$evaluation=="Dropseq_count10",]
+estimates.allSamples<-observed.gene.counts[
+  observed.gene.counts$evaluation=="Dropseq_count10",]
 
 estimates.allSamples$estimated.counts<-NA
 for(i in 1:nrow(estimates.allSamples)){
@@ -1691,15 +1746,17 @@ for(i in 1:nrow(estimates.allSamples)){
   
 }
 
-plot.estimates<-reshape2::melt(estimates.allSamples,id.vars=c("run","sample","cell.type","num.cells",
-                                                    "meanUMI","evaluation"))
+plot.estimates<-reshape2::melt(estimates.allSamples,
+                               id.vars=c("run","sample","cell.type","num.cells",
+                                         "meanUMI","evaluation"))
 
 #Replace subsampling
 subsampled.names<-setNames(c("20000","15000","10000","5000"),
                            c("complete","75","50","25"))
 plot.estimates$sample<-as.character(plot.estimates$sample)
 plot.estimates$sample<-subsampled.names[plot.estimates$sample]
-plot.estimates$sample<-factor(plot.estimates$sample,levels=c("20000","15000","10000","5000"))
+plot.estimates$sample<-factor(plot.estimates$sample,
+                              levels=c("20000","15000","10000","5000"))
 
 #Order variable level, first expressed.genes than estimated
 plot.estimates$variable<-factor(plot.estimates$variable,
@@ -1727,7 +1784,8 @@ g.drop<-ggplot(data=plot.estimates,aes(x=num.cells,y=value))+
 #Smart-seq data
 
 #Fit for own data and count > 10
-estimates.allSamples<-observed.gene.counts[observed.gene.counts$evaluation=="Smartseq_count10",]
+estimates.allSamples<-observed.gene.counts[
+  observed.gene.counts$evaluation=="Smartseq_count10",]
 
 estimates.allSamples$estimated.counts<-NA
 for(i in 1:nrow(estimates.allSamples)){
@@ -1750,15 +1808,18 @@ for(i in 1:nrow(estimates.allSamples)){
   
 }
 
-plot.estimates<-reshape2::melt(estimates.allSamples,id.vars=c("run","sample","cell.type","num.cells",
-                                                    "meanUMI","evaluation"))
+plot.estimates<-reshape2::melt(estimates.allSamples,
+                               id.vars=c("run","sample","cell.type","num.cells",
+                                         "meanUMI","evaluation"))
 
 #Replace subsampling
 subsampled.names<-setNames(c("500000","375000","250000","125000"),
-                           c("complete","subsampling0.75","subsampling0.5","subsampling0.25"))
+                           c("complete","subsampling0.75","subsampling0.5",
+                             "subsampling0.25"))
 plot.estimates$sample<-as.character(plot.estimates$sample)
 plot.estimates$sample<-subsampled.names[plot.estimates$sample]
-plot.estimates$sample<-factor(plot.estimates$sample,levels=c("500000","375000","250000","125000"))
+plot.estimates$sample<-factor(plot.estimates$sample,
+                              levels=c("500000","375000","250000","125000"))
 
 #Order variable level, first expressed.genes than estimated
 plot.estimates$variable<-factor(plot.estimates$variable,
@@ -1846,7 +1907,8 @@ axis.labeller<-function(variable,value){
 
 g<-ggplot(parameter.combinations,aes(x=min.num.cells,y=result.ssize,col=ct))+
   geom_line()+geom_point()+facet_wrap(~num.indivs,ncol=2, labeller = axis.labeller)+
-  xlab("Minimal number of cells from target cell type per individual")+ylab("Cells per individual")+
+  xlab("Minimal number of cells from target cell type per individual")+
+  ylab("Cells per individual")+
   scale_color_manual("Cell type",values=col.set2)+
   scale_y_log10()+
   theme_bw() +
@@ -1860,4 +1922,3 @@ print(g)
 ```
 
 Figure S14: Power to detect rare cell types. The figure shows the required number of cells per individual (y-axis, log scale) to detect the minimal number of cells from a target cell type per individual (x-axis) with a probability of 95%. The probability depends on the total number of individuals and the frequency of the target cell type (purple, red, yellow, green). Note that the required number of cells per sample only counts “correctly measured” cells (no doublets etc), so the number is a lower bound for the required cells to be sequenced.
-
