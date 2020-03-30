@@ -1,6 +1,13 @@
 # scPower
 
-R package for the manuscript "Design and power analysis for multi-sample single cell genomics experiments"
+scPower is a R package for design and power analysis of cell type specific interindividual DE and eQTL studies using single cell RNA-seq. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets. The tool was evaluated with data from different tissues and single cell technologies, based on UMI counts and read counts. 
+
+The calculation can also performed using a graphical interface of a shiny app or at our webpage [scpower](http://scpower.helmholtz-muenchen.de).
+
+A short tutorial is given in the vignette [introduction-scPower](vignettes/introduction-scPower.html)
+
+A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments, Schmid et al, submitted". An explanation how the plots in the paper were generated can be found in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.html).
+
 
 ## Installation
 
@@ -16,10 +23,22 @@ then update it to the latest developement version:
 devtools::install_github("hadley/devtools")
 ```
 
-Finally you can install the latest development version of QTLnetwork from github with:
+Finally you can install the latest development version of scPower from github with:
 
 ```R
 devtools::install_github("heiniglab/scPower")
+```
+
+If you have problems installing the package, please try to install necessary packages yourself from CRAN and Bioconductor.
+
+```R
+#CRAN packages
+install.packages(c("pwr","MKmisc","reshape2","HardyWeinberg","plotly", "shiny"))
+
+#Bioconductor package
+if (!requireNamespace("BiocManager", quietly = TRUE))
+   install.packages("BiocManager")
+BiocManager::install("DESeq")
 ```
 
 ## Shiny app
@@ -35,7 +54,7 @@ The shiny app is also available at the webpage [scpower](http://scpower.helmholt
 
 ## Vignettes for introduction and for reproduction of paper plots
 
-The package provides two vignettes for the user. The first one, called "introduction-scPower", is a user manual describing all functions with small toy examples. The second one, called "reproduce-paper-plots", shows how all plots in the manuscript were created with the package. The vignettes are not incorporated by default when downloading the package, instead the specific parameter need to be set:
+The package provides two vignettes for the user. The first one, called "introduction-scPower", is a user manual describing all functions with small toy examples. The second one, called "reproduce-paper-plots", shows how all plots in the manuscript were created with the package. The vignettes can be built when downloading the package with setting the option "build_vignettes=TRUE", however, this will take several minutes, as the vignettes are comprehensive. Alternatively, the html files are directly uploaded in the github.
 
 ```{R}
 devtools::install_github("heiniglab/scPower",build_vignettes=TRUE)

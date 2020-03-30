@@ -11,10 +11,10 @@ Imports:
     pwr,
     MKmisc,
     reshape2,
-    DESeq,
     HardyWeinberg,
     plotly, 
     shiny
+biocViews: DESeq
 License: GNU GPLv3
 Encoding: UTF-8
 LazyData: true

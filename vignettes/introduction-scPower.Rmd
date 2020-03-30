@@ -9,11 +9,11 @@ vignette: >
   %\VignetteEncoding{UTF-8}
 ---
 
-scPower is a R package for design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis. A detection of cell-type specific DE and eQTL genes is possible with the help of single cell data. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets.
+scPower is a R package for design and power analysis of single cell transcriptomics experiments for differential expression and eQTL analysis. A detection of cell-type specific DE and eQTL genes is possible with the help of single cell RNA-seq. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets.
 
-The tool was evaluated with data from different tissues and single cell technologies.
+The tool was evaluated with data from different tissues and single cell technologies, based on UMI counts and read counts.
 
-A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments". A explanation how the plots in the paper were generated can be found in the second vignette "reproduce-paper-plots".
+A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments". An explanation how the plots in the paper were generated can be found in the second vignette "reproduce-paper-plots".
 
 In the first part of this tutorial, the estimation of power and optimal design with the example priors of scPower is shown, in the second part, the fitting of new priors using own data is described. Additionally, in the third part, the power to detect a sufficent number of cells of a specific cell type is explained.
 
@@ -44,15 +44,18 @@ We model the overall detection power as the product of the expression probabilit
 * number of measured cells per sample
 * read depth
 
-Exemplarily, we will set the number of samples to 100, the cells per sample to 1,500 and the read depth to 25,000.
+Exemplarily, we want to see the power, which can be reached for a specific combination of the three parameters, when we want to analyze eQTLs in the cell type Monocyte. The experimental parameters are
+a sample size of 100, 1,500 cells per sample and a read depth to 25,000.
 
-Additionally, the expected effect sizes and the expression ranks of the eQTL genes are important. To get realistic estimates for them, we used FACS sorted bulk RNA-seq data. We will use here data from the Blueprint project, which estimated eQTLs in FACS sorted Monocytes.
+The expected effect sizes and the expression ranks of the eQTL genes have a large influence on the power. To get realistic cell type specific estimates, we use the results of eQTL studies performed with FACS sorted bulk RNA-seq. In this example calculation, a reference study of scPower is used, containing data from the Blueprint project, which estimated eQTLs in FACS sorted Monocytes.
 
-In general, the goal of the analysis is the detection of cell-type specific DE and eQTL genes. It needs to be defined, how often the target cells appear in the sample, i.e. the cell type frequency, and how the expression distribution of the genes in this cell type looks like. We will choose here CD14+ Monocytes and assume a cell type frequency of 20%. Expression distribution fits from an example PBMC data set are available in the package. The fitted distribution is a mixed distribution of with a zero component and two left censored gamma components parameterized over the UMI counts, for which the data frame gamma.mixed.fits is necessary. Furthermore, the relationship between gene expression means and dispersion is modelled using DESeq fits, an example fit is available in the data frame disp.fun.param.
+Another important influence on the detection power is how many genes are found in the data set in general. Single cell RNA-seq is typically sparser than bulk RNA-seq and a fraction of eQTL genes can be already missed because no counts are detected for them. So in total, the overall detection power depends on the eQTL power and the expression probability of the genes.
 
-The relationship between read depth and UMI counts is modelled logarithmic, an example fit is available in the data frame read.umi.fit. Additionally, the mapping efficiency of the reads is important, we assume a efficiency of 80%.
+For the expression probability, it needs to be defined, how often the target cells appear in the sample, i.e. the cell type frequency, and how the expression distribution of the genes in this cell type looks like. We assume a cell type frequency of 20%. Expression distribution fits from an example PBMC data set are available in the package, including one for "CD14+ Monocytes", our cell type of interest. The expression distribution fits describe the mean and dispersion parameters of all genes in the cell type. The mean distribution is modelled as a mixed distribution of with a zero component and two left censored gamma components parameterized over the UMI counts, for which the data frame gamma.mixed.fits is necessary. The relationship between gene expression means and dispersion is modelled using DESeq fits, an example fit is available in the data frame disp.fun.param.
 
-The definition of expression can be set user-specific to be above a specific count threshold in a certain fraction of all samples. We will set it to more than 3 counts in more than 50% of the samples.
+To estimate the mean number of UMI counts for a given read depth, the relationship between read depth and UMI counts is modelled logarithmic. An example fit is available in the data frame read.umi.fit. Additionally, the mapping efficiency of the reads is important, we assume a efficiency of 80%.
+
+The definition of expression can be set user-specific to be above a specific count threshold in a certain fraction of all samples. We will set the defintion of an expressed gene to have more than 3 counts in more than 50% of the samples.
 
 In the following, different example scenarios for different single cell technologies are shown.
 
@@ -62,7 +65,7 @@ For droplet-based methods, the so called overloading is possible. Loading more c
 
 We modelled the multiplet rate linear increasing with the number of cells loaded per lane, using data from the 10X Genomics user guide V3. A doublet gets on average more reads than a singlet, for this, a model of Satija lab is used (https://satijalab.org/costpercell). The multiplet factor describes the ratio of reads in multiplets compared to reads in singlets.
 
-In this model, we permit an independent overloading of the lane, setting instead the number of samples per lane to a specific number.
+In this model, we permit overloading of the lane, setting only the number of samples per lane to a specific number.
 
 ```{r}
 
@@ -112,7 +115,7 @@ In this case, the power decreases slightly compared to case 1, but the overall e
 
 #### Experimental cost calculation
 
-The experimental costs are the sum of the library preparation cost and the sequencing costs. They dependent on the three main experimental parameters (sample size, cells per sample and read depth). The library prepration costs for 10X are determined by the cost of a 10X kit, the seuqencing cost by the cost of a flow cell and the reads that can be sequenced with a flow cell. Example values are here chosen for all three to calculate the experimental costs for case 1 and case 2.
+The experimental costs are the sum of the library preparation cost and the sequencing costs. They dependent on the three main experimental parameters (sample size, cells per sample and read depth). The library prepration costs for 10X are determined by the cost of a 10X kit, the sequencing cost by the cost of a flow cell and the reads that can be sequenced with a flow cell. Example values are chosen for all three to calculate the experimental costs for case 1 and case 2.
 
 ```{r}
 
@@ -162,7 +165,7 @@ print(power)
 
 #### Case 4: Smart-seq2
 
-Read based technologies, such as smart-seq2, need to be modelled slightly differently. The fit between reads and UMI is not required, as the gamma mixed curves are directly parameterized over the read depth. Instead, specific gene curve fits with Smart-seq data are used. As an additional prior, the gene length of the eQTL/DE genes is taken here, which can also be gained from the FACS sorted bulk eQTL/DE studies. As example case, a pancreas smart-seq data set is used here together with a DE study performed in pancreas tissue.
+Read based technologies, such as Smart-seq2, need to be modelled slightly differently. The fit between reads and UMI is not required, as the gamma mixed curves are directly parameterized over the read depth. Instead, specific gene curve fits with Smart-seq data are used. As an additional prior, the gene length of the eQTL/DE genes is taken here, which can also be gained from the FACS sorted bulk eQTL/DE studies. As example case, a pancreas Smart-seq data set is used here together with a DE study performed in pancreas tissue.
 
 ```{r}
 
@@ -183,7 +186,7 @@ print(power)
 
 #### Expression probabilities
 
-The detection power is the product of the expression probabilities and the power. The expression probabilities can also be calculated independently, using the function estimate.exp.prob.param.
+As mentioned before, the detection power is the product of the expression probabilities and the power. The expression probabilities can also be calculated independently, using the function estimate.exp.prob.param. However, in this function doublets and cell type frequencies are not taken into account, but instead directly the number of cells per cell type and individual need to be entered.
 
 ```{r,fig.width=6}
 exp.probs<-scPower::estimate.exp.prob.param(nSamples=100,readDepth=25000,nCellsCt=150,
@@ -202,9 +205,9 @@ print(paste("Expected number of expressed genes:",round(sum(exp.probs))))
 
 ### Selection of optimal parameter combination for a restricted budget
 
-scPower give the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. For two of three parameters, sample size, cells per individual and read depth, vectors with potential values are required, the third variable is determined uniquely given the other two and the overall budget. Which of the variables is left out, can be freely chosen. In this example we set the number of cells per individual and read depths in the parameters readDepthRange and cellPersRange, and leave out the sample size, which will be determined by the algorithm
+scPower gives the user the opportunity to select the best parameter combination for a restricted budget. In the following example, we optimize the experimental design for a budget of 100,000. For two of the three parameters, sample size, cells per individual and read depth, vectors with potential values are required, the third variable is determined uniquely given the other two and the overall budget. Which of the variables is left out, can be freely chosen. In this example we set the number of cells per individual and read depths in the parameters readDepthRange and cellPersRange, and leave out the sample size, which will be determined by the algorithm
 
-For the function to calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before, such as gamma and dispersion fits.
+To calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before, such as gamma and dispersion fits.
 
 ```{r,fig.width=6}
 
@@ -322,15 +325,15 @@ print(opt.design[which.max(opt.design$powerDetect),])
 
 ```
 
-Similar to the power calculation, variants if the function exist to model a restricted number of cells per lane (optimize.constant.budget.restrictedDoublets) and to model smart-seq data (optimize.constant.budget.smartseq). Furthermore, there is the option to calculate the library preparation cost per cell instead of per kit (optimize.constant.budget.libPrepCell).
+Similar to the power calculation, variants of the function exist to model a restricted number of cells per lane (optimize.constant.budget.restrictedDoublets) and to model Smart-seq data (optimize.constant.budget.smartseq). Furthermore, there is the option to calculate the library preparation cost per cell instead of per kit (optimize.constant.budget.libPrepCell).
 
 ## Part 2: Generation of new priors from a data set
 
 Additionally to the priors given by the package, scPower offers the option to generate new priors from your own data set. Two types of priors are necessary:
 
-* parameters for the expression probability curves, which can be fitted from single cell RNA-seq data of the same technology (e.g. data from a pilot study)
+* the cell type specific expression distribution of all genes for the expression probability curves, which can be fitted from single cell RNA-seq data of the same technology (e.g. data from a pilot study). The distribution include the read-UMI fit to estimate the UMI counts per cell, the gamma mixed fits for the mean values of each gene and the mean-dispersion fits for the dispersion values of each gene.
 
-* effect sizes and expression ranks of the DE/eQTL genes, which can be taken from any kind of study or simulated. We recommend studies with FACS sorted bulk RNA-seq to get a realistic estimation of parameters.
+* effect sizes and expression ranks of the DE/eQTL genes, which can be taken from any kind of study or simulated. We recommend studies with FACS sorted bulk RNA-seq to get a realistic cell type specific estimations of the priors.
 
 ### Expression probability curves
 
@@ -339,7 +342,6 @@ A small example data set of a UMI count matrix is provided in the package to sho
 The data set is a list of four raw count matrices, the first one is the original count matrix and 3 subsampled matrices to evaluate the effect of the read depth. The subsampling was performed on the reads using the tool fastq-sample from fastq-tools version 0.8 and then the mapping repeated with cellranger.
 
 ```{r}
-
 data(countMatrixExample)
 
 #Dimensions of the three count matrices
@@ -349,16 +351,16 @@ sapply(count.matrix.example,dim)
 
 #### Counting observed expressed genes 
 
-The number of expressed genes in the data set can be estimated by reformating the 2d count matrix into a 3d pseudobulk matrix, using the function "create.pseudobulk". Therefor an annotation data frame is required with individual and cell type annotations for each cells. The rows of the annotaiton data frame must match the columns in the count matrix (same ordering of cells). After the pseudobulk matrix is created, the expressed genes are extracted using the function "calculate.gene.counts". Here, we use a threshold of more than 3 counts in more 50% of the individuals.
+The number of expressed genes in the data set can be estimated by reformating the 2d count matrix into a 3d pseudobulk matrix, using the function "create.pseudobulk". Therefore, an annotation data frame is required with individual and cell type annotations for each cells. The rows of the annotaiton data frame must match the columns in the count matrix (same ordering of cells). After the pseudobulk matrix is created, the expressed genes are extracted using the function "calculate.gene.counts". Here, we use a threshold of more than 3 counts in more 50% of the individuals.
 
 ```{r}
-
 expressed.genes.df<-NULL
+#Iterate over each count matrix
 for(name in names(count.matrix.example)){
   
   count.matrix<-count.matrix.example[[name]]
   
-  #Annotation file
+  #Create an annotation file (here containing only one cell type, but can be more)
   annot.df<-data.frame(individual=paste0("S",rep(1:14,length.out=ncol(count.matrix))),
                        cell.type=rep("default_ct",ncol(count.matrix)))
   #Reformat count matrix into pseudobulk matrix
@@ -383,12 +385,11 @@ As expected, the subsampling of the count matrix leads to an reduction of the nu
 
 #### Estimation of negative binomial paramters for each gene
 
-As a first step, the negative binomial fit for each gene, i.e. the mean and disperion parameter, are estimated. The function uses DESeq for library normalization and parameter estimation.  For the normalization, the standard normalization of DEseq can be used or a variant of it called poscounts. It can be set in the parameter "sizeFactors" of the function. Default is "standard", but for very sparse data, "poscounts" might be the better option. For too sparse data, "standard" is not working and will give an error message. 
+As a first step for fitting the expression distribution, the negative binomial fit for each gene, i.e. the mean and disperion parameter, is estimated with "nbinom.estimation". The function uses DESeq for library normalization and parameter estimation.  For the normalization, the standard normalization of DEseq can be used or a variant of it called poscounts. It can be set in the parameter "sizeFactors" of the function. Default is "standard", but for very sparse data, "poscounts" might be the better option. For too sparse data, "standard" is not working and will give an error message. 
 
 The function returns a list with three elements: the normalized mean values, the dispersion values and the parameters of the mean-dispersion function fitted from DESeq. We will save the mean values and the parameters of the mean-dispersion function for further processing.
 
 ```{r}
-
 norm.mean.values<-NULL
 disp.param<-NULL
 for(name in names(count.matrix.example)){
@@ -415,10 +416,9 @@ print(disp.param)
 
 ### Estimation of a gamma mixed distribution over all means
 
-A mixed distribution of a zero component and two left zensored gamma components is fitted for each mean value vector (one fit per count matrix). The count matrix contains often a large number of genes with a mean of zero. To reduce the matrix size and faciliate so the fit, the parameter of num.genes.kept regulates the number of mean values for the fit (it removes only genes with a mean of zero). The number should however never be smaller than the number of means values larger than zero. As a fraction of the zero values can be expressed genes below the detection threshold of the experiment, the gamma distributions are modelled as left censored. If no censoring point is set in the variable "censoredPoint", the smallest positive value in the data set is taken as the censoring point. For our models, we use 1/num_cells_celltype as the censoring point.
+A mixed distribution of a zero component and two left zensored gamma components is fitted for each mean value vector (one fit per count matrix). The count matrix contains often a large number of genes with a mean of zero. To reduce the matrix size and faciliate so the fit, the parameter of "num.genes.kept" regulates the number of mean values for the fit (it removes only genes with a mean of zero). The number should however never be smaller than the number of positive means values. As a fraction of the zero values can be expressed genes below the detection threshold of the experiment, the gamma distributions are modelled as left censored. If no censoring point is set in the variable "censoredPoint", the smallest positive value in the data set is taken as the censoring point. For our models, we use 1/num_cells_celltype as the censoring point.
 
 ```{r}
-
 gamma.fits<-NULL
 for(name in names(count.matrix.example)){
   
@@ -479,7 +479,7 @@ ggplot(data=plot.values,aes(x=mean, fill=type))+
 
 #### Parameterization of the parameters of the gamma fits by the mean UMI counts per cell
 
-The gamma fits over all matrices are parameterized by the mean UMI counts per cell. The values are calculated from the original count matrices.
+The gamma fits over all matrices are parameterized by the mean UMI counts per cell. The mean UMI counts are calculated from the original count matrices using the function "meanUMI.calculation". For the fits, the parameterization of the mixtures need to be converted from rate-shape parameters to mean-standard deviation parameters by "convert.gamma.parameters".
 
 ```{r,fig.width=4}
 #Estimate the mean umi values per cell for each matrix
@@ -496,7 +496,7 @@ gamma.fits<-merge(gamma.fits,umi.values,by="matrix")
 #Convert the gamma fits from the shape-rate parametrization to the mean-sd parametrization
 gamma.fits<-convert.gamma.parameters(gamma.fits)
 
-#Plot linear relationship between gamma parameters and UMI values
+#Visualize the linear relationship between gamma parameters and UMI values in plots
 plot.values<-melt(gamma.fits,id.vars=c("matrix","mean.umi"))
 plot.values<-plot.values[plot.values$variable %in% c("mean1","mean2","sd1","sd2","p1","p2"),]
 ggplot(plot.values,aes(x=mean.umi,y=value))+
@@ -552,7 +552,6 @@ print(read.umi.fit.new)
 In the section "Counting observed expressed genes", the number of expressed genes in our example count matrices were calculated and saved in the data frame "expressed.genes.df". To validate our model, we try to predict the same number of expressed genes using our fitted model.
 
 ```{r,fig.width=6}
-
 #Merge the observed numbers of expressed genes with the read depth
 expressed.genes.df<-merge(expressed.genes.df,mapped.reads,
                           by="matrix")
@@ -564,7 +563,8 @@ for(i in 1:nrow(expressed.genes.df)){
   
   #Vector with the expression probability for each gene
   expr.prob<-estimate.exp.prob.param(nSamples=14,
-                                    readDepth=expressed.genes.df$transcriptome.mapped.reads[i],
+                                    readDepth=expressed.genes.df$
+                                      transcriptome.mapped.reads[i],
                                     nCellsCt=expressed.genes.df$cells.indiv[i],
                                     read.umi.fit = read.umi.fit.new,
                                     gamma.mixed.fits = gamma.linear.fit.new,
@@ -590,11 +590,11 @@ ggplot(plot.expressed.genes.df,aes(x=transcriptome.mapped.reads,y=value,
 
 ```
 
-The estimated number of genes match already in the small example data set quite well the observed numbers. A larger data set with more observations improves of course the fit in general.
+The estimated numbers of expressed genes match already in the small example data set quite well the observed numbers. A larger data set with more observations improves of course the fit in general. For a proper validation, the fits need to be validated not only on the training data set used for the fits, but also on an independent test data set. This is performed in our publication.
 
 #### Use of expression probability model for power calculation
 
-All fitted values are used to adapt the power calculation to the specific conditions of the experiment, e.g. a specific cell type of interest. The new data frames are added as parameter instead of the standard example fits of the package. The cell type is set to "New_ct", as saved in the dispersion and gamma fit data frames above.
+The fitted values can adapt the power calculation to the specific conditions of the experiment, e.g. a specific cell type of interest. The new data frames are added as parameters instead of the standard example fits of the package. The cell type is set to "New_ct", as saved in the dispersion and gamma fit data frames above.
 
 ```{r}
 
@@ -622,7 +622,7 @@ To use other effect size and expression rank priors either data from other DE / 
 
 #### Priors from DE / eQTL studies
 
-Effect sizes from other studies can be taken directly from the summary statistics of the study (FoldChange for DE genes and R^2 value for eQTL genes). A function of poweScPop extracts the gene ranks, if the normalized (!) count matrix is provided and a vector with the names of the significante DE / eQTL genes. To show the function, an example count matrix of scPower is processed in the following. For normalization, a simple normalization by counts per cell is done here. Depending on the data, other normalization strategies, e.g. incorporating also the gene length, might be more appropriate.
+Effect sizes from other studies can be taken directly from the summary statistics of the study (FoldChange for DE genes and R^2 value for eQTL genes). A function of scPower extracts the gene ranks, if the normalized (!) count matrix is provided and a vector with the names of the significante DE / eQTL genes. To show the function, an example count matrix of scPower is processed in the following. For normalization, a simple normalization by counts per cell is done here. Depending on the data, other normalization strategies, e.g. incorporating also the gene length, might be more appropriate.
 
 ```{r}
 
@@ -652,7 +652,7 @@ ggplot(gene.ranks, aes(rank)) + stat_ecdf(geom = "step") +
 
 #### Simulated priors
 
-If a data from a suitable study is not available or extreme cases, such as very small or very large effect sizes, shall be tested, the priors can also be simulated using functions of scPower. Gene ranks can be either sampled randomly or if an even distribution in a certain interval is preferred, generated with the function uniform.ranks.interval.
+If a data from a suitable study is not available or extreme cases, such as very small or very large effect sizes, shall be tested, the priors can also be simulated using functions of scPower. Gene ranks can be either sampled randomly or if an uniform distribution in a certain interval is preferred, generated with the function uniform.ranks.interval.
 
 For eQTL genes, the R^2 value are simulated by transformation of Z-Scores using the Fisher Z Transformation. The Z-Scores are sampled from a normal distribution with parameters mean and sd.
 
@@ -714,7 +714,7 @@ print(power)
 
 ## Part 3: Power estimation to detect a sufficent number of cells in a specific cell types
 
-To perform the cell type specific DE and eQTL analysis described in part 1 and 2, a sufficient number of cells of the target cell type needs to be detected for each individual. The package provides to functions, either to calculate the power for a specific parameter combination or to calculate the number of cells per sample to reach a certain power. In both cases, important parameters are the cell type frequency of the parameter of interest, which can be gained for example by literature research, here set to 2\%. The minimal number of cells which should be detected was set to 10 and the sample size to 100.
+To perform the cell type specific DE and eQTL analysis described in part 1 and 2, a sufficient number of cells of the target cell type needs to be detected for each individual. The package provides to functions, either to calculate the power for a specific parameter combination or to calculate the number of cells per sample to reach a certain power. In both cases, important parameters are the cell type frequency of the cell type of interest, which can be gained for example by literature research, here set to 2\%. The minimal number of cells which should be detected was set to 10 and the sample size to 100.
 
 In case of the power calculation, we assume to measure 1000 cells per individual. This leads to a detection power of:
 
@@ -723,7 +723,7 @@ scPower::power.detect.celltype(nCells=1000,min.num.cells = 10,
                                cell.type.frac=0.02,nSamples=100)
 ```
 
-In case of estimating the number of cells, with set the detection threshold to 0.95, i.e. the functions returns the number of cells to reach a detection power of at least 95\%. The required number of cells per person is then:
+In case of estimating the number of cells, we set the detection threshold to 0.95, i.e. the functions returns the number of cells to reach a detection power of at least 95\%. The required number of cells per person is then:
 
 ```{r}
 scPower::number.cells.detect.celltype(prob.cut=0.95,min.num.cells = 10,
