@@ -306,8 +306,6 @@ estimate.exp.prob.values<-function(mu,size,nCellsCt,nSamples,
 #' the dispersion parameters and the parameters for the mean-dispersion function
 #' estimated from DESeq
 #'
-#' @import DESeq
-#'
 #' @export
 #'
 nbinom.estimation<-function(counts.ct, sizeFactors="standard"){
@@ -387,7 +385,7 @@ sizeFactorsPosCounts<-function(counts){
 #' @param num.genes.kept Total number of genes used for the fit (remove additional genes with a mean of 0)
 #' @param proportion.values Possibility to initialize the proportion values for the first component (zero component)
 #' and the third component (second gamma distribution) with a numeric vector of length 2. Default setting the proportion of the
-#' first component to 25% of all zero values and the proportion of the third component to 5%.
+#' first component to 25\% of all zero values and the proportion of the third component to 5\%.
 #' @param return.df If true return data frame with fitted parameters, otherwise an object of class EMResult
 #' (containing also the loglikelihoods)
 #'
@@ -397,6 +395,17 @@ sizeFactorsPosCounts<-function(counts){
 mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
                                  num.genes.kept=21000, proportion.values=NULL,
                                  return.df=TRUE){
+
+  #Check if the mean vector is matching the num.genes.kept parameter
+  if(length(mean.vals)<num.genes.kept){
+    warning(paste0("Warning: Number of genes in parameter num.genes.kept (",
+                   num.genes.kept,
+                   ") is larger than the number of mean values (",
+                   length(mean.vals),"). ",
+                   "Setting the num.genes.kept parameter to ",
+                   length(mean.vals),"."))
+    num.genes.kept<-length(mean.vals)
+  }
 
   #Check how many 0 genes are in the sample
   zeroGenes<-mean.vals==0
@@ -428,11 +437,11 @@ mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
   }
 
   #Initialize first gamma component
-  y<-mean.vals[mean.vals > 0 & mean.vals<quantile(1-outlier.prop)]
+  y<-mean.vals[mean.vals > 0 & mean.vals<quantile(mean.vals,probs=1-outlier.prop)]
   Gamma1<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
 
   #Initialize second gamma component
-  y<-mean.vals[mean.vals>=quantile(1-outlier.prop)]
+  y<-mean.vals[mean.vals>=quantile(mean.vals,probs=1-outlier.prop)]
   Gamma2<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
 
   log<-capture.output({emfit <-em(mean.vals, ncomp=3,

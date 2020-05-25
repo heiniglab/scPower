@@ -140,15 +140,6 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   #Convert them to the rateshape variant
   gamma.parameters<-convert.gamma.parameters(gamma.parameters,type="rateshape")
 
-  #Sample means values
-  if(samplingMethod=="random"){
-    gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
-  } else if (samplingMethod=="quantiles"){
-    gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
-  } else {
-    stop("No known sampling method. Use the options 'random' or 'quantiles'.")
-  }
-
   #Check if dispersion data for the cell type exists
   if(! any(disp.fun.param$ct==ct)){
     stop(paste("No dispersion fitting data in the data frame disp.fun.param fits to the specified cell type",
@@ -157,86 +148,18 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 
   #Fit dispersion parameter dependent on mean parameter
   disp.fun<-disp.fun.param[disp.fun.param$ct==ct,]
-  gene.disps<-sample.disp.values(gene.means,disp.fun)
 
-  sim.genes<-data.frame(mean=gene.means, disp=gene.disps)
-
-  #Sort simulated genes by mean expression
-  sim.genes<-sim.genes[order(sim.genes$mean, decreasing = TRUE),]
-
-  #Calculate the mean per cell type for each individuum
-  sim.genes$mean.sum<-sim.genes$mean*ctCells
-  sim.genes$disp.sum<-sim.genes$disp/ctCells
-
-  #Calculate for each gene the expression probability
-  sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
-                                            nSamples=nSamples,min.counts=min.UMI.counts,
-                                            perc.indiv=perc.indiv.expr)
-
-  #Calculate the expected number of expressed genes
-  exp.genes<-round(sum(sim.genes$exp.probs))
-
-  #Check if the study reference name exists in the data frame
-  if(! any(ref.study$name==ref.study.name)){
-    stop(paste("No study name in the data frame ref.study fits to the specified reference study name",
-               ref.study.name,". Check that the name is correctly spelled and the right ref.study.name object used."))
-  }
-
-  #Set the simulated DE genes as the genes at the same rank position as the original DE genes
-  ranks<-ref.study$rank[ref.study$name==ref.study.name]
-
-  #Set all DE with rank > nGenes to nGenes (expression anyway nearly 0)
-  ranks[ranks>nGenes]<-nGenes
-
-  #Calculate alpha parameter corrected for multiple testing
-  alpha<-0.05/exp.genes
-
-  #Choose the DE genes according to the rank
-  foundSignGenes<-sim.genes[ranks,]
-
-  #Calculate power
-  if(type=="eqtl"){
-
-    #Set the Rsq respectively
-    foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
-
-    #Check that the required column Rsq exists
-    if(! any(colnames(ref.study)=="Rsq")){
-      stop(paste("Column name Rsq missing in the ref.study data frame.",
-                 "Please make sure to provide this column for eQTL power analysis."))
-    }
-
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.eqtl(foundSignGenes$Rsq[i],
-                                                                               alpha,
-                                                                               nSamples))
-  } else if (type=="de") {
-
-    #Check that the required column FoldChange exists
-    if(! any(colnames(ref.study)=="FoldChange")){
-      stop(paste("Column name FoldChange missing in the ref.study data frame.",
-                 "Please make sure to provide this column for DE power analysis."))
-    }
-
-    #Set the fold change respectively
-    foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
-
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-      floor(nSamples/2),
-      foundSignGenes$mean.sum[i],
-      foundSignGenes$FoldChange[i],
-      1/foundSignGenes$disp.sum[i],
-      alpha,3,ssize.ratio=1))
-  } else  {
-    stop('For type parameter only "eqtl" or "de" possible!')
-  }
-
-  #Calculate total probability as the DE power times the expression probability
-  foundSignGenes$combined.prob<-foundSignGenes$power*foundSignGenes$exp.probs
+  #Calculate expression power depending on gamma parameters
+  probs<-calculate.probabilities(nSamples,ctCells,type,
+                                 ref.study,ref.study.name,
+                                 gamma.parameters,disp.fun,
+                                 min.UMI.counts,perc.indiv.expr,
+                                 nGenes,samplingMethod)
 
   power.study<-data.frame(name=ref.study.name,
-                          powerDetect=mean(foundSignGenes$combined.prob),
-                          exp.probs=mean(foundSignGenes$exp.probs),
-                          power=mean(foundSignGenes$power),
+                          powerDetect=probs$powerDetect,
+                          exp.probs=probs$exp.probs,
+                          power=probs$power,
                           sampleSize=nSamples,
                           totalCells=nCells,
                           usableCells=usableCells,
@@ -245,7 +168,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                           readDepth=readDepth,
                           readDepthSinglet=readDepthSinglet,
                           mappedReadDepth=mappedReadDepth,
-                          expressedGenes=exp.genes)
+                          expressedGenes=probs$expressedGenes)
 
   return(power.study)
 }
@@ -316,7 +239,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                              nGenes,samplingMethod,multipletRateGrowth))
 }
 
-#' Power calculation for a DE/eQTL study  with Smart-seq design
+#' Power calculation for a DE/eQTL study with Smart-seq design
 #'
 #' This function to calculate the detection power for a DE or eQTL study, given DE/eQTL genes from a reference study,
 #' in a single cell Smart-seq RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
@@ -517,6 +440,298 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                           expressedGenes=exp.genes)
 
   return(power.study)
+}
+
+#' Power calculation for a DE/eQTL study with same read depth as the fitted gamma distribution
+#'
+#' This is a simplified version of the function power.general.withDoublets to be used on a gamma
+#' fit not parameterized for UMI/read counts. It evaluates the effect of different samples sizes
+#' and cells per person, keeping the same read depth as in the experiment used for fitting.
+#'
+#' @param nSamples Sample size
+#' @param nCells Number of cells per individual
+#' @param ct.freq Frequency of the cell type of interest
+#' @param type (eqtl/de) study
+#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
+#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
+#' @param samplesPerLane Maximal number of individuals per 10X lane
+#' @param gamma.parameters Data frame with gamma parameters for each cell type
+#' (required columns: ct (cell type), s1, r1, s2, r2, p1, p2/p3 (gamma parameters for both components))
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
+#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
+#' @param multipletRate Expected increase in multiplets for additional cell in the lane
+#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
+#' gene per individual and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
+#' to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#'
+#' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
+#'
+#' @export
+#'
+power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
+                              type,ref.study,ref.study.name,
+                              samplesPerLane,
+                              gamma.parameters,ct,
+                              disp.fun.param,
+                              mappingEfficiency=0.8,
+                              multipletRate=7.67e-06,multipletFactor=1.82,
+                              min.UMI.counts=3,perc.indiv.expr=0.5,
+                              nGenes=21000,samplingMethod="quantiles",
+                              multipletRateGrowth="linear"){
+
+
+  #Estimate multiplet fraction dependent on cells per lane
+  if(multipletRateGrowth=="linear"){
+    multipletFraction<-multipletRate*nCells*samplesPerLane
+  } else if (multipletRateGrowth == "constant") {
+    multipletFraction<-multipletRate
+  } else {
+    stop("No known option for multipletRateGrowth. Use the values 'linear' or 'constant'.")
+  }
+
+  #Check that the number of cells entered does not provide a multiplet rate of >100%
+  if(multipletFraction>=1){
+    stop("Too many cells per individual entered! Multiplet rate of more than 100%!")
+  }
+
+  usableCells<-round((1-multipletFraction)*nCells)
+
+  #Get the fraction of cell type cells
+  ctCells<-round(usableCells*ct.freq)
+
+  #Check if gamma fit data for the cell type exists
+  if(! any(gamma.parameters$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.mixed.fits fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.mixed.fits object used."))
+  }
+
+  gamma.parameters<-gamma.parameters[gamma.parameters$ct==ct,]
+
+  #Check if dispersion data for the cell type exists
+  if(! any(disp.fun.param$ct==ct)){
+    stop(paste("No dispersion fitting data in the data frame disp.fun.param fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right disp.fun.param object used."))
+  }
+
+  #Fit dispersion parameter dependent on mean parameter
+  disp.fun<-disp.fun.param[disp.fun.param$ct==ct,]
+
+  #Calculate expression power depending on gamma parameters
+  probs<-calculate.probabilities(nSamples,ctCells,type,
+                                 ref.study,ref.study.name,
+                                 gamma.parameters,disp.fun,
+                                 min.UMI.counts,perc.indiv.expr,
+                                 nGenes,samplingMethod)
+
+  power.study<-data.frame(name=ref.study.name,
+                          powerDetect=probs$powerDetect,
+                          exp.probs=probs$exp.probs,
+                          power=probs$power,
+                          sampleSize=nSamples,
+                          totalCells=nCells,
+                          usableCells=usableCells,
+                          multipletFraction=multipletFraction,
+                          ctCells=ctCells,
+                          expressedGenes=probs$expressedGenes)
+
+  return(power.study)
+}
+
+#' Power calculation for a DE/eQTL study with same read depth as the fitted gamma distribution
+#'
+#' This function is a variant of power.sameReadDepth.withDoublets, where not the number of samplesPerLane is given as an
+#' parameter, but instead the individuals are distributed over the lanes in a way that restricts the total number of
+#' cells per lane instead. This gives also an upper bound for the doublet rate.
+#'
+#' @param nSamples Sample size
+#' @param nCells Number of cells per individual
+#' @param ct.freq Frequency of the cell type of interest
+#' @param type (eqtl/de) study
+#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
+#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
+#' @param cellsPerLane Maximal number of cells per 10X lane
+#' @param gamma.parameters Data frame with gamma parameters for each cell type
+#' (required columns: ct (cell type), s1, r1, s2, r2, p1, p2/p3 (gamma parameters for both components))
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
+#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
+#' @param multipletRate Expected increase in multiplets for additional cell in the lane
+#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
+#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
+#' gene per individual and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
+#' to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#'
+#' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
+#'
+#' @export
+#'
+power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
+                              type,ref.study,ref.study.name,
+                              cellsPerLane,
+                              gamma.parameters,ct,
+                              disp.fun.param,
+                              mappingEfficiency=0.8,
+                              multipletRate=7.67e-06,multipletFactor=1.82,
+                              min.UMI.counts=3,perc.indiv.expr=0.5,
+                              nGenes=21000,samplingMethod="quantiles",
+                              multipletRateGrowth="linear"){
+
+  #Distribute individuals most optimal over the lanes
+  samplesPerLane<-floor(cellsPerLane/nCells)
+
+  if(samplesPerLane==0){
+    stop("Allowed number of cells per lane is too low to fit so many cells per individual!")
+  }
+
+  return(power.sameReadDepth.withDoublets(nSamples,nCells,ct.freq,
+                                          type,ref.study,ref.study.name,
+                                          samplesPerLane,
+                                          gamma.parameters,ct,
+                                          disp.fun.param,
+                                          mappingEfficiency,
+                                          multipletRate,multipletFactor,
+                                          min.UMI.counts,perc.indiv.expr,
+                                          nGenes,samplingMethod,
+                                          multipletRateGrowth))
+}
+
+#' Help function to calculate expression probability, power and detection power
+#' for a given gamma distribution plus additional parameters
+#'
+#' @param nSamples Sample size
+#' @param ctCells Number of cells of the target cell type
+#' @param type (eqtl/de) study
+#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
+#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
+#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
+#' @param gamma.parameters Data frame with gamma parameters, filtered for the correct cell type
+#' (required columns: ct (cell type), s1, r1, s2, r2, p1, p2/p3 (gamma parameters for both components))
+#' @param disp.fun Function to fit the dispersion parameter dependent on the mean,
+#' filtered for the correct cell type (required columns: ct (cell type),
+#' asymptDisp, extraPois (both from taken from DEseq))
+#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
+#' gene per individual and cell type is required to defined it as expressed in one individual
+#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
+#' to define it as globally expressed
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#'
+#' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
+#'
+calculate.probabilities<-function(nSamples,ctCells,type,
+                                  ref.study,ref.study.name,
+                                  gamma.parameters,disp.fun,
+                                  min.UMI.counts,perc.indiv.expr,
+                                  nGenes,samplingMethod){
+
+  #Sample means values
+  if(samplingMethod=="random"){
+    gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
+  } else if (samplingMethod=="quantiles"){
+    gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
+  } else {
+    stop("No known sampling method. Use the options 'random' or 'quantiles'.")
+  }
+
+  gene.disps<-sample.disp.values(gene.means,disp.fun)
+
+  sim.genes<-data.frame(mean=gene.means, disp=gene.disps)
+
+  #Sort simulated genes by mean expression
+  sim.genes<-sim.genes[order(sim.genes$mean, decreasing = TRUE),]
+
+  #Calculate the mean per cell type for each individuum
+  sim.genes$mean.sum<-sim.genes$mean*ctCells
+  sim.genes$disp.sum<-sim.genes$disp/ctCells
+
+  #Calculate for each gene the expression probability
+  sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
+                                                nSamples=nSamples,min.counts=min.UMI.counts,
+                                                perc.indiv=perc.indiv.expr)
+
+  #Calculate the expected number of expressed genes
+  exp.genes<-round(sum(sim.genes$exp.probs))
+
+  #Check if the study reference name exists in the data frame
+  if(! any(ref.study$name==ref.study.name)){
+    stop(paste("No study name in the data frame ref.study fits to the specified reference study name",
+               ref.study.name,". Check that the name is correctly spelled and the right ref.study.name object used."))
+  }
+
+  #Set the simulated DE genes as the genes at the same rank position as the original DE genes
+  ranks<-ref.study$rank[ref.study$name==ref.study.name]
+
+  #Set all DE with rank > nGenes to nGenes (expression anyway nearly 0)
+  ranks[ranks>nGenes]<-nGenes
+
+  #Calculate alpha parameter corrected for multiple testing
+  alpha<-0.05/exp.genes
+
+  #Choose the DE genes according to the rank
+  foundSignGenes<-sim.genes[ranks,]
+
+  #Calculate power
+  if(type=="eqtl"){
+
+    #Set the Rsq respectively
+    foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
+
+    #Check that the required column Rsq exists
+    if(! any(colnames(ref.study)=="Rsq")){
+      stop(paste("Column name Rsq missing in the ref.study data frame.",
+                 "Please make sure to provide this column for eQTL power analysis."))
+    }
+
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.eqtl(foundSignGenes$Rsq[i],
+                                                                               alpha,
+                                                                               nSamples))
+  } else if (type=="de") {
+
+    #Check that the required column FoldChange exists
+    if(! any(colnames(ref.study)=="FoldChange")){
+      stop(paste("Column name FoldChange missing in the ref.study data frame.",
+                 "Please make sure to provide this column for DE power analysis."))
+    }
+
+    #Set the fold change respectively
+    foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
+
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
+      floor(nSamples/2),
+      foundSignGenes$mean.sum[i],
+      foundSignGenes$FoldChange[i],
+      1/foundSignGenes$disp.sum[i],
+      alpha,3,ssize.ratio=1))
+  } else  {
+    stop('For type parameter only "eqtl" or "de" possible!')
+  }
+
+  #Calculate total probability as the DE power times the expression probability
+  foundSignGenes$combined.prob<-foundSignGenes$power*foundSignGenes$exp.probs
+
+  #Return probabilities and expected number of expressed genes
+  results<-data.frame(powerDetect=mean(foundSignGenes$combined.prob),
+                     exp.probs=mean(foundSignGenes$exp.probs),
+                     power=mean(foundSignGenes$power),
+                     expressedGenes=exp.genes)
+  return(results)
+
 }
 
 #' Optimizing cost parameters to maximize detection power for a given budget and 10X design

@@ -242,20 +242,10 @@ head(opt.design)
 #Optimal experimental design combination
 print(opt.design[which.max(opt.design$powerDetect),])
 
-#Plot results
-power.DE.study<-melt(opt.design,id.vars=c("name","sampleSize","totalCells","usableCells",
-                                              "multipletFraction","ctCells","readDepth",
-                                              "readDepthSinglet","mappedReadDepth",
-                                              "expressedGenes"))
-power.DE.study$variable<-factor(power.DE.study$variable,levels=c("exp.probs","power","powerDetect"))
-
-var.labs<-c("Expression probability", "DE power", 
-            "Detection power")
-names(var.labs)<-c("exp.probs","power","powerDetect")
-
-power.DE.study$totalCells<-as.factor(power.DE.study$totalCells)
-power.DE.study$readDepth<-as.factor(power.DE.study$readDepth)
-g<-ggplot(power.DE.study,aes(x=totalCells,y=readDepth,fill=sampleSize))+
+#Plot relation between the three parameters
+opt.design$totalCells<-as.factor(opt.design$totalCells)
+opt.design$readDepth<-as.factor(opt.design$readDepth)
+g<-ggplot(opt.design,aes(x=totalCells,y=readDepth,fill=sampleSize))+
   geom_tile()+
   xlab("Number of measured cells per sample")+ylab("Read depth")+
   ggtitle("Possible sample size for each parameter combination \n and a restricted budget")+
@@ -265,17 +255,21 @@ g<-ggplot(power.DE.study,aes(x=totalCells,y=readDepth,fill=sampleSize))+
         axis.text=element_text(size=6),
         legend.title=element_text(size=7),
         legend.text=element_text(size=7))
-  
+
 print(g)
 
 ```
 
+Visualization of all power values as a grid of two variable axes is possible with
+the function visualize.power.grid. It returns a ggplot object, which can further
+be formated, as shown below.
+
 ```{r,fig.width=8}
-g<-ggplot(power.DE.study,aes(x=totalCells,y=readDepth,fill=value))+
-  geom_tile()+facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
-  xlab("Number of measured cells per sample")+ylab("Read depth")+
-  ggtitle("Possible power for each parameter combination and a restricted budget")+
-  theme_bw()+
+
+g<-visualize.power.grid(opt.design,var.axis1 ="totalCells",var.axis2="readDepth")
+
+#Add figure title and change text size
+g<-g+ggtitle("Possible power for each parameter combination and a restricted budget")+
   theme(plot.title = element_text(size=10),
         axis.title=element_text(size=8),
         axis.text=element_text(size=6),
@@ -283,6 +277,7 @@ g<-ggplot(power.DE.study,aes(x=totalCells,y=readDepth,fill=value))+
         legend.text=element_text(size=7))
 
 print(g)
+
 ```
 
 The function returns for each combination of read depth and cells per individual, how many samples can be measured with the given budget and which detection power can be reached. The combination in the data frame with the maximal detection power is the optimal experimental design.
@@ -449,42 +444,16 @@ print(gamma.fits)
 
 #### Comparison of gamma mixed fits with original means
 
-The fit can be evaluated by simulating mean values using this gamma distribution. In general, the package provides two options for the sampling the values, either random (sample.mean.values.random) or using the quantiles of the gamma mixed distribution (sample.mean.values.quantiles).
+The fit can be evaluated by simulating mean values using this gamma distribution.
+This is done here inside the plotting function visualize.gamma.fits.
+In general, the package provides two options for the sampling the values, either random (sample.mean.values.random) or using the quantiles of the gamma mixed distribution (sample.mean.values.quantiles).
 
 ```{r,fig.width=6}
-#Check fit for the full matrix
-sim.mean.vals<-sample.mean.values.quantiles(gamma.fits[gamma.fits$matrix=="complete",],
-                                            nGenes=21000)
 
-#Calculate from which component each value in the simulation originates (ZI + LZG1 + LZG2)
-nGenes<-21000
-nZeros<-round(nGenes*gamma.fits$p1[gamma.fits$matrix=="complete"])
-nGamma1<-round(nGenes*gamma.fits$p2[gamma.fits$matrix=="complete"])
-nGamma2<-nGenes-nZeros-nGamma1
-  
-plot.values<-data.frame(means=c(norm.mean.values$mean[norm.mean.values$matrix=="complete"],
-                                sim.mean.vals),
-                        type=c(rep("Observed",sum(norm.mean.values$matrix=="complete")),
-                               rep("sim.mean.zero",nZeros),
-                               rep("sim.mean.c1",nGamma1),
-                               rep("sim.mean.c2",nGamma2)))
-
-#Set zero values to a very small value to be able to plot on logarithmic scale
-lower_dist<-1e-5
-zero_pos<-1e-6
-
-plot.values<-plot.values[plot.values$mean==0 | plot.values$mean>=lower_dist,]
-plot.values$mean[plot.values$mean==0]<-zero_pos
-
-#Order estimated means
-plot.values$type<-factor(plot.values$type,
-                         levels=c("Observed","sim.mean.zero","sim.mean.c1","sim.mean.c2"))
-
-ggplot(data=plot.values,aes(x=mean, fill=type))+
-  geom_histogram(position="dodge")+
-  scale_x_log10(limits = c(1e-7,1e2), breaks=c(1e-6,1e-4,1e-2,1e0,1e2),
-                labels=c(0,c(1e-4,1e-2,1e0,1e2)))+geom_vline(xintercept=1e-5)+
-  xlab("Deseq fitted mean value")+ylab("Frequency")
+g<-visualize.gamma.fits(norm.mean.values$mean[norm.mean.values$matrix=="complete"],
+                        gamma.fits[gamma.fits$matrix=="complete",],
+                        nGenes=21000)
+print(g)
 
 ```
 
@@ -621,6 +590,37 @@ power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000
                                         mappingEfficiency = 0.8,
                                         min.UMI.counts = 3,
                                         perc.indiv.expr = 0.5)
+
+print(power)
+
+```
+
+### Simplified gamma model without optimizing the read depth
+
+If only the sample size and the number of cells per sample should be evaluated and
+the same read depth is kept as in the pilot experiment, the power can be calculated
+directly on the gamma fitted models, without the parameterization for the UMI counts.
+This has the advantage that no subsampling for different read depths is necessary.
+The functions power.sameReadDepth.restrictedDoublets (for restriction of cells per
+lane) and power.sameReadDepth.withDoublets (for restriction of samples per lane) 
+can be used for this.
+
+```{r}
+
+#Set the cell type specification
+gamma.fits$ct<-"New_ct"
+
+power<-power.sameReadDepth.restrictedDoublets(nSamples=100,nCells=1500,
+                  ct.freq=0.2,type="eqtl",
+                  ref.study=scPower::eqtl.ref.study,
+                  ref.study.name="Blueprint (Monocytes)",
+                  cellsPerLane=20000,
+                  gamma.parameters = gamma.fits[gamma.fits$matrix=="complete",],
+                  ct="New_ct",
+                  disp.fun.param=disp.fun.general.new,
+                  mappingEfficiency = 0.8,
+                  min.UMI.counts = 3,
+                  perc.indiv.expr = 0.5)
 
 print(power)
 

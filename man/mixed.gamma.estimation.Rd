@@ -22,7 +22,7 @@ the minimal positive value will be chosen)}
 
 \item{proportion.values}{Possibility to initialize the proportion values for the first component (zero component)
 and the third component (second gamma distribution) with a numeric vector of length 2. Default setting the proportion of the
-first component to 25% of all zero values and the proportion of the third component to 5%.}
+first component to 25\% of all zero values and the proportion of the third component to 5\%.}
 
 \item{return.df}{If true return data frame with fitted parameters, otherwise an object of class EMResult
 (containing also the loglikelihoods)}

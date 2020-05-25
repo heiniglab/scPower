@@ -179,7 +179,7 @@
 #'
 #' @usage data(countMatrixExample)
 #'
-#' @format List with four count matrices (complete and subsampled to 75%, 50% and 25%)
+#' @format List with four count matrices (complete and subsampled to 75\%, 50\% and 25\%)
 #'
 #' @keywords datasets
 #'

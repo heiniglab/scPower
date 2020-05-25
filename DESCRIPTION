@@ -1,6 +1,6 @@
 Package: scPower
 Title: Experimental design framework for scRNAseq population studies (eQTL and DE)
-Version: 0.0.0.9000
+Version: 0.1.0
 Authors@R: c(
 	person('Katharina', 'Schmid', NULL, 'katharina.schmid@helmholtz-muenchen.de', 'aut'),
 	person('Matthias', 'Heinig', NULL, 'matthias.heinig@helmholtz-muenchen.de', c('cre', 'aut'))
@@ -13,7 +13,8 @@ Imports:
     MKmisc,
     reshape2,
     HardyWeinberg,
-    plotly, 
+    plotly,
+    ggplot2, 
     shiny,
     DESeq
 License: GNU GPLv3
@@ -23,7 +24,6 @@ RoxygenNote: 7.0.1
 Suggests: 
     knitr,
     rmarkdown,
-    ggplot2,
     ggpubr,
     data.table,
     viridis

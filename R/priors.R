@@ -15,7 +15,27 @@
 gene.rank.calculation<-function(countMatrix,diff.expr.genes){
 
   #Calculate mean expression of all genes
-  gene.expr<-data.frame(gene_symbol=rownames(countMatrix), meanExpr=rowMeans(countMatrix),
+  gene.rank.calculation.vector(rowMeans(countMatrix),rownames(countMatrix),diff.expr.genes)
+
+}
+
+#' Calculation of gene ranks using a vector of mean expression per gene
+#'
+#' @param meanVector Vector with mean value per gene in the sample
+#' (use normalized counts)
+#' @param geneNames Gene name corresponding to the mean value
+#' (need to be in the same order as the mean vector)
+#' @param diff.expr.genes Vector of significant genes (DE or eQTLs), the gene names
+#' in the vector need to match the row names of the count matrix
+#'
+#' @return Data frame with expression rank for each DE gene
+#'
+#' @export
+#'
+gene.rank.calculation.vector<-function(meanVector,geneNames,diff.expr.genes){
+
+  #Calculate mean expression of all genes
+  gene.expr<-data.frame(gene_symbol=geneNames, meanExpr=meanVector,
                         stringsAsFactors = FALSE)
   gene.expr$diff.expressed<-ifelse(gene.expr$gene_symbol %in% diff.expr.genes,1,0)
 
