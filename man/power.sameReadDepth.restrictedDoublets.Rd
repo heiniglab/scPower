@@ -22,7 +22,8 @@ power.sameReadDepth.restrictedDoublets(
   perc.indiv.expr = 0.5,
   nGenes = 21000,
   samplingMethod = "quantiles",
-  multipletRateGrowth = "linear"
+  multipletRateGrowth = "linear",
+  returnResultsDetailed = FALSE
 )
 }
 \arguments{
@@ -67,6 +68,8 @@ to define it as globally expressed}
 
 \item{multipletRateGrowth}{Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".}
+
+\item{returnResultsDetailed}{If true, return not only summary data frame, but additional list with exact probability vectors}
 }
 \value{
 Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters

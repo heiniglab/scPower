@@ -69,6 +69,7 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 #' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -87,7 +88,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      multipletRate=7.67e-06,multipletFactor=1.82,
                                      min.UMI.counts=3,perc.indiv.expr=0.5,
                                      nGenes=21000,samplingMethod="quantiles",
-                                     multipletRateGrowth="linear"){
+                                     multipletRateGrowth="linear",
+                                     returnResultsDetailed=FALSE){
 
   #Estimate multiplet fraction dependent on cells per lane
   if(multipletRateGrowth=="linear"){
@@ -154,21 +156,42 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                  ref.study,ref.study.name,
                                  gamma.parameters,disp.fun,
                                  min.UMI.counts,perc.indiv.expr,
-                                 nGenes,samplingMethod)
+                                 nGenes,samplingMethod,
+                                 returnResultsDetailed)
 
-  power.study<-data.frame(name=ref.study.name,
-                          powerDetect=probs$powerDetect,
-                          exp.probs=probs$exp.probs,
-                          power=probs$power,
-                          sampleSize=nSamples,
-                          totalCells=nCells,
-                          usableCells=usableCells,
-                          multipletFraction=multipletFraction,
-                          ctCells=ctCells,
-                          readDepth=readDepth,
-                          readDepthSinglet=readDepthSinglet,
-                          mappedReadDepth=mappedReadDepth,
-                          expressedGenes=probs$expressedGenes)
+  #Return either detailed probabilities for each DE/eQTL gene or only overview
+  if(returnResultsDetailed){
+    power.study<-data.frame(name=ref.study.name,
+                            powerDetect=probs$overview.df$powerDetect,
+                            exp.probs=probs$overview.df$exp.probs,
+                            power=probs$overview.df$power,
+                            sampleSize=nSamples,
+                            totalCells=nCells,
+                            usableCells=usableCells,
+                            multipletFraction=multipletFraction,
+                            ctCells=ctCells,
+                            readDepth=readDepth,
+                            readDepthSinglet=readDepthSinglet,
+                            mappedReadDepth=mappedReadDepth,
+                            expressedGenes=probs$overview.df$expressedGenes)
+
+    return(list(overview.df=power.study,probs.df=probs$probs.df))
+
+  } else {
+    power.study<-data.frame(name=ref.study.name,
+                            powerDetect=probs$powerDetect,
+                            exp.probs=probs$exp.probs,
+                            power=probs$power,
+                            sampleSize=nSamples,
+                            totalCells=nCells,
+                            usableCells=usableCells,
+                            multipletFraction=multipletFraction,
+                            ctCells=ctCells,
+                            readDepth=readDepth,
+                            readDepthSinglet=readDepthSinglet,
+                            mappedReadDepth=mappedReadDepth,
+                            expressedGenes=probs$expressedGenes)
+  }
 
   return(power.study)
 }
@@ -206,6 +229,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 #' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -219,7 +243,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            multipletRate=7.67e-06,multipletFactor=1.82,
                                            min.UMI.counts=3,perc.indiv.expr=0.5,
                                            nGenes=21000,samplingMethod="quantiles",
-                                           multipletRateGrowth="linear"){
+                                           multipletRateGrowth="linear",
+                                           returnResultsDetailed=FALSE){
 
   #Distribute individuals most optimal over the lanes
   samplesPerLane<-floor(cellsPerLane/nCells)
@@ -236,7 +261,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                              mappingEfficiency,
                              multipletRate,multipletFactor,
                              min.UMI.counts,perc.indiv.expr,
-                             nGenes,samplingMethod,multipletRateGrowth))
+                             nGenes,samplingMethod,
+                             multipletRateGrowth,returnResultsDetailed))
 }
 
 #' Power calculation for a DE/eQTL study with Smart-seq design
@@ -267,6 +293,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -278,7 +305,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                          mappingEfficiency=0.8,
                          multipletFraction=0,multipletFactor=1.82,
                          min.norm.count=3,perc.indiv.expr=0.5,
-                         nGenes=21000,samplingMethod="quantiles"){
+                         nGenes=21000,samplingMethod="quantiles",
+                         returnResultsDetailed=FALSE){
 
   usableCells<-round((1-multipletFraction)*nCells)
   #Estimate multiplet rate and "real read depth"
@@ -439,7 +467,12 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                           mappedReadDepth=mappedReadDepth,
                           expressedGenes=exp.genes)
 
-  return(power.study)
+  #Return either detailed probabilities for each DE/eQTL gene or only overview
+  if(returnResultsDetailed){
+    return(list(overview.df=power.study,probs.df=foundSignGenes))
+  } else {
+    return(power.study)
+  }
 }
 
 #' Power calculation for a DE/eQTL study with same read depth as the fitted gamma distribution
@@ -472,6 +505,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 #' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -486,7 +520,8 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
                               multipletRate=7.67e-06,multipletFactor=1.82,
                               min.UMI.counts=3,perc.indiv.expr=0.5,
                               nGenes=21000,samplingMethod="quantiles",
-                              multipletRateGrowth="linear"){
+                              multipletRateGrowth="linear",
+                              returnResultsDetailed=FALSE){
 
 
   #Estimate multiplet fraction dependent on cells per lane
@@ -532,16 +567,33 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
                                  min.UMI.counts,perc.indiv.expr,
                                  nGenes,samplingMethod)
 
-  power.study<-data.frame(name=ref.study.name,
-                          powerDetect=probs$powerDetect,
-                          exp.probs=probs$exp.probs,
-                          power=probs$power,
-                          sampleSize=nSamples,
-                          totalCells=nCells,
-                          usableCells=usableCells,
-                          multipletFraction=multipletFraction,
-                          ctCells=ctCells,
-                          expressedGenes=probs$expressedGenes)
+  #Return either detailed probabilities for each DE/eQTL gene or only overview
+  if(returnResultsDetailed){
+    power.study<-data.frame(name=ref.study.name,
+                            powerDetect=probs$overview.df$powerDetect,
+                            exp.probs=probs$overview.df$exp.probs,
+                            power=probs$overview.df$power,
+                            sampleSize=nSamples,
+                            totalCells=nCells,
+                            usableCells=usableCells,
+                            multipletFraction=multipletFraction,
+                            ctCells=ctCells,
+                            expressedGenes=probs$overview.df$expressedGenes)
+
+    return(list(overview.df=power.study,probs.df=probs$probs.df))
+
+  } else {
+    power.study<-data.frame(name=ref.study.name,
+                            powerDetect=probs$powerDetect,
+                            exp.probs=probs$exp.probs,
+                            power=probs$power,
+                            sampleSize=nSamples,
+                            totalCells=nCells,
+                            usableCells=usableCells,
+                            multipletFraction=multipletFraction,
+                            ctCells=ctCells,
+                            expressedGenes=probs$expressedGenes)
+  }
 
   return(power.study)
 }
@@ -576,6 +628,7 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 #' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -590,7 +643,8 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                               multipletRate=7.67e-06,multipletFactor=1.82,
                               min.UMI.counts=3,perc.indiv.expr=0.5,
                               nGenes=21000,samplingMethod="quantiles",
-                              multipletRateGrowth="linear"){
+                              multipletRateGrowth="linear",
+                              returnResultsDetailed=FALSE){
 
   #Distribute individuals most optimal over the lanes
   samplesPerLane<-floor(cellsPerLane/nCells)
@@ -608,7 +662,8 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                                           multipletRate,multipletFactor,
                                           min.UMI.counts,perc.indiv.expr,
                                           nGenes,samplingMethod,
-                                          multipletRateGrowth))
+                                          multipletRateGrowth,
+                                          returnResultsDetailed))
 }
 
 #' Help function to calculate expression probability, power and detection power
@@ -631,6 +686,7 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -638,7 +694,8 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                                   ref.study,ref.study.name,
                                   gamma.parameters,disp.fun,
                                   min.UMI.counts,perc.indiv.expr,
-                                  nGenes,samplingMethod){
+                                  nGenes,samplingMethod,
+                                  returnResultsDetailed){
 
   #Sample means values
   if(samplingMethod=="random"){
@@ -730,8 +787,13 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                      exp.probs=mean(foundSignGenes$exp.probs),
                      power=mean(foundSignGenes$power),
                      expressedGenes=exp.genes)
-  return(results)
 
+  #Return either detailed probabilities for each DE/eQTL gene or only overview
+  if(returnResultsDetailed){
+    return(list(overview.df=results,probs.df=foundSignGenes))
+  } else {
+    return(results)
+  }
 }
 
 #' Optimizing cost parameters to maximize detection power for a given budget and 10X design

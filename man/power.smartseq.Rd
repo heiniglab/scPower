@@ -21,7 +21,8 @@ power.smartseq(
   min.norm.count = 3,
   perc.indiv.expr = 0.5,
   nGenes = 21000,
-  samplingMethod = "quantiles"
+  samplingMethod = "quantiles",
+  returnResultsDetailed = FALSE
 )
 }
 \arguments{
@@ -63,6 +64,8 @@ to define it as globally expressed}
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
 \item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
+
+\item{returnResultsDetailed}{If true, return not only summary data frame, but additional list with exact probability vectors}
 }
 \value{
 Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
