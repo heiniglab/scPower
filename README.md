@@ -6,7 +6,11 @@ The calculation can also performed using a graphical interface of a shiny app or
 
 A short tutorial is given in the vignette [introduction-scPower](vignettes/introduction-scPower.pdf).
 
-A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper "Design and power analysis for multi-sample single cell genomics experiments, Schmid et al, submitted". An explanation how the plots in the paper were generated can be found in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf).
+A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper 
+
+Schmid, K. T., Cruceanu, C., Boettcher, A., Lickert, H., Binder, E. B., Theis, F. J., & Heinig, M. (2020). Design and power analysis for multi-sample single cell genomics experiments. bioRxiv. https://doi.org/10.1101/2020.04.01.019851
+
+An explanation how the plots in the paper were generated can be found in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf).
 
 
 ## Installation
