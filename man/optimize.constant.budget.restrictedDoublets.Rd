@@ -28,7 +28,9 @@ optimize.constant.budget.restrictedDoublets(
   perc.indiv.expr = 0.5,
   nGenes = 21000,
   samplingMethod = "quantiles",
-  multipletRateGrowth = "linear"
+  multipletRateGrowth = "linear",
+  sign.threshold = 0.05,
+  MTmethod = "Bonferroni"
 )
 }
 \arguments{
@@ -46,7 +48,7 @@ optimize.constant.budget.restrictedDoublets(
 
 \item{readsPerFlowcell}{Number reads that can be sequenced with one flow cell}
 
-\item{ref.study}{Data frame with reference studies to be used for effect sizes and ranks
+\item{ref.study}{Data frame with reference studies to be used for expression ranks and effect sizes
 (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))}
 
 \item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
@@ -86,6 +88,15 @@ to define it as globally expressed}
 
 \item{multipletRateGrowth}{Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".}
+
+\item{sign.threshold}{Significance threshold}
+
+\item{MTmethod}{Multiple testing correction method
+(possible options: "Bonferroni","FDR","none")}
+}
+\value{
+Data frame with overall detection power, power and expression power for
+each possible parameter combination given the budget and the parameter ranges
 }
 \description{
 This function determines the optimal parameter combination for a given budget.

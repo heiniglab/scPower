@@ -17,6 +17,8 @@ calculate.probabilities(
   perc.indiv.expr,
   nGenes,
   samplingMethod,
+  sign.threshold,
+  MTmethod,
   returnResultsDetailed
 )
 }
@@ -48,6 +50,11 @@ to define it as globally expressed}
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
 \item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
+
+\item{sign.threshold}{Significance threshold}
+
+\item{MTmethod}{Multiple testing correction method
+(possible options: "Bonferroni","FDR","none")}
 
 \item{returnResultsDetailed}{If true, return not only summary data frame, but additional list with exact probability vectors}
 }

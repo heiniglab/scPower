@@ -42,14 +42,9 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' in a single cell 10X RNAseq study. The power depends on the cost determining parameter of sample size, number of cells
 #' per individual and read depth.
 #'
-#' @param nSamples Sample size
 #' @param nCells Number of cells per individual
 #' @param readDepth Target read depth per cell
 #' @param ct.freq Frequency of the cell type of interest
-#' @param type (eqtl/de) study
-#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
-#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
-#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param samplesPerLane Maximal number of individuals per 10X lane
 #' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
 #' (required columns: intercept, reads (slope))
@@ -61,15 +56,10 @@ number.cells.detect.celltype<-function(prob.cutoff,min.num.cells,cell.type.frac,
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
-#' to define it as globally expressed
-#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
-#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 #' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
 #' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
+#' @inheritParams calculate.probabilities
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -89,6 +79,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      min.UMI.counts=3,perc.indiv.expr=0.5,
                                      nGenes=21000,samplingMethod="quantiles",
                                      multipletRateGrowth="linear",
+                                     sign.threshold=0.05,
+                                     MTmethod="Bonferroni",
                                      returnResultsDetailed=FALSE){
 
   #Estimate multiplet fraction dependent on cells per lane
@@ -157,6 +149,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                  gamma.parameters,disp.fun,
                                  min.UMI.counts,perc.indiv.expr,
                                  nGenes,samplingMethod,
+                                 sign.threshold,MTmethod,
                                  returnResultsDetailed)
 
   #Return either detailed probabilities for each DE/eQTL gene or only overview
@@ -202,34 +195,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' parameter, but instead the individuals are distributed over the lanes in a way that restricts the total number of
 #' cells per lane instead. This gives also an upper bound for the doublet rate.
 #'
-#' @param nSamples Sample size
-#' @param nCells Number of cells per individual
-#' @param readDepth Target read depth per cell
-#' @param ct.freq Frequency of the cell type of interest
-#' @param type (eqtl/de) study
-#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
-#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
-#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param cellsPerLane Maximal number of cells per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
-#' (required columns: intercept, reads (slope))
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
-#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
-#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
-#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
-#' @param multipletRate Expected increase in multiplets for additional cell in the lane
-#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
-#' to define it as globally expressed
-#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
-#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
-#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
-#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
-#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
+#' @inheritParams power.general.withDoublets
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -244,6 +211,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            min.UMI.counts=3,perc.indiv.expr=0.5,
                                            nGenes=21000,samplingMethod="quantiles",
                                            multipletRateGrowth="linear",
+                                           sign.threshold=0.05,
+                                           MTmethod="Bonferroni",
                                            returnResultsDetailed=FALSE){
 
   #Distribute individuals most optimal over the lanes
@@ -262,7 +231,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                              multipletRate,multipletFactor,
                              min.UMI.counts,perc.indiv.expr,
                              nGenes,samplingMethod,
-                             multipletRateGrowth,returnResultsDetailed))
+                             multipletRateGrowth,
+                             sign.threshold,MTmethod,returnResultsDetailed))
 }
 
 #' Power calculation for a DE/eQTL study with Smart-seq design
@@ -293,6 +263,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param sign.threshold Significance threshold
+#' @param MTmethod Multiple testing correction method (possible options: "Bonferroni","FDR","none")
 #' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
@@ -306,6 +278,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                          multipletFraction=0,multipletFactor=1.82,
                          min.norm.count=3,perc.indiv.expr=0.5,
                          nGenes=21000,samplingMethod="quantiles",
+                         sign.threshold=0.05,MTmethod="Bonferroni",
                          returnResultsDetailed=FALSE){
 
   usableCells<-round((1-multipletFraction)*nCells)
@@ -408,11 +381,23 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   #Set all DE with rank > nGEnes to nGenes (expression anyway nearly 0)
   ranks[ranks>nGenes]<-nGenes
 
-  #Calculate alpha parameter corrected for multiple testing
-  alpha<-0.05/exp.genes
-
   #Choose the DE genes according to the rank
   foundSignGenes<-sim.genes[ranks,]
+
+  #Calculate alpha parameter corrected for multiple testing
+  if(MTmethod=="Bonferroni"){
+    alpha<-sign.threshold/exp.genes
+  } else if (MTmethod=="none"){
+    alpha<-sign.threshold
+    #For FDR correction, optimization is done dependent on eqtl/de power later
+    #Only first parameters are calculated here
+  } else if(MTmethod=="FDR"){
+    lowerBound<-sign.threshold/exp.genes
+    m0<-exp.genes-round(sum(foundSignGenes$exp.probs))
+  } else {
+    stop(paste("MTmethod",MTmethod,"is unknown! Please choose between",
+               "Bonferroni, FDR and none!"))
+  }
 
   #Calculate power
   if(type=="eqtl"){
@@ -425,6 +410,17 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 
     #Set the Rsq respectively
     foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
+
+    if(MTmethod=="FDR"){
+      root<-uniroot(f=fdr.optimization,
+                    interval=c(lowerBound,sign.threshold),
+                    fdr=sign.threshold,m0=m0,type=type,
+                    exp.vector=foundSignGenes$exp.probs,
+                    es.vector=foundSignGenes$Rsq,
+                    nSamples=nSamples)
+
+      alpha<-root$root
+    }
 
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.eqtl(foundSignGenes$Rsq[i],
                                                                                             alpha,
@@ -439,6 +435,19 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 
     #Set the fold change respectively
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
+
+    if(MTmethod=="FDR"){
+      root<-uniroot(f=fdr.optimization,
+                    interval=c(lowerBound,sign.threshold),
+                    fdr=sign.threshold,m0=m0,type=type,
+                    exp.vector=foundSignGenes$exp.probs,
+                    es.vector=foundSignGenes$FoldChange,
+                    nSamples=nSamples,
+                    mean.vector=foundSignGenes$mean.length.sum,
+                    disp.vector = foundSignGenes$disp.sum)
+
+      alpha<-root$root
+    }
 
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
       floor(nSamples/2),
@@ -481,13 +490,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' fit not parameterized for UMI/read counts. It evaluates the effect of different samples sizes
 #' and cells per person, keeping the same read depth as in the experiment used for fitting.
 #'
-#' @param nSamples Sample size
 #' @param nCells Number of cells per individual
 #' @param ct.freq Frequency of the cell type of interest
-#' @param type (eqtl/de) study
-#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
-#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
-#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param samplesPerLane Maximal number of individuals per 10X lane
 #' @param gamma.parameters Data frame with gamma parameters for each cell type
 #' (required columns: ct (cell type), s1, r1, s2, r2, p1, p2/p3 (gamma parameters for both components))
@@ -497,15 +501,9 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
 #' @param multipletRate Expected increase in multiplets for additional cell in the lane
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
-#' to define it as globally expressed
-#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
-#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 #' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
-#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
+#' @inheritParams calculate.probabilities
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -521,6 +519,7 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
                               min.UMI.counts=3,perc.indiv.expr=0.5,
                               nGenes=21000,samplingMethod="quantiles",
                               multipletRateGrowth="linear",
+                              sign.threshold=0.05, MTmethod="Bonferroni",
                               returnResultsDetailed=FALSE){
 
 
@@ -565,7 +564,9 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
                                  ref.study,ref.study.name,
                                  gamma.parameters,disp.fun,
                                  min.UMI.counts,perc.indiv.expr,
-                                 nGenes,samplingMethod)
+                                 nGenes,samplingMethod,
+                                 sign.threshold,MTmethod,
+                                 returnResultsDetailed)
 
   #Return either detailed probabilities for each DE/eQTL gene or only overview
   if(returnResultsDetailed){
@@ -603,32 +604,8 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
 #' This function is a variant of power.sameReadDepth.withDoublets, where not the number of samplesPerLane is given as an
 #' parameter, but instead the individuals are distributed over the lanes in a way that restricts the total number of
 #' cells per lane instead. This gives also an upper bound for the doublet rate.
-#'
-#' @param nSamples Sample size
-#' @param nCells Number of cells per individual
-#' @param ct.freq Frequency of the cell type of interest
-#' @param type (eqtl/de) study
-#' @param ref.study Data frame with reference studies to be used for expression ranks and effect sizes
-#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
-#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
 #' @param cellsPerLane Maximal number of cells per 10X lane
-#' @param gamma.parameters Data frame with gamma parameters for each cell type
-#' (required columns: ct (cell type), s1, r1, s2, r2, p1, p2/p3 (gamma parameters for both components))
-#' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
-#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
-#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
-#' @param multipletRate Expected increase in multiplets for additional cell in the lane
-#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
-#' to define it as globally expressed
-#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
-#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
-#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
-#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
-#' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
+#' @inheritParams power.sameReadDepth.withDoublets
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -644,6 +621,7 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                               min.UMI.counts=3,perc.indiv.expr=0.5,
                               nGenes=21000,samplingMethod="quantiles",
                               multipletRateGrowth="linear",
+                              sign.threshold=0.05, MTmethod="Bonferroni",
                               returnResultsDetailed=FALSE){
 
   #Distribute individuals most optimal over the lanes
@@ -663,6 +641,8 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                                           min.UMI.counts,perc.indiv.expr,
                                           nGenes,samplingMethod,
                                           multipletRateGrowth,
+                                          sign.threshold,
+                                          MTmethod,
                                           returnResultsDetailed))
 }
 
@@ -686,6 +666,9 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
 #' to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @param sign.threshold Significance threshold
+#' @param MTmethod Multiple testing correction method
+#' (possible options: "Bonferroni","FDR","none")
 #' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
@@ -695,6 +678,7 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                                   gamma.parameters,disp.fun,
                                   min.UMI.counts,perc.indiv.expr,
                                   nGenes,samplingMethod,
+                                  sign.threshold,MTmethod,
                                   returnResultsDetailed){
 
   #Sample means values
@@ -737,17 +721,26 @@ calculate.probabilities<-function(nSamples,ctCells,type,
   #Set all DE with rank > nGenes to nGenes (expression anyway nearly 0)
   ranks[ranks>nGenes]<-nGenes
 
-  #Calculate alpha parameter corrected for multiple testing
-  alpha<-0.05/exp.genes
-
   #Choose the DE genes according to the rank
   foundSignGenes<-sim.genes[ranks,]
 
+  #Calculate alpha parameter corrected for multiple testing
+  if(MTmethod=="Bonferroni"){
+    alpha<-sign.threshold/exp.genes
+  } else if (MTmethod=="none"){
+    alpha<-sign.threshold
+  #For FDR correction, optimization is done dependent on eqtl/de power later
+  #Only first parameters are calculated here
+  } else if(MTmethod=="FDR"){
+    lowerBound<-sign.threshold/exp.genes
+    m0<-exp.genes-round(sum(foundSignGenes$exp.probs))
+  } else {
+    stop(paste("MTmethod",MTmethod,"is unknown! Please choose between",
+               "Bonferroni, FDR and none!"))
+  }
+
   #Calculate power
   if(type=="eqtl"){
-
-    #Set the Rsq respectively
-    foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
 
     #Check that the required column Rsq exists
     if(! any(colnames(ref.study)=="Rsq")){
@@ -755,9 +748,23 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                  "Please make sure to provide this column for eQTL power analysis."))
     }
 
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.eqtl(foundSignGenes$Rsq[i],
-                                                                               alpha,
-                                                                               nSamples))
+    #Set the Rsq respectively
+    foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
+
+    if(MTmethod=="FDR"){
+      root<-uniroot(f=fdr.optimization,
+                    interval=c(lowerBound,sign.threshold),
+                    fdr=sign.threshold,m0=m0,type=type,
+                    exp.vector=foundSignGenes$exp.probs,
+                    es.vector=foundSignGenes$Rsq,
+                    nSamples=nSamples)
+
+      alpha<-root$root
+    }
+
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),
+                                 function(i) power.eqtl(foundSignGenes$Rsq[i],
+                                                        alpha,nSamples))
   } else if (type=="de") {
 
     #Check that the required column FoldChange exists
@@ -768,6 +775,19 @@ calculate.probabilities<-function(nSamples,ctCells,type,
 
     #Set the fold change respectively
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
+
+    if(MTmethod=="FDR"){
+      root<-uniroot(f=fdr.optimization,
+                    interval=c(lowerBound,sign.threshold),
+                    fdr=sign.threshold,m0=m0,type=type,
+                    exp.vector=foundSignGenes$exp.probs,
+                    es.vector=foundSignGenes$FoldChange,
+                    nSamples=nSamples,
+                    mean.vector=foundSignGenes$mean.sum,
+                    disp.vector = foundSignGenes$disp.sum)
+
+      alpha<-root$root
+    }
 
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
       floor(nSamples/2),
@@ -796,6 +816,7 @@ calculate.probabilities<-function(nSamples,ctCells,type,
   }
 }
 
+
 #' Optimizing cost parameters to maximize detection power for a given budget and 10X design
 #'
 #' This function determines the optimal parameter combination for a given budget.
@@ -804,36 +825,16 @@ calculate.probabilities<-function(nSamples,ctCells,type,
 #' the third one is uniquely defined given the other two parameters and the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
-#' @param type (eqtl/de) study
-#' @param ct Cell type of interest (name should be found in the gamma and dispersion models)
-#' @param ct.freq Frequency of the cell type of interest
 #' @param costKit Cost for one 10X kit
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
-#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
-#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param samplesPerLane Maximal number of individuals per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
-#' (required columns: intercept, reads (slope))
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
-#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
-#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
 #' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
-#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
-#' @param multipletRate Expected increase in multiplets for additional cell in the lane
-#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
-#' to define it as globally expressed
-#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
-#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
-#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
-#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#' @inheritParams power.general.withDoublets
+#'
+#' @return Data frame with overall detection power, power and expression power for
+#' each possible parameter combination given the budget and the parameter ranges
 #'
 #' @export
 #'
@@ -855,6 +856,7 @@ optimize.constant.budget<-function(totalBudget,type,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
                                    min.UMI.counts=3,perc.indiv.expr=0.5,
                                    nGenes=21000,samplingMethod="quantiles",
+                                   sign.threshold=0.05,MTmethod="Bonferroni",
                                    multipletRateGrowth="linear"){
 
   #Check that exactly two of the parameters are set and the third one is not defined
@@ -934,7 +936,9 @@ optimize.constant.budget<-function(totalBudget,type,
                                     perc.indiv.expr=perc.indiv.expr,
                                     nGenes=nGenes,
                                     samplingMethod=samplingMethod,
-                                    multipletRateGrowth=multipletRateGrowth))
+                                    multipletRateGrowth=multipletRateGrowth,
+                                    sign.threshold=sign.threshold,
+                                    MTmethod=MTmethod))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -951,38 +955,19 @@ optimize.constant.budget<-function(totalBudget,type,
 #' the third one is uniquely defined given the other two parameters and the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
-#' @param type (eqtl/de) study
-#' @param ct Cell type of interest (name should be found in the gamma and dispersion models)
-#' @param ct.freq Frequency of the cell type of interest
 #' @param prepCostCell Library preparation costs per cell
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
-#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
-#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param samplesPerLane Maximal number of individuals per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
-#' (required columns: intercept, reads (slope))
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
-#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
-#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
 #' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
-#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
-#' @param multipletRate Expected increase in multiplets for additional cell in the lane
-#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
-#' to define it as globally expressed
-#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
-#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
-#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
-#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#' @inheritParams power.general.withDoublets
+#'
+#' @return Data frame with overall detection power, power and expression power for
+#' each possible parameter combination given the budget and the parameter ranges
 #'
 #' @export
+#'
 optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                                ct,ct.freq,
                                                prepCostCell,costFlowCell,readsPerFlowcell,
@@ -996,7 +981,8 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                                multipletRate=7.67e-06,multipletFactor=1.82,
                                                min.UMI.counts=3,perc.indiv.expr=0.5,
                                                nGenes=21000,samplingMethod="quantiles",
-                                               multipletRateGrowth="linear"){
+                                               multipletRateGrowth="linear",
+                                               sign.threshold=0.05,MTmethod="Bonferroni"){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1072,7 +1058,9 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                     perc.indiv.expr=perc.indiv.expr,
                                     nGenes=nGenes,
                                     samplingMethod=samplingMethod,
-                                    multipletRateGrowth=multipletRateGrowth))
+                                    multipletRateGrowth=multipletRateGrowth,
+                                    sign.threshold=sign.threshold,
+                                    MTmethod=MTmethod))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -1088,38 +1076,19 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
 #' the third one is uniquely defined given the other two parameters and the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
-#' @param type (eqtl/de) study
-#' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param ct.freq Frequency of the cell type of interest
 #' @param costKit Cost for one 10X kit
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
-#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
-#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param cellsPerLane Maximal number of cells per 10X lane
-#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
-#' (required columns: intercept, reads (slope))
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
-#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
-#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
 #' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
-#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
-#' @param multipletRate Expected increase in multiplets for additional cell in the lane
-#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#' gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
-#' to define it as globally expressed
-#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
-#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
-#' @param multipletRateGrowth Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
-#' modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".
+#' @inheritParams power.general.restrictedDoublets
+#'
+#' @return Data frame with overall detection power, power and expression power for
+#' each possible parameter combination given the budget and the parameter ranges
 #'
 #' @export
+#'
 optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                      ct,ct.freq,
                                                      costKit,costFlowCell,readsPerFlowcell,
@@ -1133,7 +1102,8 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                      multipletRate=7.67e-06,multipletFactor=1.82,
                                                      min.UMI.counts=3,perc.indiv.expr=0.5,
                                                      nGenes=21000,samplingMethod="quantiles",
-                                                     multipletRateGrowth="linear"){
+                                                     multipletRateGrowth="linear",
+                                                     sign.threshold=0.05,MTmethod="Bonferroni"){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1213,7 +1183,9 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                     perc.indiv.expr=perc.indiv.expr,
                                     nGenes=nGenes,
                                     samplingMethod=samplingMethod,
-                                    multipletRateGrowth=multipletRateGrowth))
+                                    multipletRateGrowth=multipletRateGrowth,
+                                    sign.threshold=sign.threshold,
+                                    MTmethod=MTmethod))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -1230,31 +1202,16 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
 #' the third one is uniquely defined given the other two parameters and the overall budget.
 #'
 #' @param totalBudget Overall experimental budget
-#' @param type (eqtl/de) study
-#' @param ct Cell type of interest (name should be found in the gamma and dispersion models)
-#' @param ct.freq Frequency of the cell type of interest
 #' @param prepCostCell Library preparation costs per cell
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
-#' @param ref.study Data frame with reference studies to be used for effect sizes and ranks
-#' (required columns: name (study name), rank (expression rank), FoldChange (DE study) /Rsq (eQTL study))
-#' @param ref.study.name Name of the reference study. Will be checked in the ref.study data frame for it (as column name).
-#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
-#' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
-#' @param disp.linear.fit Function to fit the dispersion parameter dependent on the mean (parameter linear dependent on read depth)
-#' (required columns: parameter, ct (cell type), intercept, meanReads (slope))
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
 #' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
-#' @param mappingEfficiency Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)
-#' @param multipletFraction Multiplet fraction in the experiment as a constant factor
-#' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.norm.count Expression defition parameter: more than is number of counts per kilobase transcript for each
-#' gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals that need to have this gene expressed
-#' to define it as globally expressed
-#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
-#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#' @inheritParams power.smartseq
+#'
+#' @return Data frame with overall detection power, power and expression power for
+#' each possible parameter combination given the budget and the parameter ranges
 #'
 #' @export
 #'
@@ -1269,7 +1226,8 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
                                            mappingEfficiency=0.8,
                                            multipletFraction=0,multipletFactor=1.82,
                                            min.norm.count=3,perc.indiv.expr=0.5,
-                                           nGenes=21000,samplingMethod="quantiles"){
+                                           nGenes=21000,samplingMethod="quantiles",
+                                           sign.threshold=0.05,MTmethod="Bonferroni"){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1342,7 +1300,9 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
                                     min.norm.count=min.norm.count,
                                     perc.indiv.expr=perc.indiv.expr,
                                     nGenes=nGenes,
-                                    samplingMethod=samplingMethod))
+                                    samplingMethod=samplingMethod,
+                                    sign.threshold=sign.threshold,
+                                    MTmethod=MTmethod))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -1413,6 +1373,45 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
     return(calc$power)
   }
 }
+
+#' Function for numeric optimization to get an FDR corrected significance thresold
+#'
+#' @param x Adjusted significance threshold to be found during optimization
+#' @param fdr Chosen FDR threshold
+#' @param m0 Number of null hypothesis
+#' @param type Either DE or eQTL power
+#' @param exp.vector Vector of expression probabilities for each DEG/eQTL
+#' @param es.vector Effect size vector (Fold Change for DEGs, Rsq for eQTLs)
+#' @param nSamples Sample size
+#' @param mean.vector Mean value for each DEG (only required for DE power)
+#' @param disp.vector Dispersion value for each DEG (only required for DE power)
+#'
+#' @return Optimizing this function to 0 will lead to the correct adjusted
+#' significance threshold x
+#'
+fdr.optimization<-function(x,fdr,m0,type,
+                           exp.vector,
+                           es.vector,
+                           nSamples,
+                           mean.vector=NULL,
+                           disp.vector=NULL){
+
+  #Calculate DE power (similar for eQTL power)
+  if(type=="de"){
+    power<-sapply(1:length(es.vector), function(i)
+      power.de(floor(nSamples/2),mean.vector[i],
+               es.vector[i],1/disp.vector[i],x))
+  } else if (type=="eqtl"){
+    power<-sapply(1:length(es.vector), function(i)
+      power.eqtl(es.vector[i],x,nSamples))
+  } else {
+    stop("Type unknown!")
+  }
+
+  r1<-sum(power*exp.vector)
+  return(x-(fdr*r1)/(m0*(1-fdr)))
+}
+
 
 #' Calculate total cost dependent on parameters for 10X design
 #'

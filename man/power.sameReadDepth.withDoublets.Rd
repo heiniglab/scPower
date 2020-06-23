@@ -23,6 +23,8 @@ power.sameReadDepth.withDoublets(
   nGenes = 21000,
   samplingMethod = "quantiles",
   multipletRateGrowth = "linear",
+  sign.threshold = 0.05,
+  MTmethod = "Bonferroni",
   returnResultsDetailed = FALSE
 )
 }
@@ -68,6 +70,11 @@ to define it as globally expressed}
 
 \item{multipletRateGrowth}{Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
 modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".}
+
+\item{sign.threshold}{Significance threshold}
+
+\item{MTmethod}{Multiple testing correction method
+(possible options: "Bonferroni","FDR","none")}
 
 \item{returnResultsDetailed}{If true, return not only summary data frame, but additional list with exact probability vectors}
 }
