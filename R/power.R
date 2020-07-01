@@ -107,6 +107,12 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
   #Get the fraction of cell type cells
   ctCells<-round(usableCells*ct.freq)
 
+  #Check that really only one row is given for read.umi.fit
+  if(nrow(read.umi.fit)>1){
+    stop("Please only enter data frame with one row for read.umi.fit,
+         only one fit can be evaluated in one run!")
+  }
+
   #Get mean umi dependent on read depth
   umiCounts<-read.umi.fit$intercept+read.umi.fit$reads*log(mappedReadDepth)
 
@@ -412,14 +418,25 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
     foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
 
     if(MTmethod=="FDR"){
-      root<-uniroot(f=fdr.optimization,
-                    interval=c(lowerBound,sign.threshold),
-                    fdr=sign.threshold,m0=m0,type=type,
-                    exp.vector=foundSignGenes$exp.probs,
-                    es.vector=foundSignGenes$Rsq,
-                    nSamples=nSamples)
+      #In the extreme case that also with Bonferroni cut-off less than one TP
+      #can be found, the optimization is not working, use here the Bonferroni
+      #cutoff instead
+      if(fdr.optimization(x=lowerBound,
+                          fdr=sign.threshold,m0=m0,type=type,
+                          exp.vector=foundSignGenes$exp.probs,
+                          es.vector=foundSignGenes$Rsq,
+                          nSamples=nSamples)>0){
+        alpha<-lowerBound
+      } else {
+        root<-uniroot(f=fdr.optimization,
+                      interval=c(lowerBound,sign.threshold),
+                      fdr=sign.threshold,m0=m0,type=type,
+                      exp.vector=foundSignGenes$exp.probs,
+                      es.vector=foundSignGenes$Rsq,
+                      nSamples=nSamples)
 
-      alpha<-root$root
+        alpha<-root$root
+      }
     }
 
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.eqtl(foundSignGenes$Rsq[i],
@@ -437,16 +454,29 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
 
     if(MTmethod=="FDR"){
-      root<-uniroot(f=fdr.optimization,
-                    interval=c(lowerBound,sign.threshold),
-                    fdr=sign.threshold,m0=m0,type=type,
-                    exp.vector=foundSignGenes$exp.probs,
-                    es.vector=foundSignGenes$FoldChange,
-                    nSamples=nSamples,
-                    mean.vector=foundSignGenes$mean.length.sum,
-                    disp.vector = foundSignGenes$disp.sum)
+      #In the extreme case that also with Bonferroni cut-off less than one TP
+      #can be found, the optimization is not working, use here the Bonferroni
+      #cutoff instead
+      if(fdr.optimization(x=lowerBound,
+                          fdr=sign.threshold,m0=m0,type=type,
+                          exp.vector=foundSignGenes$exp.probs,
+                          es.vector=foundSignGenes$FoldChange,
+                          nSamples=nSamples,
+                          mean.vector=foundSignGenes$mean.length.sum,
+                          disp.vector = foundSignGenes$disp.sum)>0){
+        alpha<-lowerBound
+      } else {
+        root<-uniroot(f=fdr.optimization,
+                      interval=c(lowerBound,sign.threshold),
+                      fdr=sign.threshold,m0=m0,type=type,
+                      exp.vector=foundSignGenes$exp.probs,
+                      es.vector=foundSignGenes$FoldChange,
+                      nSamples=nSamples,
+                      mean.vector=foundSignGenes$mean.length.sum,
+                      disp.vector = foundSignGenes$disp.sum)
 
-      alpha<-root$root
+        alpha<-root$root
+      }
     }
 
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
@@ -752,14 +782,25 @@ calculate.probabilities<-function(nSamples,ctCells,type,
     foundSignGenes$Rsq<-ref.study$Rsq[ref.study$name==ref.study.name]
 
     if(MTmethod=="FDR"){
-      root<-uniroot(f=fdr.optimization,
-                    interval=c(lowerBound,sign.threshold),
-                    fdr=sign.threshold,m0=m0,type=type,
-                    exp.vector=foundSignGenes$exp.probs,
-                    es.vector=foundSignGenes$Rsq,
-                    nSamples=nSamples)
+      #In the extreme case that also with Bonferroni cut-off less than one TP
+      #can be found, the optimization is not working, use here the Bonferroni
+      #cutoff instead
+      if(fdr.optimization(x=lowerBound,
+                          fdr=sign.threshold,m0=m0,type=type,
+                          exp.vector=foundSignGenes$exp.probs,
+                          es.vector=foundSignGenes$Rsq,
+                          nSamples=nSamples)>0){
+        alpha<-lowerBound
+      } else {
+        root<-uniroot(f=fdr.optimization,
+                      interval=c(lowerBound,sign.threshold),
+                      fdr=sign.threshold,m0=m0,type=type,
+                      exp.vector=foundSignGenes$exp.probs,
+                      es.vector=foundSignGenes$Rsq,
+                      nSamples=nSamples)
 
-      alpha<-root$root
+        alpha<-root$root
+      }
     }
 
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),
@@ -777,16 +818,29 @@ calculate.probabilities<-function(nSamples,ctCells,type,
     foundSignGenes$FoldChange<-ref.study$FoldChange[ref.study$name==ref.study.name]
 
     if(MTmethod=="FDR"){
-      root<-uniroot(f=fdr.optimization,
-                    interval=c(lowerBound,sign.threshold),
-                    fdr=sign.threshold,m0=m0,type=type,
-                    exp.vector=foundSignGenes$exp.probs,
-                    es.vector=foundSignGenes$FoldChange,
-                    nSamples=nSamples,
-                    mean.vector=foundSignGenes$mean.sum,
-                    disp.vector = foundSignGenes$disp.sum)
+      #In the extreme case that also with Bonferroni cut-off less than one TP
+      #can be found, the optimization is not working, use here the Bonferroni
+      #cutoff instead
+      if(fdr.optimization(x=lowerBound,
+                          fdr=sign.threshold,m0=m0,type=type,
+                          exp.vector=foundSignGenes$exp.probs,
+                          es.vector=foundSignGenes$FoldChange,
+                          nSamples=nSamples,
+                          mean.vector=foundSignGenes$mean.sum,
+                          disp.vector = foundSignGenes$disp.sum)>0){
+        alpha<-lowerBound
+      } else {
+        root<-uniroot(f=fdr.optimization,
+                      interval=c(lowerBound,sign.threshold),
+                      fdr=sign.threshold,m0=m0,type=type,
+                      exp.vector=foundSignGenes$exp.probs,
+                      es.vector=foundSignGenes$FoldChange,
+                      nSamples=nSamples,
+                      mean.vector=foundSignGenes$mean.sum,
+                      disp.vector = foundSignGenes$disp.sum)
 
-      alpha<-root$root
+        alpha<-root$root
+      }
     }
 
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
@@ -1408,7 +1462,8 @@ fdr.optimization<-function(x,fdr,m0,type,
     stop("Type unknown!")
   }
 
-  r1<-sum(power*exp.vector)
+  r1<-sum(power*exp.vector, na.rm=TRUE)
+
   return(x-(fdr*r1)/(m0*(1-fdr)))
 }
 
