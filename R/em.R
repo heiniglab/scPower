@@ -177,9 +177,6 @@ fit.CZinba <- function(model, x, logExpectation) {
 }
 setMethod("fit", signature=c(model="CZinba", x="numeric", logExpectation="numeric"), fit.CZinba)
 
-
-
-
 # just the regular negative binomial (special case of the zero inflated)
 Negbinom <- setClass("Negbinom", representation=list(size="numeric", mu="numeric"), contains="Distribution")
 

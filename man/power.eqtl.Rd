@@ -2,11 +2,20 @@
 % Please edit documentation in R/power.R
 \name{power.eqtl}
 \alias{power.eqtl}
-\title{Power calculation for an eQTL gene using the F-test}
+\title{Wrapper funtion to use either simulated power or power based on F-test
+(dependent on pseudobulk mean and used parameters)}
 \usage{
-power.eqtl(heritability, sig.level, nSamples)
+power.eqtl(
+  count.mean,
+  heritability,
+  sig.level,
+  nSamples,
+  useSimulatedPower = TRUE
+)
 }
 \arguments{
+\item{count.mean}{Expression mean in the pseudobulk}
+
 \item{heritability}{Heritability of the trait}
 
 \item{sig.level}{Significane threshold}
@@ -17,5 +26,6 @@ power.eqtl(heritability, sig.level, nSamples)
 Power to detect the eQTL gene
 }
 \description{
-This function calculates the power to detect an eQTL gene.
+Wrapper funtion to use either simulated power or power based on F-test
+(dependent on pseudobulk mean and used parameters)
 }

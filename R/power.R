@@ -425,7 +425,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                           fdr=sign.threshold,m0=m0,type=type,
                           exp.vector=foundSignGenes$exp.probs,
                           es.vector=foundSignGenes$Rsq,
-                          nSamples=nSamples)>0){
+                          nSamples=nSamples,
+                          mean.vector=foundSignGenes$mean.length.sum)>0){
         alpha<-lowerBound
       } else {
         root<-uniroot(f=fdr.optimization,
@@ -433,15 +434,20 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                       fdr=sign.threshold,m0=m0,type=type,
                       exp.vector=foundSignGenes$exp.probs,
                       es.vector=foundSignGenes$Rsq,
-                      nSamples=nSamples)
+                      nSamples=nSamples,
+                      mean.vector=foundSignGenes$mean.length.sum)
 
         alpha<-root$root
       }
+    } else if (MTmethod=="Bonferroni"){
+      #Restrict the Bonferroni for eQTLs cut-off further, assuming 10 independent SNPs per gene
+      alpha<-alpha/10
     }
 
-    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.eqtl(foundSignGenes$Rsq[i],
-                                                                                            alpha,
-                                                                                            nSamples))
+    foundSignGenes$power<-sapply(1:nrow(foundSignGenes),
+                                 function(i) power.eqtl(foundSignGenes$mean.length.sum[i],
+                                                        foundSignGenes$Rsq[i],
+                                                        alpha,nSamples))
   } else if (type=="de") {
 
     #Check that the required column FoldChange exists
@@ -789,7 +795,8 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                           fdr=sign.threshold,m0=m0,type=type,
                           exp.vector=foundSignGenes$exp.probs,
                           es.vector=foundSignGenes$Rsq,
-                          nSamples=nSamples)>0){
+                          nSamples=nSamples,
+                          mean.vector=foundSignGenes$mean.sum)>0){
         alpha<-lowerBound
       } else {
         root<-uniroot(f=fdr.optimization,
@@ -797,15 +804,21 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                       fdr=sign.threshold,m0=m0,type=type,
                       exp.vector=foundSignGenes$exp.probs,
                       es.vector=foundSignGenes$Rsq,
-                      nSamples=nSamples)
+                      nSamples=nSamples,
+                      mean.vector=foundSignGenes$mean.sum)
 
         alpha<-root$root
       }
+    } else if (MTmethod=="Bonferroni"){
+      #Restrict the Bonferroni for eQTLs cut-off further, assuming 10 independent SNPs per gene
+      alpha<-alpha/10
     }
 
     foundSignGenes$power<-sapply(1:nrow(foundSignGenes),
-                                 function(i) power.eqtl(foundSignGenes$Rsq[i],
+                                 function(i) power.eqtl(foundSignGenes$mean.sum[i],
+                                                        foundSignGenes$Rsq[i],
                                                         alpha,nSamples))
+
   } else if (type=="de") {
 
     #Check that the required column FoldChange exists
@@ -1364,6 +1377,45 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
   return(power.study)
 }
 
+#' Wrapper funtion to use either simulated power or power based on F-test
+#' (dependent on pseudobulk mean and used parameters)
+#'
+#' @param count.mean Expression mean in the pseudobulk
+#' @param heritability Heritability of the trait
+#' @param sig.level Significane threshold
+#' @param nSamples Sample size
+#'
+#' @return Power to detect the eQTL gene
+#'
+power.eqtl<-function(count.mean,heritability, sig.level, nSamples,
+                     useSimulatedPower=TRUE){
+
+
+  #Use a cut-off of 10 for power simulation!
+  if(useSimulatedPower){
+    if(round(count.mean) == 0){
+      return(0)
+    } else if (round(count.mean) > 4){
+      return(power.eqtl.ftest(heritability, sig.level, nSamples))
+    } else {
+      sim.eqtl.pvals<-scPower::sim.eqtl.pvals
+      pvals<-sim.eqtl.pvals[sim.eqtl.pvals$mean==round(count.mean) &
+                             sim.eqtl.pvals$Rsq==round(heritability,2) &
+                             sim.eqtl.pvals$sampleSize==nSamples,]
+      if(nrow(pvals)>0){
+        return(mean(unlist(pvals)[4:103]<sig.level))
+      } else {
+        warning(paste0("Simulated p-values not available for the current parameter combination. ",
+                       "Calculation from scratch might take a bit!"))
+        return(power.eqtl.simulated(count.mean,heritability, sig.level, nSamples))
+      }
+    }
+
+  } else {
+    return(power.eqtl.ftest(heritability, sig.level, nSamples))
+  }
+}
+
 #' Power calculation for an eQTL gene using the F-test
 #'
 #' This function calculates the power to detect an eQTL gene.
@@ -1372,7 +1424,8 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
 #' @param nSamples Sample size
 #'
 #' @return Power to detect the eQTL gene
-power.eqtl<-function(heritability, sig.level, nSamples) {
+#'
+power.eqtl.ftest<-function(heritability, sig.level, nSamples) {
   require(pwr)
 
   #A sample size larger than 2 is required for the power analysis
@@ -1385,6 +1438,153 @@ power.eqtl<-function(heritability, sig.level, nSamples) {
   df.denom <- nSamples - df.num - 1 ## error dfs
   power<-pwr::pwr.f2.test(u=df.num, v=df.denom, f2=f2, sig.level=sig.level)$power
   return(power)
+}
+
+#' Power calculation for an eQTL gene using simulations
+#'
+#' The eQTL power is independent of the mean except for very small mean values,
+#' where small effect sizes might not be detectable due to the discrete counts
+#' In these cases, the power can instead be simulated.
+#'
+#' @param count.mean Expression mean in the pseudobulk
+#' @param heritability Heritability of the trait
+#' @param sig.level Significane threshold
+#' @param nSamples Sample size
+#' @param rep.times Number of repetitions used for the
+#'
+#' @return Power to detect the eQTL gene
+#'
+power.eqtl.simulated<-function(count.mean, heritability, sig.level, nSamples,
+                               rep.times=100){
+
+  #Use precalculated size estimates
+  size.estimates<-scPower::size.estimates
+
+  #Power for pseudobulk means close to 0 is set to 0 (no simulation possible)
+  if(round(count.mean)==0){return(0)}
+
+  #Simulated power
+  p.vals<-sapply(1:rep.times,function(i)
+    power.eqtl.simulated.help(round(count.mean), heritability, nSamples,
+                              size.estimates))
+
+  #Simulated power
+  return(mean(p.vals<sig.level))
+
+}
+
+#' Helper function for eQTL simulation power calculation
+#'
+#' @param count.mean Expression mean in the pseudobulk
+#' @param Rsq Heritability of the trait
+#' @param nSamples Sample size
+#' @param size.estimates Data frame with precalculated size values to speed calculation
+#' @param af Allele frequency (sampled if not explicity given)
+#'
+power.eqtl.simulated.help<-function(count.mean,Rsq,nSamples,
+                                    size.estimates,af=NULL){
+
+  #Randomly sample AF if not given
+  if(is.null(af)){
+    af<-sample(seq(0.1,0.9,by=0.1),1)
+  }
+
+  #Genotype distribution in the population
+  bb<-round(nSamples*af^2)
+  ab<-round(nSamples*2*af*(1-af))
+  aa<-nSamples-ab-bb
+  genotypes<-c(rep(0,aa),rep(1,ab),rep(2,bb))
+
+  #Calculate beta value and standard error
+  beta<-sqrt(Rsq/(2*af*(1-af)))
+
+  #Get dispersion parameter from look-up table if available
+  #Look-up dispersion parameter from numerical optimization
+  size.vector<-size.estimates[size.estimates$Rsq==round(Rsq,2) &
+                                size.estimates$af==round(af,1) &
+                                size.estimates$mean==round(count.mean),4:6]
+
+  if(nrow(size.vector)==0){stop("Look-up value not found")}
+
+  #Sample from a normal distribution dependent on the genotype
+  mean.vector<-exp(log(count.mean) + beta * genotypes)
+  size.vector<-unlist(size.vector)[genotypes+1]
+
+  #Suppress warning messages if NA values are generated
+  suppressWarnings(counts<-rnbinom(nSamples,mu=mean.vector,size=size.vector))
+
+  simData<-data.frame(count=counts,
+                      log.count=log(counts+1),
+                      g=genotypes)
+
+  #Check if the counts are all the same
+  if(length(setdiff(unique(simData$count),NA))<=1){
+    return(1)
+  }
+
+  #Calculate p-values
+  model<-lm(log.count~g,data=simData)
+
+  #Check if there were enough data points to fit the model
+  if("g" %in% row.names(summary(model)$coefficients)){
+    return(summary(model)$coefficients["g","Pr(>|t|)"])
+  } else{
+    return(1)
+  }
+
+}
+
+
+#' Estimation of size parameter (1/dsp) for eQTL power simulation
+#'
+#' @param count.mean Mean of negative binomial distribution for the counts
+#' @param Rsq Effect size
+#' @param af Allele frequency
+#'
+#' @return Numerical optimized size parameter (1/dispersion) to model the standard error
+#' as good as possible in the simulation
+#'
+estimate.size.simulation<-function(count.mean,Rsq,af){
+
+  #Calculate beta and Rsq
+  beta<-sqrt(Rsq/(2*af*(1-af)))
+  sd.error<-sqrt(1-Rsq)
+
+  #Estimate for genotype the suitable size factor for each genotype
+  disp.estimates<-c()
+  for(g in c(0,1,2)){
+    #Tayler estimate of size as approximation for optimization range
+    beta.mean<-exp(log(count.mean) + beta * g)
+    size<-1/(sd.error^2-1/beta.mean)
+
+    root<-try(uniroot(f=optimizeSizeFactor, interval=c(0.01,max(size*2,1)),
+                      sd.error=sd.error,
+                      beta.mean=beta.mean),silent=TRUE)
+
+    #For some very small size factors the optimization does not work
+    if(class(root)=="try-error"){
+      disp.estimates<-c(disp.estimates,NA)
+    } else {
+      disp.estimates<-c(disp.estimates,root$root)
+    }
+  }
+  return(disp.estimates)
+}
+
+
+#' Function for numeric optimization of size parameter
+#'
+#' @param x Tested size factor
+#' @param sd.error The targeted standard error
+#' @param beta.mean The mean of the counts
+#'
+#' @return A value close to 0 shows a good accordance of targeted and simulated
+#' standard error
+optimizeSizeFactor<-function(x,sd.error,beta.mean){
+  set.seed(1)
+  #Simulate counts
+  log.counts<-log(rnbinom(10000,mu=beta.mean,size=x)+1)
+  return(sd.error-sd(log.counts))
 }
 
 # Alternative calculation of power function
@@ -1447,7 +1647,7 @@ fdr.optimization<-function(x,fdr,m0,type,
                            exp.vector,
                            es.vector,
                            nSamples,
-                           mean.vector=NULL,
+                           mean.vector,
                            disp.vector=NULL){
 
   #Calculate DE power (similar for eQTL power)
@@ -1457,7 +1657,7 @@ fdr.optimization<-function(x,fdr,m0,type,
                es.vector[i],1/disp.vector[i],x))
   } else if (type=="eqtl"){
     power<-sapply(1:length(es.vector), function(i)
-      power.eqtl(es.vector[i],x,nSamples))
+      power.eqtl(mean.vector[i],es.vector[i],x,nSamples))
   } else {
     stop("Type unknown!")
   }

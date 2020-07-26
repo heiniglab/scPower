@@ -170,6 +170,41 @@
 #' head(disp.fun.param.smart)
 "disp.fun.param.smart"
 
+#' Precalcuated size estimates for eQTL power simulation
+#'
+#' Precalculated size estimates for eQTL power simulation
+#' (using the function estimate.size.simulation) to speed simulation
+#'
+#' @docType data
+#'
+#' @usage data(sizeEstimates)
+#'
+#' @format Data frame with precalculated size estimates (depending on Rsq, af and mean)
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(sizeEstimates)
+#' head(size.estimates)
+"size.estimates"
+
+#' Precalcuated p-values from eQTL simulation
+#'
+#' Precalculated p-values from eQTL simulation to speed calculation time
+#'
+#' @docType data
+#'
+#' @usage data(sizeEstimates)
+#'
+#' @format Matrix with mean, Rsq, sampleSize and 1 hundert p-values
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(simEqtlPvals)
+#' head(simEqtlPvals)
+"size.estimates"
+
 #' Example count matrices to test the expression curve estimation
 #'
 #' Small subset from the 10X PBMC data to visualize expression curve
