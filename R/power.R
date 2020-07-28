@@ -1358,6 +1358,34 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                     useSimulatedPower=useSimulatedPower,
                                     speedPowerCalc=speedPowerCalc))
 
+  # for(i in 1:nrow(param.combis)){
+  #   power.general.restrictedDoublets(
+  #   param.combis$nSamples[i],
+  #   param.combis$nCells[i],
+  #   param.combis$readDepth[i],ct.freq=ct.freq,
+  #
+  #                 type=type,
+  #                 ref.study=ref.study,
+  #                 ref.study.name=ref.study.name,
+  #                 cellsPerLane=cellsPerLane,
+  #                 read.umi.fit=read.umi.fit,
+  #                 gamma.mixed.fits=gamma.mixed.fits,
+  #                 ct=ct,
+  #                 disp.fun.param=disp.fun.param,
+  #                 mappingEfficiency=mappingEfficiency,
+  #                 multipletRate=multipletRate,
+  #                 multipletFactor=multipletFactor,
+  #                 min.UMI.counts=min.UMI.counts,
+  #                 perc.indiv.expr=perc.indiv.expr,
+  #                 nGenes=nGenes,
+  #                 samplingMethod=samplingMethod,
+  #                 multipletRateGrowth=multipletRateGrowth,
+  #                 sign.threshold=sign.threshold,
+  #                 MTmethod=MTmethod,
+  #                 useSimulatedPower=useSimulatedPower,
+  #                 speedPowerCalc=speedPowerCalc)
+  # }
+
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
 
@@ -1513,7 +1541,8 @@ power.eqtl<-function(count.mean,heritability, sig.level, nSamples,
       if(nrow(pvals)>0){
         return(mean(unlist(pvals)[4:103]<sig.level))
       } else {
-        warning(paste0("Simulated p-values not available for the current parameter combination. ",
+        warning(paste0("Simulated p-values not available for the current parameter combination ",
+                       "(",round(count.mean),",",round(heritability,2),",",nSamples,").",
                        "Calculation from scratch might take a bit!"))
         return(power.eqtl.simulated(count.mean,heritability, sig.level, nSamples))
       }
@@ -1612,7 +1641,8 @@ power.eqtl.simulated.help<-function(count.mean,Rsq,nSamples,
                                 size.estimates$af==round(af,1) &
                                 size.estimates$mean==round(count.mean),4:6]
 
-  if(nrow(size.vector)==0){stop("Look-up value not found")}
+  if(nrow(size.vector)==0){stop(paste("Look-up value not found for Rsq",round(Rsq,2),
+                                "af",round(af,1),"mean",round(count.mean),"."))}
 
   #Sample from a normal distribution dependent on the genotype
   mean.vector<-exp(log(count.mean) + beta * genotypes)
