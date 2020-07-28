@@ -28,9 +28,11 @@ optimize.constant.budget(
   perc.indiv.expr = 0.5,
   nGenes = 21000,
   samplingMethod = "quantiles",
+  multipletRateGrowth = "linear",
   sign.threshold = 0.05,
   MTmethod = "Bonferroni",
-  multipletRateGrowth = "linear"
+  useSimulatedPower = TRUE,
+  speedPowerCalc = FALSE
 )
 }
 \arguments{
@@ -86,13 +88,19 @@ to define it as globally expressed}
 
 \item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
 
+\item{multipletRateGrowth}{Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
+modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".}
+
 \item{sign.threshold}{Significance threshold}
 
 \item{MTmethod}{Multiple testing correction method
 (possible options: "Bonferroni","FDR","none")}
 
-\item{multipletRateGrowth}{Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
-modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".}
+\item{useSimulatedPower}{Option to simulate eQTL power for small mean values to increase accuracy
+(only possible for eQTL analysis)}
+
+\item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
+an expression probability less than 0.01 (as overall power is anyway close to 0)}
 }
 \value{
 Data frame with overall detection power, power and expression power for

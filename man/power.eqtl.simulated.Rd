@@ -9,7 +9,7 @@ power.eqtl.simulated(
   heritability,
   sig.level,
   nSamples,
-  rep.times = 1000
+  rep.times = 100
 )
 }
 \arguments{

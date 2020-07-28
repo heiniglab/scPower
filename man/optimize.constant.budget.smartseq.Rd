@@ -27,7 +27,9 @@ optimize.constant.budget.smartseq(
   nGenes = 21000,
   samplingMethod = "quantiles",
   sign.threshold = 0.05,
-  MTmethod = "Bonferroni"
+  MTmethod = "Bonferroni",
+  useSimulatedPower = TRUE,
+  speedPowerCalc = FALSE
 )
 }
 \arguments{
@@ -81,6 +83,12 @@ to define it as globally expressed}
 \item{sign.threshold}{Significance threshold}
 
 \item{MTmethod}{Multiple testing correction method (possible options: "Bonferroni","FDR","none")}
+
+\item{useSimulatedPower}{Option to simulate eQTL power for small mean values to increase accuracy
+(only possible for eQTL analysis)}
+
+\item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
+an expression probability less than 0.01 (as overall power is anyway close to 0)}
 }
 \value{
 Data frame with overall detection power, power and expression power for

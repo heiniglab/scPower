@@ -12,8 +12,9 @@ fdr.optimization(
   exp.vector,
   es.vector,
   nSamples,
-  mean.vector = NULL,
-  disp.vector = NULL
+  mean.vector,
+  disp.vector = NULL,
+  useSimulatedPower = TRUE
 )
 }
 \arguments{

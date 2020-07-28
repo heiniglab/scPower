@@ -21,6 +21,8 @@ power.eqtl(
 \item{sig.level}{Significane threshold}
 
 \item{nSamples}{Sample size}
+
+\item{useSimulatedPower}{Option to simulate eQTL power for small mean values to increase accuracy}
 }
 \value{
 Power to detect the eQTL gene

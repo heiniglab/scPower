@@ -19,6 +19,8 @@ calculate.probabilities(
   samplingMethod,
   sign.threshold,
   MTmethod,
+  useSimulatedPower,
+  speedPowerCalc,
   returnResultsDetailed
 )
 }
@@ -55,6 +57,12 @@ to define it as globally expressed}
 
 \item{MTmethod}{Multiple testing correction method
 (possible options: "Bonferroni","FDR","none")}
+
+\item{useSimulatedPower}{Option to simulate eQTL power for small mean values to increase accuracy
+(only possible for eQTL analysis)}
+
+\item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
+an expression probability less than 0.01 (as overall power is anyway close to 0)}
 
 \item{returnResultsDetailed}{If true, return not only summary data frame, but additional list with exact probability vectors}
 }
