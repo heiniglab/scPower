@@ -194,16 +194,18 @@
 #'
 #' @docType data
 #'
-#' @usage data(sizeEstimates)
+#' @usage data(simEqtlPvals)
 #'
-#' @format Matrix with mean, Rsq, sampleSize and 1 hundert p-values
+#' @format Matrix of with 100 p-values (columns) and rownames in the format
+#' "mean_Rsq_sampleSize" showing the corresponding parameter combination with
+#' which the p-values were generated
 #'
 #' @keywords datasets
 #'
 #' @examples
 #' data(simEqtlPvals)
-#' head(simEqtlPvals)
-"size.estimates"
+#' head(sim.eqtl.pvals)
+"sim.eqtl.pvals"
 
 #' Example count matrices to test the expression curve estimation
 #'

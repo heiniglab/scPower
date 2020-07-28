@@ -7,19 +7,13 @@
 \format{Data frame with precalculated size estimates (depending on Rsq, af and mean)}
 \usage{
 data(sizeEstimates)
-
-data(sizeEstimates)
 }
 \description{
 Precalculated size estimates for eQTL power simulation
 (using the function estimate.size.simulation) to speed simulation
-
-Precalculated p-values from eQTL simulation to speed calculation time
 }
 \examples{
 data(sizeEstimates)
 head(size.estimates)
-data(simEqtlPvals)
-head(simEqtlPvals)
 }
 \keyword{datasets}
