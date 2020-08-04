@@ -36,6 +36,12 @@ The cost function influences how many parameters can be measured for the given o
     <li>Number of reads per flow cell.</li>
     <li>Cells per lane: Number of cells meassured on one 10X lane, assuming 6 lanes per kit.</li>
 </ul>
+<h5>Multiple testing correction</h5>
+Both the p-value and the multiple testing strategy can be chosen. We recommend using FWER adjustement for eQTL studies and FDR adjustment for DE studies.
+<ul>
+    <li>P-value: Significance threshold.</li>
+    <li>Multiple testing method: Possible is adjustment after the family-wise error rate (FWER), after the false discovery rate (FDR) or no adjustment at all (none).</li>
+</ul>
 <h5>Mapping and multiplet estimation</h5>
 The more cells are loaded on a lane, the more multiplets are produced. These need to be discared before the analysis. Furthermore, the reads are not evenly distributed, but multiplets have a higher fraction of reads per cell than singlets, so the target read depth is reduced with more multiplet.
 <ul>
@@ -49,6 +55,12 @@ A gene is defined as expressed, if it has a certain fraction of UMI counts per g
     <li>Minimal number of UMI per gene.</li>
     <li>Fraction of individuals.</li>
 </ul>
+<h5>Special parameters</h5>
+The method of power calculation can be changed to speed calculation or to increase accuracy (especially important for eQTL calculation).
+<ul>
+    <li>Skip power for lowly expressed genes: this parameter will speed the calculation by setting the power of lowly expressed genes (probability smaller than 0.01) automatically to 0. This will have only a marginal effect on the overall power, but of course change the DE/eQTL power estimates.</li>
+    <li>Use simulated power for eQTLs: for genes with small mean values, the method used for eQTL power calculation can get inaccurate. Instead the eQTL power for these small mean values can be estimated via simulation, which however increases the runtime.</li>
+</ul>
 
 <h4>Power to detect cell types</h4>
 "Power to detect cell types" describes the power to detect a sufficient number of cells from a cell type of interest in each individual. This is important as a cell-type specific DE or eQTL analysis is only possible if enough cells of this cell type are detected. The method calculates the minimal number of cells per individual which are necessary to reach a sufficient power threshold. The necessary parameters, which can be set on the left side, are:
@@ -59,7 +71,6 @@ A gene is defined as expressed, if it has a certain fraction of UMI counts per g
     <li>Detection power: the target power that should be reached with the parameter combination.</li>
     <li>Minimal number of cells: how many cells of the target cell type should at least be detected for each individual.</li>
 </ul>
-
 
 <h4>References</h4>
 

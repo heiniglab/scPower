@@ -57,13 +57,19 @@ shinyServer(
       if(input$study=="eqtl"){
         data(eQTLRefStudy)
         studies<-as.character(unique(eqtl.ref.study$name))
+        selected<-"Bonferroni"
       } else {
         data(DERefStudy)
         studies<-as.character(unique(de.ref.study$name))
+        selected<-"FDR"
       }
       choices<-setNames(studies,studies)
       updateSelectInput(session,"ref.study", label = "Reference study",
                         choices = choices)
+
+      #Choose the preferred MT method
+      updateSelectInput(session,"MTmethod",
+                        selected=selected)
     })
 
     #Set labels for the parameter pair properly
@@ -137,11 +143,17 @@ shinyServer(
       readsPerFlowcell<-input$readsPerFlowcell
       cellsPerLane<-input$cellsLane
 
+      sign.threshold<-input$pval
+      MTmethod<-input$MTmethod
+
       mappingEfficiency<-input$map.eff
       multipletRate<-input$multipletRate
       multipletFactor<-input$multipletFactor
       min.UMI.counts<-input$minUMI
       perc.indiv.expr<-input$percIndiv
+
+      useSimulatedPower<-input$simPower
+      speedPowerCalc<-input$speedCalc
 
       #Load required data sets
       data(readDepthUmiFit) #Relation between reads and UMI
@@ -164,7 +176,7 @@ shinyServer(
                                                                     costKit,costFlowCell,readsPerFlowcell,
                                                                     ref.study,ref.study.name,
                                                                     cellsPerLane,
-                                                                    read.umi.fit,
+                                                                    read.umi.fit[read.umi.fit$type=="10X_PBMC_1",],
                                                                     gamma.mixed.fits,
                                                                     disp.fun.param,
                                                                     nSamplesRange=sampleRange,
@@ -175,7 +187,11 @@ shinyServer(
                                                                     multipletFactor=multipletFactor,
                                                                     min.UMI.counts=min.UMI.counts,
                                                                     perc.indiv.expr=perc.indiv.expr,
-                                                                    samplingMethod="quantiles"),
+                                                                    samplingMethod="quantiles",
+                                                                    sign.threshold =sign.threshold,
+                                                                    MTmethod = MTmethod,
+                                                                    useSimulatedPower = useSimulatedPower,
+                                                                    speedPowerCalc = speedPowerCalc),
         message="Calculating power optimization!", value=0.5
       )
 

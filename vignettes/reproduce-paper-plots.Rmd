@@ -287,7 +287,7 @@ Figure 2: Expression probability model parameterized by UMI counts per cell. Plo
 
 ## Figure 3: Expression probability, DE/eQTL power and overall detection power
 
-The figure shows the influence of the experimental parameters on the detection power. The same expression probability model as in Figure 2 is used, the priors for the power, i.e. the effect sizes and expression ranks, are taken from different reference studies (see publication for citation and more explanation). The experimental parameters are set to realistic values.
+The figure shows the influence of the experimental parameters on the detection power. The same expression probability model as in Figure 2 is used, the priors for the power, i.e. the effect sizes and expression ranks, are taken from different reference studies (see publication for citation and more explanation). The experimental parameters are set to realistic values. FDR adjustment is set as multiple testing correction for DE and FWER adjustment for eQTLs.
 
 ```{r, fig.width=8,fig.height=6}
 #General parameters
@@ -320,7 +320,9 @@ res<-lapply(1:nrow(param.combis),function(i)
                              multipletRate=0,multipletFactor=1,
                              min.UMI.counts = 10,
                              perc.indiv.expr = 0.5,
-                             nGenes=21000))
+                             nGenes=21000,
+                             sign.threshold = 0.05,
+                             MTmethod = "FDR"))
 
 power.DE.study<-rbindlist(res)
 
@@ -345,7 +347,7 @@ g.DE<-ggplot(power.DE.study,aes(x=ctCells,y=sampleSize,fill=value))+
   facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
   xlab("Number of measured cells per cell type and individual")+
   ylab("Total sample size")+
-  scale_fill_viridis("Probability")+
+  scale_fill_viridis("Probability",limits=c(0,1))+
   theme_bw()+
   theme(axis.title=element_text(size=10),
         axis.text=element_text(size=8),
@@ -375,7 +377,9 @@ res<-lapply(1:nrow(param.combis),function(i)
                              multipletRate=0,multipletFactor=1,
                              min.UMI.counts = 10,
                              perc.indiv.expr = 0.5,
-                             nGenes=21000))
+                             nGenes=21000,
+                             sign.threshold = 0.05,
+                             MTmethod = "Bonferroni"))
 
 power.eqtl.study<-rbindlist(res)
 
@@ -400,7 +404,7 @@ g.eqtl<-ggplot(power.eqtl.study,aes(x=ctCells,y=sampleSize,fill=value))+
   facet_wrap(~variable,ncol=3,labeller = labeller(variable=var.labs))+
   xlab("Number of measured cells per cell type and individual")+
   ylab("Total sample size")+
-  scale_fill_viridis("Probability")+
+  scale_fill_viridis("Probability",limits=c(0,1))+
   theme_bw()+
   theme(axis.title=element_text(size=10),
         axis.text=element_text(size=8),
@@ -492,7 +496,9 @@ for(s in 1:nrow(simulated.parameters)){
                              readDepthRange = readDepth,
                              mappingEfficiency = mapping.efficiency,
                              min.UMI.counts = minUMI, 
-                             perc.indiv.expr = perc.indiv)
+                             perc.indiv.expr = perc.indiv,
+                             MTmethod = "FDR",
+                             speedPowerCalc=TRUE)
     
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -524,7 +530,9 @@ for(studyName in unique(de.ref.study$name)){
                    nCellsRange = cellsPerPerson,
                    readDepthRange = readDepth,
                    mappingEfficiency = mapping.efficiency,
-                   min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv)
+                   min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv,
+                   MTmethod = "FDR",
+                   speedPowerCalc=TRUE)
         
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -585,7 +593,9 @@ for(s in 1:nrow(simulated.parameters)){
                          nCellsRange = cellsPerPerson,
                          readDepthRange = readDepth,
                          mappingEfficiency = mapping.efficiency,
-                         min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv)
+                         min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv,
+                         MTmethod = "Bonferroni",
+                         speedPowerCalc=TRUE))
     
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -616,7 +626,9 @@ for(studyName in unique(eqtl.ref.study$name)){
                    nCellsRange = cellsPerPerson,
                    readDepthRange = readDepth,
                    mappingEfficiency = mapping.efficiency,
-                   min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv)
+                   min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv,
+                   MTmethod = "Bonferroni",
+                   speedPowerCalc=TRUE))
     
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -796,7 +808,9 @@ for(s in 1:nrow(simulated.parameters)){
                              min.UMI.counts = minUMI, 
                              perc.indiv.expr = perc.indiv,
                              nGenes=nFittedGenes,
-                             multipletRateGrowth = multipletRateGrowth)
+                             multipletRateGrowth = multipletRateGrowth,
+                             MTmethod = "FDR",
+                             speedPowerCalc=TRUE)
     
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -831,7 +845,9 @@ for(studyName in unique(de.priors.lung$name)){
                            multipletRate = multipletRate,
                            min.UMI.counts = minUMI, perc.indiv.expr = perc.indiv,
                            nGenes=nFittedGenes,
-                           multipletRateGrowth = multipletRateGrowth)
+                           multipletRateGrowth = multipletRateGrowth,
+                           MTmethod = "FDR",
+                           speedPowerCalc=TRUE)
         
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -913,7 +929,9 @@ for(s in 1:nrow(simulated.parameters)){
                                          mappingEfficiency = mapping.efficiency,
                                          min.norm.count = min.norm.count,
                                          perc.indiv.expr = perc.indiv.expr,
-                                         nGenes=nFittedGenes)
+                                         nGenes=nFittedGenes,
+                                         MTmethod = "FDR",
+                                         speedPowerCalc=TRUE)
     
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -944,7 +962,9 @@ for(studyName in unique(de.priors.panc$name)){
                                    mappingEfficiency = mapping.efficiency,
                                    min.norm.count = min.norm.count,
                                    perc.indiv.expr = perc.indiv.expr,
-                                   nGenes=nFittedGenes)
+                                   nGenes=nFittedGenes,
+                                   MTmethod = "FDR",
+                                   speedPowerCalc=TRUE)
         
     max.values<-rbind(max.values,
                       power.study[which.max(power.study$powerDetect),])
@@ -1388,9 +1408,70 @@ print(g)
 
 Figure S9: Effect size priors from cell type sorted bulk studies. Effect sizes gained from cell type sorted bulk studies for A. eQTL studies of PBMCs B. DE studies of PBMCs C. DE studies of lung tissue and D. DE studies of pancreas tissue. The effect size is quantified as beta values for eQTL studies and as log fold changes for DE studies.
 
-## Figure S10: Detection power using observed priors from reference studies
+## Figure S10: Relation between eQTL power and expression mean in a simulation study
 
-Figure S10 is an extension of Figure 3, showing the detection power for all analysed reference studies with PBMC cell types and matched cell type expression model, while in Figure 3 it is only shown for one DE and one eQTL study.
+Figure S10 shows how large the deviation between simulated and analytic mean values is for small mean values, using a range of typical parameter combinations for sample size, effect size (Rsq), mean and Bonferroni adjustetd p-values.
+
+To speed uo calculations, the plot is only shown for a reduced number of parameter combinations.
+
+```{r, fig.width=8, fig.height=4}
+
+#Parameters used for the original plot
+# count.mean<-c(seq(1,20),50,100,150)
+# nGenes<-c(1000,2000,5000,10000)
+
+#Reduced parameters used here to accelerate
+count.mean<-seq(1,9)
+nGenes<-1000
+          
+#Simulate look-up table of typical parameter combinations
+sampleSize<-c(20,50,100,200)
+Rsq<-quantile(abs(scPower::eqtl.ref.study$Rsq))
+
+#Check also different p-values (all approximating Bonferroni corrected p-values)
+pvals<-0.05/(10*nGenes)
+
+param.combis<-expand.grid(sampleSize,Rsq,count.mean,pvals,KEEP.OUT.ATTRS = FALSE)
+colnames(param.combis)<-c("sampleSize","Rsq","count.mean","pvals")
+
+#Get simulated power
+param.combis$power.simulated<-sapply(1:nrow(param.combis),function(i)
+    scPower:::power.eqtl.simulated(param.combis$count.mean[i],
+                                   param.combis$Rsq[i],
+                                   param.combis$pvals[i],
+                                   param.combis$sampleSize[i]))
+  
+#Get analytic power
+param.combis$power.analytic<-sapply(1:nrow(param.combis),function(i)
+    scPower:::power.eqtl.ftest(param.combis$Rsq[i],
+                               param.combis$pvals[i],
+                               param.combis$sampleSize[i]))
+
+#Calculate deviation
+param.combis$deviation<-param.combis$power.analytic-param.combis$power.simulated
+
+g.a<-ggplot(param.combis[param.combis$count.mean<=20,],
+            aes(x=power.simulated,y=power.analytic,color=count.mean))+
+  geom_point()+geom_abline()+
+  xlab("Power - eQTL simulation") + ylab("Power - scPower")+
+  theme_bw()+
+  scale_color_viridis("Mean")
+
+g.b<-ggplot(param.combis,aes(x=as.factor(count.mean),y=deviation))+geom_boxplot()+
+  xlab("Deviation of analytic power and simulated power")+xlab("Mean")+
+  theme_bw()
+
+g<-ggarrange(g.a,g.b,ncol=2,labels=c("A","B"))
+
+print(g)
+
+```
+
+## Figure S11: Detection power using observed priors from reference studies
+
+Figure S11 is an extension of Figure 3, showing the detection power for all analysed reference studies with PBMC cell types and matched cell type expression model, while in Figure 3 it is only shown for one DE and one eQTL study.
+
+In contrast to the original publication, the parameter useSimulatedPower is set to FALSE for the eQTL budget optimization. Both parameters speed the calculation in the vignette, while changing the overall power only slightly. We show in the publication the more accurate version including simulated eQTL power for lowly expressed genes.
 
 ```{r, fig.width=6, fig.height=8}
 
@@ -1434,7 +1515,9 @@ res<-lapply(1:nrow(param.combis),function(i)
                              multipletRate=0,multipletFactor=1,
                              min.UMI.counts = 10,
                              perc.indiv.expr = 0.5,
-                             nGenes=nGenes))
+                             nGenes=nGenes,
+                             sign.threshold = 0.05,
+                             MTmethod= "FDR"))
 
 power.DE.study<-rbindlist(res)
 
@@ -1446,7 +1529,7 @@ g.DE<-ggplot(power.DE.study,aes(x=totalCells,y=sampleSize,fill=powerDetect))+
   geom_tile()+facet_wrap(~name,ncol=2)+
   xlab("Number of measured cells per cell type and individual")+
   ylab("Total sample size")+
-  scale_fill_viridis("Detection power")+
+  scale_fill_viridis("Detection power",limits=c(0,1))+
   theme_bw()+
   theme(axis.title=element_text(size=10),
         axis.text=element_text(size=8),
@@ -1486,7 +1569,13 @@ res<-lapply(1:nrow(param.combis),function(i)
                              multipletRate=0,multipletFactor=1,
                              min.UMI.counts = 10,
                              perc.indiv.expr = 0.5,
-                             nGenes=21000))
+                             nGenes=21000,
+                             sign.threshold = 0.05,
+                             MTmethod= "Bonferroni",
+                             #The parameter is set differently
+                             #in the publictions, but changed here to
+                             #speed the calculation
+                             useSimulatedPower = FALSE)) #(in publication: TRUE)
 
 power.eqtl.study<-rbindlist(res)
 
@@ -1498,7 +1587,7 @@ g.eQTL<-ggplot(power.eqtl.study,aes(x=totalCells,y=sampleSize,fill=powerDetect))
   geom_tile()+facet_wrap(~name,ncol=2)+
   xlab("Number of measured cells per cell type and individual")+
   ylab("Total sample size")+
-  scale_fill_viridis("Detection power")+
+  scale_fill_viridis("Detection power",limits=c(0,1))+
   theme_bw()+
   theme(axis.title=element_text(size=10),
         axis.text=element_text(size=8),
@@ -1513,11 +1602,283 @@ print(g)
 
 ```
 
-Figure S10: Detection power using observed priors from reference studies. Detection power for A. DE genes and B. eQTL genes dependent on the study, total sample size and the number of measured cells per cell type for a transcriptome mapped read depth per cell of 20,000. The detection power is the product of the probability that the gene is expressed and the power to detect it as a DE or eQTL gene, respectively, assuming that it is expressed. The fold change for DE genes and the R^2 for eQTL genes is taken from the published study, together with the expression rank of the genes. The expression profile in a single cell experiment with a specific number of samples and measured cells is estimated using our gamma mixed models.
+Figure S11: Detection power using observed priors from reference studies. Detection power for A. DE genes and B. eQTL genes dependent on the study, total sample size and the number of measured cells per cell type for a transcriptome mapped read depth per cell of 20,000. The detection power is the product of the probability that the gene is expressed and the power to detect it as a DE or eQTL gene, respectively, assuming that it is expressed. The fold change for DE genes and the R^2 for eQTL genes is taken from the published study, together with the expression rank of the genes. The expression profile in a single cell experiment with a specific number of samples and measured cells is estimated using our gamma mixed models.
 
-## Figure S11: Parameter optimization for constant budget
+## Figure S12: Variant of Main Figure 3 with FWER adjusted significance thresholds
 
-Figure S11 shows two example calculations on how scPower selects the optimal experimental parameter combination for a specific budget, once for a DE study and once for an eQTL study. For an explanation of all the used parameters, please look into the introduction vignette.
+This figure was generated with exactly the same code as Main Figures 3, only setting the multiple testing method (MTmethod) to "FWER" instead of "FDR" for the DE power.
+
+## Figure S13: Comparison of powsimR in combination with different DE methods and scPower
+
+```{r, fig.width=8,fig.height=8}
+
+#General parameters
+transcriptome.mapped.reads<-25000
+nGenes<-21000
+ct<-"CD4 T cells"
+ct.freq<-1
+cellsPerLane<-20000
+cellsPerCelltype<-c(200,1000,3000)
+sampleSize<-c(4,8,16)
+ref.study.name<-"Blueprint (CLL) iCLL-mCLL"
+
+#Build a frame of all possible combinations
+param.combis<-expand.grid(cellsPerCelltype,sampleSize,KEEP.OUT.ATTRS = FALSE)
+colnames(param.combis)<-c("cellsPerCelltype","sampleSize")
+
+#Filter ref study for the ones that are kept after gene filtering
+ref.study<-de.ref.study[de.ref.study$name==ref.study.name,]
+fitted.genes<-16197 #Hard-coded here, found in powsimR object
+
+######################################################################
+#Test results for each parameter combination with MT method FWER
+
+overview.results<-NULL
+for(i in 1:nrow(param.combis)){
+  detailed<-power.general.restrictedDoublets(param.combis$sampleSize[i],
+                             param.combis$cellsPerCelltype[i],
+                             transcriptome.mapped.reads,
+                             ct.freq, "de",de.ref.study,ref.study.name,
+                             cellsPerLane,read.umi.fit[
+                               read.umi.fit$type=="10X_PBMC_1",],
+                             gamma.mixed.fits,ct,
+                             disp.fun.param,mappingEfficiency = 1,
+                             multipletRate=0,multipletFactor=1,
+                             min.UMI.counts = 0,
+                             perc.indiv.expr = 0,
+                             nGenes=21000,
+                             returnResultsDetailed = TRUE,
+                             MTmethod="Bonferroni")
+  
+  temp.overview<-detailed$overview.df
+
+  #Filter power for the expressed genes
+  ref.study$not.filtered<-ref.study$rank<=min(fitted.genes,
+                                              detailed$overview.df$expressedGenes)
+  temp.overview$power.filtered<-mean(detailed$probs.df$power[ref.study$not.filtered])
+  
+  #Filter overall power for simulated genes
+  ref.study$not.filtered<-ref.study$rank<=fitted.genes
+  temp.overview$overall.power.filtered<-mean(detailed$probs.df$combined.prob[
+    ref.study$not.filtered])
+  
+  overview.results<-rbind(overview.results,temp.overview)
+}
+
+overview.results$method<-"scPower"
+overview.results$power.sd<-0
+overview.results$overall.power.sd<-0
+overview.results$expressed.genes.sd<-0
+overview.results<-overview.results[,c("sampleSize","totalCells","method",
+                                      "power.filtered","power.sd",
+                                      "overall.power.filtered","overall.power.sd",
+                                      "expressedGenes","expressed.genes.sd")]
+overview.results$MT<-"FWER"
+
+#Bonferroni corrected values
+power.fwer<-scPower::simulated.DE.values[simulated.DE.values$MT=="FWER",]
+colnames(overview.results)<-colnames(power.fwer)
+power.fwer<-rbind(power.fwer,overview.results)
+power.fwer$totalCells<-as.factor(power.fwer$totalCells)
+
+g.a<-ggplot(power.fwer,aes(x=totalCells,y=expressed.genes,fill=method))+
+  geom_bar(stat="identity",position="dodge")+
+  geom_errorbar(aes(ymin=expressed.genes-expressed.genes.sd,
+                      ymax=expressed.genes+expressed.genes.sd), width=.2,
+                 position=position_dodge(.9))+
+  ylab("Expressed genes")+xlab("Cells per person")+
+  facet_wrap(~sampleSize)+
+  theme_bw()+
+  scale_fill_manual("Method",values=col.set2)
+
+g.b<-ggplot(data=power.fwer,aes(x=totalCells,y=power,fill=method))+
+  geom_bar(stat="identity",position="dodge")+
+  geom_errorbar(aes(ymin=power-power.sd, ymax=power+power.sd), width=.2,
+                 position=position_dodge(.9))+
+  ylab("DE power")+xlab("Cells per person")+
+  facet_wrap(~sampleSize)+ylim(0,1)+
+  theme_bw()+
+  scale_fill_manual("Method",values=col.set2)
+
+g.c<-ggplot(data=power.fwer,aes(x=totalCells,y=overall.power,fill=method))+
+  geom_bar(stat="identity",position="dodge")+
+  geom_errorbar(aes(ymin=overall.power-overall.power.sd, 
+                    ymax=overall.power+overall.power.sd), width=.2,
+                 position=position_dodge(.9))+
+  ylab("Overall detection power")+xlab("Cells per person")+
+  facet_wrap(~sampleSize)+ylim(0,1)+
+  theme_bw()+
+  scale_fill_manual("Method",values=col.set2)
+
+######################################################################
+#Test results for each parameter combination with MT method FDR
+
+overview.results<-NULL
+for(i in 1:nrow(param.combis)){
+  detailed<-power.general.restrictedDoublets(param.combis$sampleSize[i],
+                             param.combis$cellsPerCelltype[i],
+                             transcriptome.mapped.reads,
+                             ct.freq, "de",de.ref.study,ref.study.name,
+                             cellsPerLane,read.umi.fit[
+                               read.umi.fit$type=="10X_PBMC_1",],
+                             gamma.mixed.fits,ct,
+                             disp.fun.param,mappingEfficiency = 1,
+                             multipletRate=0,multipletFactor=1,
+                             min.UMI.counts = 0,
+                             perc.indiv.expr = 0,
+                             nGenes=21000,
+                             returnResultsDetailed = TRUE,
+                             MTmethod="FDR")
+  
+  temp.overview<-detailed$overview.df
+
+  #Filter power for the expressed genes
+  ref.study$not.filtered<-ref.study$rank<=min(fitted.genes,
+                                              detailed$overview.df$expressedGenes)
+  temp.overview$power.filtered<-mean(detailed$probs.df$power[ref.study$not.filtered])
+  
+  #Filter overall power for simulated genes
+  ref.study$not.filtered<-ref.study$rank<=fitted.genes
+  temp.overview$overall.power.filtered<-mean(detailed$probs.df$combined.prob[
+    ref.study$not.filtered])
+  
+  overview.results<-rbind(overview.results,temp.overview)
+}
+
+overview.results$method<-"scPower"
+overview.results$power.sd<-0
+overview.results$overall.power.sd<-0
+overview.results$expressed.genes.sd<-0
+overview.results<-overview.results[,c("sampleSize","totalCells","method",
+                                      "power.filtered","power.sd",
+                                      "overall.power.filtered","overall.power.sd",
+                                      "expressedGenes","expressed.genes.sd")]
+overview.results$MT<-"FDR"
+
+#Bonferroni corrected values
+power.fdr<-scPower::simulated.DE.values[simulated.DE.values$MT=="FDR",]
+colnames(overview.results)<-colnames(power.fdr)
+power.fdr<-rbind(power.fdr,overview.results)
+power.fdr$totalCells<-as.factor(power.fdr$totalCells)
+
+g.d<-ggplot(power.fdr,aes(x=totalCells,y=expressed.genes,fill=method))+
+  geom_bar(stat="identity",position="dodge")+
+  geom_errorbar(aes(ymin=expressed.genes-expressed.genes.sd,
+                      ymax=expressed.genes+expressed.genes.sd), width=.2,
+                 position=position_dodge(.9))+
+  ylab("Expressed genes")+xlab("Cells per person")+
+  facet_wrap(~sampleSize)+
+  theme_bw()+
+  scale_fill_manual("Method",values=col.set2)
+
+g.e<-ggplot(data=power.fdr,aes(x=totalCells,y=power,fill=method))+
+  geom_bar(stat="identity",position="dodge")+
+  geom_errorbar(aes(ymin=power-power.sd, ymax=power+power.sd), width=.2,
+                 position=position_dodge(.9))+
+  ylab("DE power")+xlab("Cells per person")+
+  facet_wrap(~sampleSize)+ylim(0,1)+
+  theme_bw()+
+  scale_fill_manual("Method",values=col.set2)
+
+g.f<-ggplot(data=power.fdr,aes(x=totalCells,y=overall.power,fill=method))+
+  geom_bar(stat="identity",position="dodge")+
+  geom_errorbar(aes(ymin=overall.power-overall.power.sd, 
+                    ymax=overall.power+overall.power.sd), width=.2,
+                 position=position_dodge(.9))+
+  ylab("Overall detection power")+xlab("Cells per person")+
+  facet_wrap(~sampleSize)+ylim(0,1)+
+  theme_bw()+
+  scale_fill_manual("Method",values=col.set2)
+
+g<-ggarrange(g.a,g.d,
+             g.b,g.e,
+             g.c,g.f,
+             ncol=2,nrow=3,
+             labels=c("A","B","C","D","E","F"),
+             common.legend=TRUE,
+             legend="bottom",align="hv")
+
+print(g)
+
+```
+
+
+## Figure S14: Comparison between powsimR and scPower over a large range of experimental design
+
+Figure S14 extends the comparison between powsimR and scPower for a large range of parameter combinations and only evaluating it for powsimR in combination with edgeR. The used parameter combinations are:
+
+```{r}
+cellsPerCelltype<-c(100,200,500,1000,1500,2000,2500,3000)
+sampleSize<-c(4,6,8,10,16,20)
+```
+
+The final plots (restricted for the parameter combinations generated in Figure S13) are generated as:
+
+```{r, fig.width=10,fig.height=6}
+
+#Create plot showing reproduction of main figure 3
+
+#FWER corrected threshold
+power.fwer.edgeR<-power.fwer[power.fwer$method == "edgeR-LRT",]
+power.fwer.scpower<-power.fwer[power.fwer$method == "scPower",]
+power.fwer<-merge(power.fwer.edgeR,power.fwer.scpower,
+                  by=c("sampleSize","totalCells"),
+                  suffixes=c("",".scpower"))
+
+g.a<-ggplot(power.fwer,aes(x=expressed.genes,y=expressed.genes.scpower))+
+  geom_point()+geom_abline()+geom_hline(yintercept = 16171)+
+  xlab("Expressed genes - powsimR")+ylab("Expressed genes - scPower")+
+  theme_bw()
+
+g.b<-ggplot(power.fwer,aes(x=power,y=power.scpower))+
+  geom_point()+geom_abline()+ylim(c(0,1))+xlim(c(0,1))+
+  xlab("DE power - powsimR")+ylab("DE power - scPower")+
+  theme_bw()
+  
+g.c<-ggplot(power.fwer,aes(x=overall.power,y=overall.power.scpower))+
+  geom_point()+geom_abline()+ylim(c(0,1))+xlim(c(0,1))+
+  xlab("Overall power - powsimR")+
+  ylab("Overall power - scPower")+
+  theme_bw()
+
+#FDR corrected thresold
+power.fdr.edgeR<-power.fdr[power.fdr$method == "edgeR-LRT",]
+power.fdr.scpower<-power.fdr[power.fdr$method == "scPower",]
+power.fdr<-merge(power.fdr.edgeR,power.fdr.scpower,
+                  by=c("sampleSize","totalCells"),
+                  suffixes=c("",".scpower"))
+
+g.d<-ggplot(power.fdr,aes(x=expressed.genes,y=expressed.genes.scpower))+
+  geom_point()+geom_abline()+geom_hline(yintercept = 16171)+
+  xlab("Expressed genes - powsimR")+ylab("Expressed genes - scPower")+
+  theme_bw()
+
+g.e<-ggplot(power.fdr,aes(x=power,y=power.scpower))+
+  geom_point()+geom_abline()+ylim(c(0,1))+xlim(c(0,1))+
+  xlab("DE power - powsimR")+ylab("DE power - scPower")+
+  theme_bw()
+  
+g.f<-ggplot(power.fdr,aes(x=overall.power,y=overall.power.scpower))+
+  geom_point()+geom_abline()+ylim(c(0,1))+xlim(c(0,1))+
+  xlab("Overall power - powsimR")+
+  ylab("Overall power - scPower")+
+  theme_bw()
+
+g<-ggarrange(g.a,g.b,g.c,
+             g.d,g.e,g.f,
+             ncol=3,nrow=2,
+             labels=c("A","B","C","D","E","F"),align="hv")
+
+print(g)
+
+```
+
+
+## Figure S15: Parameter optimization for constant budget
+
+Figure S15 shows two example calculations on how scPower selects the optimal experimental parameter combination for a specific budget, once for a DE study and once for an eQTL study. For an explanation of all the used parameters, please look into the introduction vignette.
+
+In contrast to the original publication, the parameter useSimulatedPower is set to FALSE and the parameter speedPowerCalc to TRUE for the eQTL budget optimization. Both parameters speed the calculation in the vignette, while changing the overall power only slightly. We show in the publication the more accurate version including simulated eQTL power for lowly expressed genes.
 
 ```{r,fig.width=8,fig.height=8}
 
@@ -1548,7 +1909,9 @@ power.study.de<-optimize.constant.budget.restrictedDoublets(totalBudget,
                                       disp.fun.param,
                                       nCellsRange=cellsPerIndividual,
                                       readDepthRange=readDepth,
-                                      mappingEfficiency=mappingEfficiency)
+                                      mappingEfficiency=mappingEfficiency,
+                                      sign.threshold = 0.05,
+                                      MTmethod="FDR")
 
 #Print maximal combination of values
 max.study<-power.study.de[which.max(power.study.de$powerDetect),]
@@ -1641,7 +2004,14 @@ power.study.eqtl<-optimize.constant.budget.restrictedDoublets(totalBudget,
                                       disp.fun.param,
                                       nCellsRange=cellsPerIndividual,
                                       readDepthRange=readDepth,
-                                      mappingEfficiency=mappingEfficiency)
+                                      mappingEfficiency=mappingEfficiency,
+                                      sign.threshold = 0.05,
+                                      MTmethod="Bonferroni",
+                                      #These two parameters are set differently
+                                      #in the publictions, but changed here to
+                                      #speed the calculation
+                                      useSimulatedPower = FALSE, #(in publication: TRUE)
+                                      speedPowerCalc = TRUE) #(in publication: FALSE)
 
 #Print maximal combination of values
 max.study<-power.study.eqtl[which.max(power.study.eqtl$powerDetect),]
@@ -1719,11 +2089,11 @@ print(g)
 
 ```
 
-Figure S11: Parameter optimization for constant budget. Optimized parameters (sample size, read depth and cells per individual) to maximize the detection power for a DE study with a budget of 10,000€ (A,B) and an eQTL study with a budget of 30,000€ (D,E), both for a cell type with a frequency of 25%. Suplots A and C show the influence of the cells per individual given the optimized read depth, subplots B and D show the influence of the cells per individual given the optimized number of cells per individual. The third parameter, the sample size, is defined uniquely given the other two parameters due to the budget restriction. The optimal sample size values are shown in the upper x axes (no linear scale, but matching numbers to the parameter on the lower y axis under the given budget). The horizontal line in the subplots visualizes the optimal parameter combination. The same effect sizes and expression definition as in Figure 3 was taken.
+Figure S15: Parameter optimization for constant budget. Optimized parameters (sample size, read depth and cells per individual) to maximize the detection power for a DE study with a budget of 10,000€ (A,B) and an eQTL study with a budget of 30,000€ (D,E), both for a cell type with a frequency of 25%. Suplots A and C show the influence of the cells per individual given the optimized read depth, subplots B and D show the influence of the cells per individual given the optimized number of cells per individual. The third parameter, the sample size, is defined uniquely given the other two parameters due to the budget restriction. The optimal sample size values are shown in the upper x axes (no linear scale, but matching numbers to the parameter on the lower y axis under the given budget). The horizontal line in the subplots visualizes the optimal parameter combination. The same effect sizes and expression definition as in Figure 3 was taken.
 
-## Figure S12: Parameter optimization grid
+## Figure S16: Parameter optimization grid
 
-Figure S12 shows the parameter grids for the calculations done for Figure S11.
+Figure S16 shows the parameter grids for the calculations done for Figure S15.
 
 ```{r,fig.width=8}
 
@@ -1757,9 +2127,13 @@ print(g)
 
 ```
 
-Figure S12: Parameter optimization grid. Maximizing detection power by selecting the best combination of cells per individual and read depth for A. a DE study with a budget of 10,000€ and B. a eQTL study with a budget of 30,000€, both for a cell type with a frequency of 25%. The sample size is defined uniquely given the other two parameters due to the budget restriction. The same effect sizes and expression definition as in Figure 3 were taken.
+Figure S16: Parameter optimization grid. Maximizing detection power by selecting the best combination of cells per individual and read depth for A. a DE study with a budget of 10,000€ and B. a eQTL study with a budget of 30,000€, both for a cell type with a frequency of 25%. The sample size is defined uniquely given the other two parameters due to the budget restriction. The same effect sizes and expression definition as in Figure 3 were taken.
 
-## Figure S13: Gene curve fits for different single cell technologies
+## Figure S17-S18: Variant of Main Figure 4 & 5 with FWER adjusted significance thresholds
+
+These two figures were generated with exactly the same code as Main Figures 4 and 5, only setting the multiple testing method (MTmethod) to "FWER" instead of "FDR" for the DE power.
+
+## Figure S19: Gene curve fits for different single cell technologies
 
 The figure shows the gene expression model for a Drop-seq lung and a Smart-seq pancreas data set, corresponding to the models shown Figure 2, S5 and S6 for a 10X Genomics PBMC data set.
 
@@ -1900,9 +2274,13 @@ print(g)
 
 ```
 
-Figure S13: Gene curve fits for different single cell technologies. Plot A shows the gene curve fit for a lung data set measured with Drop-seq and plot B for a pancreas data set measured with Smart-seq2, both subsampled to different read depths. The solid lines represent the observed gene curves, the dashed lines the fitted curves. The point symbol visualizes the cell type. The definition for an expressed gene was parameterized in the following way: in Plot A, the gene needs to have UMI counts > 10 in all measured cells in total, in Plot B, read counts > 10 per kilobase transcript in all measured cells in total.
+Figure S19: Gene curve fits for different single cell technologies. Plot A shows the gene curve fit for a lung data set measured with Drop-seq and plot B for a pancreas data set measured with Smart-seq2, both subsampled to different read depths. The solid lines represent the observed gene curves, the dashed lines the fitted curves. The point symbol visualizes the cell type. The definition for an expressed gene was parameterized in the following way: in Plot A, the gene needs to have UMI counts > 10 in all measured cells in total, in Plot B, read counts > 10 per kilobase transcript in all measured cells in total.
 
-## Figure S14: Power to detect rare cell types
+## Figure S20: Comparison between powsimR and scPower for Drop-Seq and Smart-seq
+
+Same as in Figure S14, only run for Drop-Seq and Smart-Seq data.
+
+## Figure S21: Power to detect rare cell types
 
 Model to calculate the power to detect rare cell types. Please look into the introduction vignette, section "Part 3: Power estimation to detect a sufficent number of cells in a specific cell types" for an explanation of all parameters. The cell type frequencies are taken from BioRad (see citation in the publication), all other parameters are set to realistic values.
 
@@ -1970,4 +2348,4 @@ g<-ggplot(parameter.combinations,aes(x=min.num.cells,y=result.ssize,col=ct))+
 print(g)
 ```
 
-Figure S14: Power to detect rare cell types. The figure shows the required number of cells per individual (y-axis, log scale) to detect the minimal number of cells from a target cell type per individual (x-axis) with a probability of 95%. The probability depends on the total number of individuals and the frequency of the target cell type (purple, red, yellow, green). Note that the required number of cells per sample only counts “correctly measured” cells (no doublets etc), so the number is a lower bound for the required cells to be sequenced.
+Figure S21: Power to detect rare cell types. The figure shows the required number of cells per individual (y-axis, log scale) to detect the minimal number of cells from a target cell type per individual (x-axis) with a probability of 95%. The probability depends on the total number of individuals and the frequency of the target cell type (purple, red, yellow, green). Note that the required number of cells per sample only counts “correctly measured” cells (no doublets etc), so the number is a lower bound for the required cells to be sequenced.

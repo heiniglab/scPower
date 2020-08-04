@@ -61,6 +61,8 @@ To estimate the mean number of UMI counts for a given read depth, the relationsh
 
 The definition of expression can be set user-specific to be above a specific count threshold in a certain fraction of all samples. We will set the defintion of an expressed gene to have more than 3 counts in more than 50% of the samples.
 
+The significance threshold used for the power calculation can be set user-specific and different multiple testing adjustments are possible. We recommend 'FDR' for DE analyses and 'Bonferroni' for eQTL analyses.
+
 In the following, different example scenarios for different single cell technologies are shown.
 
 #### Case 1: Droplet-based method with flexible overloading
@@ -85,7 +87,9 @@ power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                   disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,
                                   min.UMI.counts = 3,
-                                  perc.indiv.expr = 0.5)
+                                  perc.indiv.expr = 0.5,
+                                  sign.threshold = 0.05,
+                                  MTmethod="Bonferroni")
 
 print(power)
 
@@ -111,7 +115,9 @@ power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000
                                         disp.fun.param=scPower::disp.fun.param,
                                         mappingEfficiency = 0.8,
                                         min.UMI.counts = 3,
-                                        perc.indiv.expr = 0.5)
+                                        perc.indiv.expr = 0.5,
+                                        sign.threshold = 0.05,
+                                        MTmethod="Bonferroni")
 
 print(power)
 
@@ -164,7 +170,9 @@ power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000
                                         min.UMI.counts = 3,
                                         perc.indiv.expr = 0.5,
                                         multipletRateGrowth = "constant",
-                                        multipletRate=0.05)
+                                        multipletRate=0.05,
+                                        sign.threshold = 0.05,
+                                        MTmethod="Bonferroni")
 
 print(power)
 
@@ -185,7 +193,9 @@ power<-power.smartseq(nSamples=100,nCells=1500,readDepth=25000,
                       disp.linear.fit = scPower::disp.fun.param.smart,
                       mappingEfficiency = 0.8,
                       min.norm.count = 3,
-                      perc.indiv.expr = 0.5)
+                      perc.indiv.expr = 0.5,
+                      sign.threshold = 0.05,
+                      MTmethod="FDR")
 
 print(power)
 
@@ -217,6 +227,8 @@ scPower gives the user the opportunity to select the best parameter combination 
 
 To calculate the budget, again costs per 10X kit and flow cells and reads per flow cell need to be defined. The other parameters are the ones that were already necessary for the power calculation in the section before, such as gamma and dispersion fits.
 
+There are two options to speed up power calculation, which make the power calculation itself less accurate, but have only very little effect on the overall detection power, which determines the best parameter calculation. Option 1 is not to use simulated power for eQTL genes with small mean (which is in general recommend as analytic power calculations overestimate eQTL power for small mean values). Option 2 is to not calculate the power for genes with little expression probability at all, as these genes will have an overall detection power close to zero anyway (this option is called speedPowerCalc). In the example below, the calculation is sped up by option 1 (using no simulated power), but not by option 2.
+
 ```{r,fig.width=4}
 
 opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
@@ -234,7 +246,11 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      nSamplesRange=NULL,
                                      nCellsRange=seq(1000,10000,by=1000),
                                      readDepthRange=seq(10000,50000,by=5000),
-                                     mappingEfficiency = 0.8)
+                                     mappingEfficiency = 0.8,
+                                     sign.threshold = 0.05,
+                                     MTmethod="Bonferroni",
+                                     useSimulatedPower = FALSE,
+                                     speedPowerCalc = FALSE)
 
 #First lines of result data frame
 head(opt.design)
@@ -302,7 +318,11 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      nSamplesRange=seq(100,300,by=25),
                                      nCellsRange=NULL,
                                      readDepthRange=seq(10000,50000,by=5000),
-                                     mappingEfficiency = 0.8)
+                                     mappingEfficiency = 0.8,
+                                     sign.threshold = 0.05,
+                                     MTmethod="Bonferroni",
+                                     useSimulatedPower = FALSE,
+                                     speedPowerCalc = FALSE)
 
 #Optimal experimental design combination
 print(opt.design[which.max(opt.design$powerDetect),])
@@ -323,7 +343,11 @@ opt.design<-optimize.constant.budget(totalBudget=100000,type="eqtl",
                                      nSamplesRange=seq(100,300,by=25),
                                      nCellsRange=seq(1000,10000,by=1000),
                                      readDepthRange=NULL,
-                                     mappingEfficiency = 0.8)
+                                     mappingEfficiency = 0.8,
+                                     sign.threshold = 0.05,
+                                     MTmethod="Bonferroni",
+                                     useSimulatedPower = FALSE,
+                                     speedPowerCalc = FALSE)
 
 
 #Optimal experimental design combination
@@ -589,7 +613,9 @@ power<-power.general.restrictedDoublets(nSamples=100,nCells=1500,readDepth=25000
                                         disp.fun.param=disp.fun.general.new,
                                         mappingEfficiency = 0.8,
                                         min.UMI.counts = 3,
-                                        perc.indiv.expr = 0.5)
+                                        perc.indiv.expr = 0.5,
+                                        sign.threshold = 0.05,
+                                        MTmethod="Bonferroni")
 
 print(power)
 
@@ -620,7 +646,9 @@ power<-power.sameReadDepth.restrictedDoublets(nSamples=100,nCells=1500,
                   disp.fun.param=disp.fun.general.new,
                   mappingEfficiency = 0.8,
                   min.UMI.counts = 3,
-                  perc.indiv.expr = 0.5)
+                  perc.indiv.expr = 0.5,
+                  sign.threshold = 0.05,
+                  MTmethod="Bonferroni")
 
 print(power)
 
@@ -690,7 +718,9 @@ power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                   disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,
                                   min.UMI.counts = 3,
-                                  perc.indiv.expr = 0.5)
+                                  perc.indiv.expr = 0.5,
+                                  sign.threshold = 0.05,
+                                  MTmethod="Bonferroni")
 
 print(power)
 ```
@@ -720,7 +750,9 @@ power<-power.general.withDoublets(nSamples=100,nCells=1500,readDepth=25000,
                                   disp.fun.param=scPower::disp.fun.param,
                                   mappingEfficiency = 0.8,
                                   min.UMI.counts = 3,
-                                  perc.indiv.expr = 0.5)
+                                  perc.indiv.expr = 0.5,
+                                  sign.threshold = 0.05,
+                                  MTmethod="FDR")
 
 print(power)
 ```

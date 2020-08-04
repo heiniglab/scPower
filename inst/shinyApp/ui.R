@@ -46,6 +46,15 @@ shinyUI(
          numericInput("cellsLane", label = "Cells per lane", value = 20000,
                       step=500,min=0),
          hr(),
+         h4("Multiple testing correction"),
+         numericInput("pval",label="P-value",
+                      value=0.05,step=0.01,min=0,max=1),
+         selectInput("MTmethod", label = "Multiple testing method",
+                     choices = list("FWER"="Bonferroni",
+                                    "FDR"="FDR",
+                                    "none"="none"),
+                     selected="FDR"),
+         hr(),
          h4("Mapping and Multiplet estimation"),
          numericInput("map.eff", label = "Mapping efficiency",
                       value = 0.8,step=0.05,min=0,max=1),
@@ -59,6 +68,10 @@ shinyUI(
                       value = 3, step=1,min=1),
          numericInput("percIndiv", label = "Fraction of individuals",
                       value = 0.5,step=0.05,min=0,max=1),
+         hr(),
+         h4("Special parameters"),
+         checkboxInput("speedCalc", "Skip power for lowly expressed genes", value = FALSE),
+         checkboxInput("simPower", "Use simulated power for eQTLs",value=FALSE),
          width = 4
        ),
        mainPanel(
@@ -118,6 +131,12 @@ shinyUI(
                      ")
                  )
               )
-          )
+          ),
+    hr(),
+    p(a("Contact",href="https://www.helmholtz-muenchen.de/ueber-uns/service/kontakt/index.html"),
+      ", ",
+      a("Imprint",href="https://www.helmholtz-muenchen.de/impressum/index.html"),
+      ", ",
+      a("Privacy statement",href="https://www.helmholtz-muenchen.de/en/data-protection-statement/index.html"))
   )
 )
