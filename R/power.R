@@ -1641,16 +1641,33 @@ power.eqtl.simulated.help<-function(count.mean,Rsq,nSamples,
 
   #Get dispersion parameter from look-up table if available
   #Look-up dispersion parameter from numerical optimization
-  size.vector<-size.estimates[size.estimates$Rsq==round(Rsq,2) &
+  size.vector<-unlist(size.estimates[size.estimates$Rsq==round(Rsq,2) &
                                 size.estimates$af==round(af,1) &
-                                size.estimates$mean==round(count.mean),4:6]
+                                size.estimates$mean==round(count.mean),4:6])
 
-  if(nrow(size.vector)==0){stop(paste("Look-up value not found for Rsq",round(Rsq,2),
-                                "af",round(af,1),"mean",round(count.mean),"."))}
+  #If the look-up value could not be found, calculate it by hand
+  if(length(size.vector)==0){
+      warning(paste("Look-up value not found for Rsq",round(Rsq,2),
+                    "af",round(af,1),"mean",round(count.mean),".",
+                    "Optimization will take time."))
+
+      size.vector<-scPower:::estimate.size.simulation(round(count.mean),
+                                                      round(Rsq,2),
+                                                      round(af,1))
+      #Replace size factors with NA with voom approximation!
+      sd.error<-sqrt(1-Rsq)
+
+      for(g in 1:3){
+        size.vector[g]<-ifelse(is.na(size.vector[g]),
+                       1/(sd.error^2-1/(exp(log(count.mean) + beta * (g-1)))),
+                       size.vector[g])
+      }
+
+  }
 
   #Sample from a normal distribution dependent on the genotype
   mean.vector<-exp(log(count.mean) + beta * genotypes)
-  size.vector<-unlist(size.vector)[genotypes+1]
+  size.vector<-size.vector[genotypes+1]
 
   #Suppress warning messages if NA values are generated
   suppressWarnings(counts<-rnbinom(nSamples,mu=mean.vector,size=size.vector))

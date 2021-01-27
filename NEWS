@@ -1,7 +1,15 @@
 
+CHANGES IN VERSION 0.1.2
+-------------------------
+
+o Option to run eQTL power simulation also for larger mean values (only using the function power.eqtl.simulated, not as part of the main pipeline)
+
+
 CHANGES IN VERSION 0.1.1
 -------------------------
 
 o Added FDR as additional multiple testing option
 o Increased power accuracy of eQTL genes with small mean values by simulation (option can be turned off to speed up calculations)
 o Option to skip power calculation of genes with very little expression probability to speed up overall power calculation
+
+
