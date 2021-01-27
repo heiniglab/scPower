@@ -1543,7 +1543,7 @@ power.eqtl<-function(count.mean,heritability, sig.level, nSamples,
       index<-paste(round(count.mean),round(heritability,2),nSamples,
                    sep="_")
       if(index %in% rownames(scPower::sim.eqtl.pvals)){
-        return(mean(scPower::sim.eqtl.pvals[index,]<0.05))
+        return(mean(scPower::sim.eqtl.pvals[index,]<sig.level))
       } else {
         warning(paste0("Simulated p-values not available for the current parameter combination ",
                        "(",round(count.mean),",",round(heritability,2),",",nSamples,").",
