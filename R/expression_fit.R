@@ -110,54 +110,13 @@ estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
                                   min.counts=3,perc.indiv=0.5,
                                   nGenes=21000,samplingMethod="quantiles"){
 
-  #Get mean umi dependent on read depth
-  umiCounts<-read.umi.fit$intercept+read.umi.fit$reads*log(readDepth)
 
-  if(umiCounts<=0){
-    stop("Read depth too small! UMI model estimates a mean UMI count per cell smaller than 0!")
-  }
+  mean.dsp.df<-estimate.mean.dsp.values(readDepth,read.umi.fit,
+                                     gamma.mixed.fits,ct,disp.fun.param,
+                                     nGenes,samplingMethod)
 
-  #Check if gamma fit data for the cell type exists
-  if(! any(gamma.mixed.fits$ct==ct)){
-    stop(paste("No gene curve fitting data in the data frame gamma.mixed.fits fits to the specified cell type",
-               ct,". Check that the cell type is correctly spelled and the right gamma.mixed.fits object used."))
-  }
-
-  #Get gamma values dependent on mean umi
-  gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
-  gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
-
-  gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
-                               p3=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p3"],
-                               mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
-                               mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
-                               sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
-                               sd2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd2"])
-
-  #Convert them to the rateshape variant
-  gamma.parameters<-convert.gamma.parameters(gamma.parameters,type="rateshape")
-
-  #Sample means values
-  if(samplingMethod=="random"){
-    gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
-  } else if (samplingMethod=="quantiles"){
-    gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
-  } else {
-    stop("No known sampling method. Use the options 'random' or 'quantiles'.")
-  }
-
-  #Check if dispersion data for the cell type exists
-  if(! any(disp.fun.param$ct==ct)){
-    stop(paste("No dispersion fitting data in the data frame disp.fun.param fits to the specified cell type",
-               ct,". Check that the cell type is correctly spelled and the right disp.fun.param object used."))
-  }
-
-  #Fit dispersion parameter dependent on mean parameter
-  disp.fun<-disp.fun.param[disp.fun.param$ct==ct,]
-  gene.disps<-sample.disp.values(gene.means,disp.fun)
-
-  return(estimate.exp.prob.values(gene.means,1/gene.disps,nCellsCt,
-                           nSamples,min.counts,perc.indiv))
+  return(estimate.exp.prob.values(mean.dsp.df$means,1/mean.dsp.df$dsp,
+                                  nCellsCt,nSamples,min.counts,perc.indiv))
 
 }
 
@@ -256,6 +215,78 @@ estimate.exp.prob.count.param<-function(nSamples,nCellsCt,meanCellCounts,
   return(estimate.exp.prob.values(gene.means,1/gene.disps,nCellsCt,
                                   nSamples,min.counts,perc.indiv))
 
+}
+
+#' Get the mean and dispersion values for each genes
+#'
+#' This function estimates the mean and dispersion of each gene (in a single cell,
+#' before pseudobulk aggregation) dependent on the read depth and
+#' the gamma mixture distribution
+#'
+#' @param readDepth Target read depth per cell
+#' @param read.umi.fit Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
+#' (required columns: intercept, reads (slope))
+#' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
+#' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
+#' @param ct Cell type of interest (name from the gamma mixed models)
+#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
+#' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
+#'
+#' @return Data frame with mean and dispersion value for each gene
+#'
+estimate.mean.dsp.values<-function(readDepth,read.umi.fit,
+                                   gamma.mixed.fits,ct,disp.fun.param,
+                                   nGenes=21000,samplingMethod="quantiles"){
+
+  #Get mean umi dependent on read depth
+  umiCounts<-read.umi.fit$intercept+read.umi.fit$reads*log(readDepth)
+
+  if(umiCounts<=0){
+    stop("Read depth too small! UMI model estimates a mean UMI count per cell smaller than 0!")
+  }
+
+  #Check if gamma fit data for the cell type exists
+  if(! any(gamma.mixed.fits$ct==ct)){
+    stop(paste("No gene curve fitting data in the data frame gamma.mixed.fits fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right gamma.mixed.fits object used."))
+  }
+
+  #Get gamma values dependent on mean umi
+  gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
+  gamma.fits.ct$fitted.value<-gamma.fits.ct$intercept+gamma.fits.ct$meanUMI*umiCounts
+
+  gamma.parameters<-data.frame(p1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p1"],
+                               p3=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="p3"],
+                               mean1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean1"],
+                               mean2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="mean2"],
+                               sd1=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd1"],
+                               sd2=gamma.fits.ct$fitted.value[gamma.fits.ct$parameter=="sd2"])
+
+  #Convert them to the rateshape variant
+  gamma.parameters<-convert.gamma.parameters(gamma.parameters,type="rateshape")
+
+  #Sample means values
+  if(samplingMethod=="random"){
+    gene.means<-sample.mean.values.random(gamma.parameters,nGenes)
+  } else if (samplingMethod=="quantiles"){
+    gene.means<-sample.mean.values.quantiles(gamma.parameters,nGenes)
+  } else {
+    stop("No known sampling method. Use the options 'random' or 'quantiles'.")
+  }
+
+  #Check if dispersion data for the cell type exists
+  if(! any(disp.fun.param$ct==ct)){
+    stop(paste("No dispersion fitting data in the data frame disp.fun.param fits to the specified cell type",
+               ct,". Check that the cell type is correctly spelled and the right disp.fun.param object used."))
+  }
+
+  #Fit dispersion parameter dependent on mean parameter
+  disp.fun<-disp.fun.param[disp.fun.param$ct==ct,]
+  gene.disps<-sample.disp.values(gene.means,disp.fun)
+
+  return(data.frame(means=gene.means,dsp=gene.disps))
 }
 
 #' Estimate gene expression probability based on mean and dispersion values
