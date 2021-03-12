@@ -14,7 +14,8 @@ fdr.optimization(
   nSamples,
   mean.vector,
   disp.vector = NULL,
-  useSimulatedPower = TRUE
+  useSimulatedPower = TRUE,
+  simThreshold = 4
 )
 }
 \arguments{
@@ -32,9 +33,15 @@ fdr.optimization(
 
 \item{nSamples}{Sample size}
 
-\item{mean.vector}{Mean value for each DEG (only required for DE power)}
+\item{mean.vector}{Mean value for each DEG / eQTL gene}
 
 \item{disp.vector}{Dispersion value for each DEG (only required for DE power)}
+
+\item{useSimulatedPower}{Option to simulate eQTL power for small mean values
+to increase accuracy (only required for the eQTL power)}
+
+\item{simThreshold}{Threshold until which the simulated power is taken
+instead of the analytic (only required with eQTL power)}
 }
 \value{
 Optimizing this function to 0 will lead to the correct adjusted

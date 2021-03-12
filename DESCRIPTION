@@ -15,8 +15,7 @@ Imports:
     HardyWeinberg,
     plotly,
     ggplot2, 
-    shiny,
-    DESeq
+    shiny
 License: GNU GPLv3
 Encoding: UTF-8
 LazyData: true

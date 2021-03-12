@@ -33,16 +33,11 @@ Finally you can install the latest development version of scPower from github wi
 devtools::install_github("heiniglab/scPower")
 ```
 
-If you have problems installing the package, please try to install necessary packages yourself from CRAN and Bioconductor.
+If you have problems installing the package, please try to install necessary packages yourself from CRAN.
 
 ```R
 #CRAN packages
 install.packages(c("pwr","MKmisc","reshape2","HardyWeinberg","plotly", "shiny"))
-
-#Bioconductor package
-if (!requireNamespace("BiocManager", quietly = TRUE))
-   install.packages("BiocManager")
-BiocManager::install("DESeq")
 ```
 
 ## Shiny app

@@ -32,7 +32,8 @@ optimize.constant.budget.libPrepCell(
   multipletRateGrowth = "linear",
   sign.threshold = 0.05,
   MTmethod = "Bonferroni",
-  useSimulatedPower = TRUE,
+  useSimulatedPower = FALSE,
+  simThreshold = 4,
   speedPowerCalc = FALSE
 )
 }
@@ -58,8 +59,8 @@ optimize.constant.budget.libPrepCell(
 
 \item{samplesPerLane}{Maximal number of individuals per 10X lane}
 
-\item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell depending on the mean readds per cell
-(required columns: intercept, reads (slope))}
+\item{read.umi.fit}{Data frame for fitting the mean UMI counts per cell
+depending on the mean readds per cell (required columns: intercept, reads (slope))}
 
 \item{gamma.mixed.fits}{Data frame with gamma mixed fit parameters for each cell type
 (required columns: parameter, ct (cell type), intercept, meanUMI (slope))}
@@ -73,7 +74,8 @@ optimize.constant.budget.libPrepCell(
 
 \item{readDepthRange}{Range of read depth values that should be tested (vector)}
 
-\item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)}
+\item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome
+in the end (need to be between 1-0)}
 
 \item{multipletRate}{Expected increase in multiplets for additional cell in the lane}
 
@@ -82,23 +84,28 @@ optimize.constant.budget.libPrepCell(
 \item{min.UMI.counts}{Expression defition parameter: more than is number of UMI counts for each
 gene per individual and cell type is required to defined it as expressed in one individual}
 
-\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals that need to have this gene expressed
-to define it as globally expressed}
+\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals
+that need to have this gene expressed to define it as globally expressed}
 
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
-\item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
+\item{samplingMethod}{Approach to sample the gene mean values (either taking
+quantiles or random sampling)}
 
-\item{multipletRateGrowth}{Development of multiplet rate with increasing number of cells per lane, "linear" if overloading should be
-modeled explicitly, otherwise "constant". The default value for the parameter multipletRate is matching the option "linear".}
+\item{multipletRateGrowth}{Development of multiplet rate with increasing number of cells per lane,
+"linear" if overloading should be modeled explicitly, otherwise "constant".
+The default value for the parameter multipletRate is matching the option "linear".}
 
 \item{sign.threshold}{Significance threshold}
 
 \item{MTmethod}{Multiple testing correction method
 (possible options: "Bonferroni","FDR","none")}
 
-\item{useSimulatedPower}{Option to simulate eQTL power for small mean values to increase accuracy
-(only possible for eQTL analysis)}
+\item{useSimulatedPower}{Option to simulate eQTL power for small mean values
+to increase accuracy (only possible for eQTL analysis)}
+
+\item{simThreshold}{Threshold until which the simulated power is taken instead
+of the analytic (only for the eQTL analysis)}
 
 \item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
 an expression probability less than 0.01 (as overall power is anyway close to 0)}

@@ -20,6 +20,7 @@ calculate.probabilities(
   sign.threshold,
   MTmethod,
   useSimulatedPower,
+  simThreshold,
   speedPowerCalc,
   returnResultsDetailed
 )
@@ -37,7 +38,8 @@ calculate.probabilities(
 \item{ref.study.name}{Name of the reference study. Will be checked in the ref.study data frame for it (as column name).}
 
 \item{gamma.parameters}{Data frame with gamma parameters, filtered for the correct cell type
-(required columns: ct (cell type), s1, r1, s2, r2, p1, p2/p3 (gamma parameters for both components))}
+(required columns: ct (cell type), s1, r1, s2, r2, p1, p2/p3
+(gamma parameters for both components))}
 
 \item{disp.fun}{Function to fit the dispersion parameter dependent on the mean,
 filtered for the correct cell type (required columns: ct (cell type),
@@ -46,25 +48,30 @@ asymptDisp, extraPois (both from taken from DEseq))}
 \item{min.UMI.counts}{Expression defition parameter: more than is number of UMI counts for each
 gene per individual and cell type is required to defined it as expressed in one individual}
 
-\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals that need to have this gene expressed
-to define it as globally expressed}
+\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals
+that need to have this gene expressed to define it as globally expressed}
 
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
-\item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
+\item{samplingMethod}{Approach to sample the gene mean values (either taking
+quantiles or random sampling)}
 
 \item{sign.threshold}{Significance threshold}
 
 \item{MTmethod}{Multiple testing correction method
 (possible options: "Bonferroni","FDR","none")}
 
-\item{useSimulatedPower}{Option to simulate eQTL power for small mean values to increase accuracy
-(only possible for eQTL analysis)}
+\item{useSimulatedPower}{Option to simulate eQTL power for small mean values
+to increase accuracy (only possible for eQTL analysis)}
+
+\item{simThreshold}{Threshold until which the simulated power is taken instead
+of the analytic (only for the eQTL analysis)}
 
 \item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
 an expression probability less than 0.01 (as overall power is anyway close to 0)}
 
-\item{returnResultsDetailed}{If true, return not only summary data frame, but additional list with exact probability vectors}
+\item{returnResultsDetailed}{If true, return not only summary data frame,
+but additional list with exact probability vectors}
 }
 \value{
 Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters

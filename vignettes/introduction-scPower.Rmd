@@ -415,7 +415,7 @@ As expected, the subsampling of the count matrix leads to an reduction of the nu
 
 #### Estimation of negative binomial paramters for each gene
 
-As a first step for fitting the expression distribution, the negative binomial fit for each gene, i.e. the mean and disperion parameter, is estimated with "nbinom.estimation". The function uses DESeq for library normalization and parameter estimation.  For the normalization, the standard normalization of DEseq can be used or a variant of it called poscounts. It can be set in the parameter "sizeFactors" of the function. Default is "standard", but for very sparse data, "poscounts" might be the better option. For too sparse data, "standard" is not working and will give an error message. 
+As a first step for fitting the expression distribution, the negative binomial fit for each gene, i.e. the mean and disperion parameter, is estimated with "nbinom.estimation". The function uses DESeq for library normalization and parameter estimation.  For the normalization, the standard normalization of DEseq can be used or a variant of it called poscounts. It can be set in the parameter "sizeFactorMethod" of the function. Default is "standard", but for very sparse data, "poscounts" might be the better option. For too sparse data, "standard" is not working and will give an error message. 
 
 The function returns a list with three elements: the normalized mean values, the dispersion values and the parameters of the mean-dispersion function fitted from DESeq. We will save the mean values and the parameters of the mean-dispersion function for further processing.
 

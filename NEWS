@@ -2,14 +2,24 @@
 CHANGES IN VERSION 0.1.2
 -------------------------
 
-o Option to run eQTL power simulation also for larger mean values (only using the function power.eqtl.simulated, not as part of the main pipeline)
-
+o Corrected bug for simulated eQTL power (significance parameter not processed correctly)
+o Added the parameter "simThreshold" to define the maximal mean threshold for simulation
+  the eQTL power (default 4)
+o Changed default value of parameter "useSimulatedPower" to FALSE for budget optimization
+  (this speeds the calculations significantly with no large effects on the optimal
+  parameter combinations). The functions starting with "optimize.constant.budget" are
+  affected.
+o Removed the DESeq dependency by implementing the required methods within scPower (using
+  exactly the DESeq approach), as DESeq is deprecated on Bioconductor
+  
 
 CHANGES IN VERSION 0.1.1
 -------------------------
 
 o Added FDR as additional multiple testing option
-o Increased power accuracy of eQTL genes with small mean values by simulation (option can be turned off to speed up calculations)
-o Option to skip power calculation of genes with very little expression probability to speed up overall power calculation
+o Increased power accuracy of eQTL genes with small mean values by simulation (option can 
+  be turned off to speed up calculations)
+o Option to skip power calculation of genes with very little expression probability to 
+  speed up overall power calculation
 
 

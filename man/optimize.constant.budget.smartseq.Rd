@@ -28,7 +28,8 @@ optimize.constant.budget.smartseq(
   samplingMethod = "quantiles",
   sign.threshold = 0.05,
   MTmethod = "Bonferroni",
-  useSimulatedPower = TRUE,
+  useSimulatedPower = FALSE,
+  simThreshold = 4,
   speedPowerCalc = FALSE
 )
 }
@@ -64,21 +65,24 @@ optimize.constant.budget.smartseq(
 
 \item{readDepthRange}{Range of read depth values that should be tested (vector)}
 
-\item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome in the end (need to be between 1-0)}
+\item{mappingEfficiency}{Fraction of reads successfully mapped to the transcriptome
+in the end (need to be between 1-0)}
 
 \item{multipletFraction}{Multiplet fraction in the experiment as a constant factor}
 
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
-\item{min.norm.count}{Expression defition parameter: more than is number of counts per kilobase transcript for each
-gene per individual and cell type is required to defined it as expressed in one individual}
+\item{min.norm.count}{Expression defition parameter: more than is number of
+counts per kilobase transcript for each gene per individual and cell
+type is required to defined it as expressed in one individual}
 
-\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals that need to have this gene expressed
-to define it as globally expressed}
+\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals
+that need to have this gene expressed to define it as globally expressed}
 
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
-\item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles or random sampling)}
+\item{samplingMethod}{Approach to sample the gene mean values (either taking quantiles
+or random sampling)}
 
 \item{sign.threshold}{Significance threshold}
 
@@ -86,6 +90,8 @@ to define it as globally expressed}
 
 \item{useSimulatedPower}{Option to simulate eQTL power for small mean values to increase accuracy
 (only possible for eQTL analysis)}
+
+\item{simThreshold}{Threshold until which the simulated power is taken instead of the analytic}
 
 \item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
 an expression probability less than 0.01 (as overall power is anyway close to 0)}

@@ -10,7 +10,8 @@ power.eqtl(
   heritability,
   sig.level,
   nSamples,
-  useSimulatedPower = TRUE
+  useSimulatedPower = TRUE,
+  simThreshold = 4
 )
 }
 \arguments{
@@ -22,7 +23,11 @@ power.eqtl(
 
 \item{nSamples}{Sample size}
 
-\item{useSimulatedPower}{Option to simulate eQTL power for small mean values to increase accuracy}
+\item{useSimulatedPower}{Option to simulate eQTL power for small mean values
+to increase accuracy}
+
+\item{simThreshold}{Threshold until which the simulated power is taken
+instead of the analytic}
 }
 \value{
 Power to detect the eQTL gene

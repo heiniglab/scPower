@@ -328,63 +328,100 @@ estimate.exp.prob.values<-function(mu,size,nCellsCt,nSamples,
 
 #' Estimate the mean and dispersion parameter for each gene
 #'
+#' Code adapted from the DESeq function estimateDispersion
+#' (Bioconductor R package DESeq, Simon Anders (EMBL Heidelberg),
+#'  DOI 10.18129/B9.bioc.DESeq )
 #'
-#' @param counts.ct Count matrix as in import for DEseq
-#' @param sizeFactors Use to different size factor normalization methods, either the "standard"
-#' method from DEseq or "poscounts" of DESeq2
+#' @param counts.ct Count matrix
+#' @param sizeFactorMethod Use to different size factor normalization methods,
+#' either the "standard" method from DEseq or "poscounts" of DESeq2
 #'
 #' @return list with three data frame containing the normalized mean values,
 #' the dispersion parameters and the parameters for the mean-dispersion function
-#' estimated from DESeq
+#' estimated using the DESeq approach
 #'
 #' @export
 #'
-nbinom.estimation<-function(counts.ct, sizeFactors="standard"){
+nbinom.estimation<-function(counts.ct, sizeFactorMethod="standard"){
 
-  require(DESeq)
-
-  #Create a fake condition matrix ...
-  cds<-newCountDataSet(counts.ct,rep("celltype",ncol(counts.ct)))
-
-  if(sizeFactors=="standard"){
-    cds<-estimateSizeFactors(cds)
-  } else if (sizeFactors=="poscounts"){
+  if(sizeFactorMethod=="standard"){
+    sizeFactors<-sizeFactorsStandard(counts.ct)
+  } else if (sizeFactorMethod=="poscounts"){
     #Use reimplementation of DEseq2 method for size factor estimation (poscounts)
-    sizeFactors(cds)<-sizeFactorsPosCounts(counts(cds,normalize=FALSE))
+    sizeFactors<-sizeFactorsPosCounts(counts.ct)
   } else {
     stop("Method for size factor estimation not known. Please use either standard or poscounts!")
   }
 
   #Check if size factors were calculated correctly
-  if(any(is.na(sizeFactors(cds)))){
+  if(any(is.na(sizeFactors))){
     stop(paste("Size factor estimation failed! Probably due to sparsity of the matrix!",
                "Try poscounts instead as variable sizeFactors."))
   }
 
-  #Estimate dispersion curves
-  cds <- suppressWarnings(estimateDispersions(cds, sharingMode="gene-est-only"))
+  #Get base mean and variance
+  norm.matrix<-t(t(counts.ct) /sizeFactors)
+  baseMean <- rowMeans(norm.matrix)
+  baseVar <- apply(norm.matrix,1,var)
+
+  #Calculate dispersion
+  dispsAll <- ( baseVar - mean( 1/sizeFactors ) * baseMean ) / baseMean^2
+
+  #Take only genes with positive expression
+  variances <- baseVar[ baseMean > 0 ]
+  disps <- dispsAll[ baseMean > 0 ]
+  means <- baseMean[ baseMean > 0 ]
+
+  #Run parametric fit
+  fit<-parametricDispersionFit_DEseq(means,disps)
 
   #Get normalized mean
-  norm.mean.ct<-rowMeans(counts(cds,normalized=TRUE))
-  mean.train.runs<-data.frame(gene=rownames(cds),mean=norm.mean.ct,
+  mean.train.runs<-data.frame(gene=names(baseMean),
+                              mean=baseMean,
+                              row.names = NULL,
                               stringsAsFactors = FALSE)
 
+  #Replace all dispersion values with NA or < 1e-8
+  dispsAll[is.nan(dispsAll)]<-0
+  dispsAll<-pmax(dispsAll,1e-8)
+
   #Get dispersion parameter
-  disp.train.runs<- data.frame(gene=rownames(fData(cds)),disp=fData(cds)[,1],
+  disp.train.runs<- data.frame(gene=names(dispsAll),
+                               disp=dispsAll,
+                               row.names = NULL,
                                stringsAsFactors = FALSE)
 
   #Get the dispersion function
-  disp.fit<-attr(fitInfo(cds)$dispFunc,"coefficients")
+  disp.fit<-attr(fit,"coefficients")
   disp.fun.param<-data.frame(asymptDisp=disp.fit["asymptDisp"],
-                             extraPois=disp.fit["extraPois"])
+                             extraPois=disp.fit["extraPois"],
+                             row.names=NULL)
 
   return(list(mean.train.runs,disp.train.runs,disp.fun.param))
+}
+
+#' Reimplementation of DEseq function for size factors
+#'
+#' Original code: Bioconductor R package DESeq, Simon Anders (EMBL Heidelberg),
+#' DOI 10.18129/B9.bioc.DESeq
+#'
+#' @param counts UMI count matrix
+#'
+#' @return size factors to normalize each cell
+#'
+sizeFactorsStandard <- function(counts) {
+  loggeomeans <- rowMeans( log(counts) )
+  apply( counts, 2, function(cnts)
+    exp( median( ( log(cnts) - loggeomeans )[ is.finite(loggeomeans) ] ) ) )
 }
 
 #' Reimplementation of DEseq2 function for size factors with option poscounts
 #'
 #' Alternative to the standard size factor, better suited for scRNAseq data
 #' with a lot of zero values
+#'
+#' Original code: Bioconductor R package DESeq2, Michael Love, Simon Anders,
+#' Wolfgang Huber, DOI 10.18129/B9.bioc.DESeq2
 #'
 #' @param counts UMI count matrix
 #'
@@ -402,6 +439,44 @@ sizeFactorsPosCounts<-function(counts){
   sizeFactors.pos <- sizeFactors.pos/exp(mean(log(sizeFactors.pos)))
 
   return(sizeFactors.pos)
+}
+
+#' Reimplementation of DEseq function for fitting mean-dispersion curve
+#'
+#' Original code: Bioconductor R package DESeq, Simon Anders (EMBL Heidelberg),
+#' DOI 10.18129/B9.bioc.DESeq
+#'
+#' @param means Mean vector for all expressed genes
+#' @param disp Dispersion vector for all expressed genes
+#'
+#' @return Parameters of fitted mean-dispersion curve
+#'
+parametricDispersionFit_DEseq <- function( means, disps ) {
+
+  coefs <- c( .1, 1 )
+  iter <- 0
+  while(TRUE) {
+    residuals <- disps / ( coefs[1] + coefs[2] / means )
+    good <- which( (residuals > 1e-4) & (residuals < 15) )
+    fit <- glm( disps[good] ~ I(1/means[good]),
+                family=stats::Gamma(link="identity"), start=coefs )
+    oldcoefs <- coefs
+    coefs <- coefficients(fit)
+    if( !all( coefs > 0 ) )
+      stop( "Parametric dispersion fit failed." )
+    if( sum( log( coefs / oldcoefs )^2 ) < 1e-6 )
+      break
+    iter <- iter + 1
+    if( iter > 10 ) {
+      warning( "Dispersion fit did not converge." )
+      break }
+  }
+
+  names( coefs ) <- c( "asymptDisp", "extraPois" )
+  ans <- function( q )
+    coefs[1] + coefs[2] / q
+  attr( ans, "coefficients" ) <- coefs
+  ans
 }
 
 #' Estimate the mixed gamma distribution of the mean values

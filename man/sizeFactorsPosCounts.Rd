@@ -16,3 +16,7 @@ size factors to normalize each cell
 Alternative to the standard size factor, better suited for scRNAseq data
 with a lot of zero values
 }
+\details{
+Original code: Bioconductor R package DESeq2, Michael Love, Simon Anders,
+Wolfgang Huber, DOI 10.18129/B9.bioc.DESeq2
+}
