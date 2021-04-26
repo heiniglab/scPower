@@ -5,7 +5,7 @@
 \title{Power calculation for a DE gene}
 \usage{
 power.de(
-  nSamples.group0,
+  nSamples,
   mu.group0,
   RR,
   theta,
@@ -15,9 +15,9 @@ power.de(
 )
 }
 \arguments{
-\item{nSamples.group0}{Sample size for group 0}
+\item{nSamples}{Total samples size (n0 + n1), group balancing defined by size.ratio}
 
-\item{RR}{effect size of group 1 vs group 0}
+\item{RR}{effect size of group 1 vs group 0 (fold change mu1/mu0)}
 
 \item{theta}{1/dispersion parameter of the negative binomial fit}
 
@@ -25,7 +25,9 @@ power.de(
 
 \item{approach}{Choose between three different methods implemented in the package for the power calculation (1,2,3)}
 
-\item{ssize.ratio}{Sample size ratio between group 0 and 1}
+\item{ssize.ratio}{Sample size ratio between group 1 and 0 (n1/n0)
+(Remark: there is a mistake in the package documentation that the ratio is n0/n1,
+but I checked the code and the associated package)}
 
 \item{mu.grou0}{Mean value of group 0}
 }

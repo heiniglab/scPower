@@ -15,7 +15,8 @@ fdr.optimization(
   mean.vector,
   disp.vector = NULL,
   useSimulatedPower = TRUE,
-  simThreshold = 4
+  simThreshold = 4,
+  ssize.ratio.de = ssize.ratio.de
 )
 }
 \arguments{
@@ -42,6 +43,9 @@ to increase accuracy (only required for the eQTL power)}
 
 \item{simThreshold}{Threshold until which the simulated power is taken
 instead of the analytic (only required with eQTL power)}
+
+\item{ssize.ratio.de}{In the DE case, ratio between sample size of group 0
+(control group) and group 1 (1=balanced design)}
 }
 \value{
 Optimizing this function to 0 will lead to the correct adjusted

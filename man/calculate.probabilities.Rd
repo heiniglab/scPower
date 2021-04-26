@@ -22,6 +22,7 @@ calculate.probabilities(
   useSimulatedPower,
   simThreshold,
   speedPowerCalc,
+  ssize.ratio.de,
   returnResultsDetailed
 )
 }
@@ -69,6 +70,9 @@ of the analytic (only for the eQTL analysis)}
 
 \item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
 an expression probability less than 0.01 (as overall power is anyway close to 0)}
+
+\item{ssize.ratio.de}{In the DE case, ratio between sample size of group 0
+(control group) and group 1 (1=balanced design)}
 
 \item{returnResultsDetailed}{If true, return not only summary data frame,
 but additional list with exact probability vectors}

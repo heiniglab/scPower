@@ -87,6 +87,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      useSimulatedPower=TRUE,
                                      simThreshold=4,
                                      speedPowerCalc=FALSE,
+                                     ssize.ratio.de=1,
                                      returnResultsDetailed=FALSE){
 
   #Estimate multiplet fraction dependent on cells per lane
@@ -165,6 +166,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                  useSimulatedPower,
                                  simThreshold,
                                  speedPowerCalc,
+                                 ssize.ratio.de,
                                  returnResultsDetailed)
 
   #Return either detailed probabilities for each DE/eQTL gene or only overview
@@ -231,6 +233,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            useSimulatedPower=TRUE,
                                            simThreshold=4,
                                            speedPowerCalc=FALSE,
+                                           ssize.ratio.de=1,
                                            returnResultsDetailed=FALSE){
 
   #Distribute individuals most optimal over the lanes
@@ -254,6 +257,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                              useSimulatedPower,
                              simThreshold,
                              speedPowerCalc,
+                             ssize.ratio.de,
                              returnResultsDetailed))
 }
 
@@ -295,6 +299,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param simThreshold Threshold until which the simulated power is taken instead of the analytic
 #' @param speedPowerCalc Option to speed power calculation by skipping all genes with
 #'        an expression probability less than 0.01 (as overall power is anyway close to 0)
+#' @param ssize.ratio.de In the DE case, ratio between sample size of group 0
+#'        (control group) and group 1 (1=balanced design)
 #' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
@@ -312,6 +318,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                          useSimulatedPower=TRUE,
                          simThreshold=4,
                          speedPowerCalc=FALSE,
+                         ssize.ratio.de=1,
                          returnResultsDetailed=FALSE){
 
   usableCells<-round((1-multipletFraction)*nCells)
@@ -516,7 +523,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                           es.vector=foundSignGenes$FoldChange,
                           nSamples=nSamples,
                           mean.vector=foundSignGenes$mean.length.sum,
-                          disp.vector = foundSignGenes$disp.sum)>0){
+                          disp.vector = foundSignGenes$disp.sum,
+                          ssize.ratio.de=ssize.ratio.de)>0){
         alpha<-lowerBound
       } else {
         root<-uniroot(f=fdr.optimization,
@@ -526,7 +534,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                       es.vector=foundSignGenes$FoldChange,
                       nSamples=nSamples,
                       mean.vector=foundSignGenes$mean.length.sum,
-                      disp.vector = foundSignGenes$disp.sum)
+                      disp.vector = foundSignGenes$disp.sum,
+                      ssize.ratio.de=ssize.ratio.de)
 
         alpha<-root$root
       }
@@ -539,19 +548,19 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
           return(0)
         } else {
           foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-            floor(nSamples/2),
+            nSamples,
             foundSignGenes$mean.length.sum[i],
             foundSignGenes$FoldChange[i],
             1/foundSignGenes$disp.sum[i],
-            alpha,3,ssize.ratio=1))
+            alpha,3,ssize.ratio=ssize.ratio.de))
         })
     } else {
       foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-        floor(nSamples/2),
+        nSamples,
         foundSignGenes$mean.length.sum[i],
         foundSignGenes$FoldChange[i],
         1/foundSignGenes$disp.sum[i],
-        alpha,3,ssize.ratio=1))
+        alpha,3,ssize.ratio=ssize.ratio.de))
     }
 
   } else  {
@@ -622,6 +631,7 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
                               useSimulatedPower=TRUE,
                               simThreshold=4,
                               speedPowerCalc=FALSE,
+                              ssize.ratio.de=1,
                               returnResultsDetailed=FALSE){
 
 
@@ -671,6 +681,7 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
                                  useSimulatedPower,
                                  simThreshold,
                                  speedPowerCalc,
+                                 ssize.ratio.de,
                                  returnResultsDetailed)
 
   #Return either detailed probabilities for each DE/eQTL gene or only overview
@@ -730,6 +741,7 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                               useSimulatedPower=TRUE,
                               simThreshold=4,
                               speedPowerCalc=FALSE,
+                              ssize.ratio.de=1,
                               returnResultsDetailed=FALSE){
 
   #Distribute individuals most optimal over the lanes
@@ -754,6 +766,7 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                                           useSimulatedPower,
                                           simThreshold,
                                           speedPowerCalc,
+                                          ssize.ratio.de,
                                           returnResultsDetailed))
 }
 
@@ -788,6 +801,8 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
 #'        of the analytic (only for the eQTL analysis)
 #' @param speedPowerCalc Option to speed power calculation by skipping all genes with
 #'        an expression probability less than 0.01 (as overall power is anyway close to 0)
+#' @param ssize.ratio.de In the DE case, ratio between sample size of group 0
+#'        (control group) and group 1 (1=balanced design)
 #' @param returnResultsDetailed If true, return not only summary data frame,
 #'        but additional list with exact probability vectors
 #'
@@ -802,6 +817,7 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                                   useSimulatedPower,
                                   simThreshold,
                                   speedPowerCalc,
+                                  ssize.ratio.de,
                                   returnResultsDetailed){
 
   #Sample means values
@@ -946,7 +962,8 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                           es.vector=foundSignGenes$FoldChange,
                           nSamples=nSamples,
                           mean.vector=foundSignGenes$mean.sum,
-                          disp.vector = foundSignGenes$disp.sum)>0){
+                          disp.vector = foundSignGenes$disp.sum,
+                          ssize.ratio.de=ssize.ratio.de)>0){
         alpha<-lowerBound
       } else {
         root<-uniroot(f=fdr.optimization,
@@ -956,7 +973,8 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                       es.vector=foundSignGenes$FoldChange,
                       nSamples=nSamples,
                       mean.vector=foundSignGenes$mean.sum,
-                      disp.vector = foundSignGenes$disp.sum)
+                      disp.vector = foundSignGenes$disp.sum,
+                      ssize.ratio.de=ssize.ratio.de)
 
         alpha<-root$root
       }
@@ -969,19 +987,19 @@ calculate.probabilities<-function(nSamples,ctCells,type,
             return(0)
           } else {
             foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-              floor(nSamples/2),
+              nSamples,
               foundSignGenes$mean.sum[i],
               foundSignGenes$FoldChange[i],
               1/foundSignGenes$disp.sum[i],
-              alpha,3,ssize.ratio=1))
+              alpha,3,ssize.ratio=ssize.ratio.de))
           })
     } else {
       foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-        floor(nSamples/2),
+        nSamples,
         foundSignGenes$mean.sum[i],
         foundSignGenes$FoldChange[i],
         1/foundSignGenes$disp.sum[i],
-        alpha,3,ssize.ratio=1))
+        alpha,3,ssize.ratio=ssize.ratio.de))
     }
 
   } else  {
@@ -1771,25 +1789,33 @@ optimizeSizeFactor<-function(x,sd.error,beta.mean){
 #' by using the function power.nb.test of the package MKmisc. The power for a gene with mean of 0
 #' is defined as 0 (the gene will have an expression probability of 0, so the overall detection power is also 0).
 #'
-#' @param nSamples.group0 Sample size for group 0
+#' @param nSamples Total samples size (n0 + n1), group balancing defined by size.ratio
 #' @param mu.grou0 Mean value of group 0
-#' @param RR effect size of group 1 vs group 0
+#' @param RR effect size of group 1 vs group 0 (fold change mu1/mu0)
 #' @param theta 1/dispersion parameter of the negative binomial fit
 #' @param sig.level Significance threshold
 #' @param approach Choose between three different methods implemented in the package for the power calculation (1,2,3)
-#' @param ssize.ratio Sample size ratio between group 0 and 1
+#' @param ssize.ratio Sample size ratio between group 1 and 0 (n1/n0)
+#'        (Remark: there is a mistake in the package documentation that the ratio is n0/n1,
+#'        but I checked the code and the associated package)
 #'
 #' @return Power to detect the DE gene
 #'
-power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize.ratio=1){
+power.de<-function(nSamples,mu.group0,RR,theta,sig.level,approach=3,ssize.ratio=1){
 
   require(MKmisc)
+
+  #Calculate the sample size of group 0 based on total sample size and ssize ratio
+  #(always round down to never overestimate the total sample size)
+  nSamples.group0<-round(nSamples/(ssize.ratio+1))
 
   if(mu.group0 == 0){
     return(0)
   } else {
-    calc<-MKmisc::power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,theta=theta, ssize.ratio=ssize.ratio,
-                        sig.level=sig.level,alternative="two.sided",approach=approach)
+    calc<-MKmisc::power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,
+                                theta=theta, ssize.ratio=ssize.ratio,
+                                sig.level=sig.level,alternative="two.sided",
+                                approach=approach)
     return(calc$power)
   }
 }
@@ -1809,6 +1835,8 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 #'        to increase accuracy (only required for the eQTL power)
 #' @param simThreshold Threshold until which the simulated power is taken
 #'        instead of the analytic (only required with eQTL power)
+#' @param ssize.ratio.de In the DE case, ratio between sample size of group 0
+#'        (control group) and group 1 (1=balanced design)
 #'
 #' @return Optimizing this function to 0 will lead to the correct adjusted
 #' significance threshold x
@@ -1820,13 +1848,15 @@ fdr.optimization<-function(x,fdr,m0,type,
                            mean.vector,
                            disp.vector=NULL,
                            useSimulatedPower=TRUE,
-                           simThreshold=4){
+                           simThreshold=4,
+                           ssize.ratio.de=ssize.ratio.de){
 
   #Calculate DE power (similar for eQTL power)
   if(type=="de"){
     power<-sapply(1:length(es.vector), function(i)
       power.de(floor(nSamples/2),mean.vector[i],
-               es.vector[i],1/disp.vector[i],x))
+               es.vector[i],1/disp.vector[i],x,
+               ssize.ratio=ssize.ratio.de))
   } else if (type=="eqtl"){
     power<-sapply(1:length(es.vector), function(i)
       power.eqtl(mean.vector[i],es.vector[i],x,nSamples,
