@@ -255,11 +255,14 @@ shinyServer(
                             '<br> Cells per individuum: ',totalCells,
                             '<br> Read depth: ',readDepth,
                             '<br> Detection power: ', Detection.power))%>%
-        layout(annotations =  list(showarrow=TRUE, x = max.study[,c(xAxis)],
-                                   y = max.study[,c(yAxis)],text = "Selected <br> study",
+        plotly::layout(annotations =  list(showarrow=TRUE,
+                                   x = as.numeric(max.study[,c(xAxis)])-1,
+                                   y = as.numeric(max.study[,c(yAxis)])-1,
+                                   text = "Selected <br> study",
                                    bgcolor  ="white"),
-               xaxis = list(title=xAxisLabel), yaxis = list(title=yAxisLabel),
-               legend=list(title="Detection power"))
+                       xaxis = list(title=xAxisLabel), 
+                       yaxis = list(title=yAxisLabel),
+                       legend=list(title="Detection power"))
 
 
     })
