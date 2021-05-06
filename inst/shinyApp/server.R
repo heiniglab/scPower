@@ -255,7 +255,7 @@ shinyServer(
                             '<br> Cells per individuum: ',totalCells,
                             '<br> Read depth: ',readDepth,
                             '<br> Detection power: ', Detection.power))%>%
-        plotly::layout(annotations =  list(showarrow=TRUE,
+        layout(annotations =  list(showarrow=TRUE,
                                    x = as.numeric(max.study[,c(xAxis)])-1,
                                    y = as.numeric(max.study[,c(yAxis)])-1,
                                    text = "Selected <br> study",
