@@ -43,6 +43,18 @@ shinyServer(
     ###############################
     # Power to detect DE/eQTL genes
 
+    ## whether the advanced input options should be displayed or not
+    observeEvent(input$advanced, {
+      
+      if(input$advanced == "no"){
+        shinyjs::hide(id = "cost")
+        shinyjs::hide(id = "multiplet")
+      }else{
+        shinyjs::show(id = "cost")
+        shinyjs::show(id = "multiplet")
+      }
+    })
+    
     #Set the cell types correctly
     observe({
       data(gammaUmiFits)

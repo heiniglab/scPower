@@ -1,12 +1,12 @@
 
 ##---NEW REQUIREMENT FOR INSTALLATION
 #install.packages("shinydashboard")
-#install.packages("shinydashboardPlus")
+#install.packages("shinyjs")
 
 library(shiny)
 library(plotly)
 library(shinydashboard)
-library(shinydashboardPlus)
+library(shinyjs)
 
 header <- dashboardHeader(title = "scPower")
 
@@ -22,49 +22,55 @@ sidebar <-   dashboardSidebar(
 
 body <- ## Body content
   dashboardBody(
+    useShinyjs(),
+    # make buttons on welcome screen clickable (and simultaneously update active menu panel)
+    tags$script(HTML("
+        var openTab = function(tabName){
+          $('a', $('.sidebar')).each(function() {
+            if(this.getAttribute('data-value') == tabName) {
+              this.click()
+            };
+          });
+        }
+      ")),
+    
+    # include our custom CSS style
+    tags$head(
+      tags$link(rel = "stylesheet", type = "text/css", href = "custom_style.css")
+    ),
     tabItems(
       
       tabItem(tabName="welcome",
               h2("Welcome to scPower!"),
-              h4("What would you like to do?"),
+              h3("What would you like to do?"),
               tags$style(HTML(".small-box {height: 150px}")),
               fluidRow(
                 infoBox("",
-                        a("Learn how scPpwer works", href="#description"),
+                        a("Learn how scPpwer works", onclick = "openTab('description')", href="#"),
                         icon=icon("book")),
                 infoBox("",
-                        a("Detect DE/eQTL genes", href="#genes"),
+                        a("Detect DE/eQTL genes", onclick = "openTab('genes')", href="#"),
                         icon=icon("users")),
                 infoBox("",
-                        a("Detect cell types", href="#celltypes"),
+                        a("Detect cell types", onclick = "openTab('celltypes')", href="#"),
                         icon=icon("search")),
               )
       ),
       
       tabItem(tabName = "description",
-              includeHTML("introduction.html"),
-              #tags$style(HTML("@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400&display=swap');
-              #                body{font-family: 'Open Sans', sans-serif;}"))
-              tags$style(HTML("@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400&family=Raleway&display=swap');
-                              body{font-family: 'Raleway', sans-serif;}"))
+              includeHTML("introduction.html")
               ),
 
       tabItem(tabName = "genes",
               fluidRow(
                 column(width=4,
                 
-                  box(
-                    title = "Controls",
+                  box(width = 0,
+                    title = "General parameters",
                     solidHeader = TRUE,
                     status="orange",
-                    tags$head(
-                      tags$style(type="text/css","label{ display: table-cell; text-align: left;vertical-align: middle; } .form-group { display: table-row;}")),
-                    h4("Study parameters"),
-                    actionButton("recalc", "Calculate", icon("paper-plane"), 
-                                 style="color: #fff; background-color: #337ab7; border-color: #2e6da4"),
                     
-                    h4("General parameters"),
-                    radioButtons("study", label = "Study type",
+                    radioButtons("study", label = "Study type", inline=TRUE,
                                  choices = list("DE study" = "de", "eQTL study" = "eqtl"),
                                  selected = "de"),
                     selectInput("celltype", label = "Cell type",
@@ -84,8 +90,17 @@ body <- ## Body content
                     numericInput("rangeY_min",label="Cells (min)",value=2000),
                     numericInput("rangeY_max",label="Cells (max)",value=10000),
                     numericInput("steps","Steps",value=5,min=0,step=1),
+                    actionButton("recalc", "Calculate optimal study", icon("paper-plane"), 
+                                 style="color: #fff; background-color: #337ab7; border-color: #2e6da4; display:center-align"),
                     hr(),
-                    h4("Cost and experimental parameters"),
+                    radioButtons("advanced", label = "Show advanced options", inline=TRUE,
+                                 choices = list("yes"="yes","no"="no"), selected="no")
+                  ),
+                  box(width = 0,
+                    title="Cost and experimental parameters",
+                    id = "cost",
+                    solidHeader = TRUE,
+                    status="orange",
                     numericInput("costKit", label = "Cost 10X kit",
                                  value = 5600, step=100,min=0),
                     numericInput("costFlowCell", label = "Cost flow cell",
@@ -95,16 +110,20 @@ body <- ## Body content
                     numericInput("cellsLane", label = "Cells per lane", value = 20000,
                                  step=500,min=0),
                     hr(),
-                    h4("Multiple testing correction"),
+                    h5("Multiple testing correction"),
                     numericInput("pval",label="P-value",
                                  value=0.05,step=0.01,min=0,max=1),
                     selectInput("MTmethod", label = "Multiple testing method",
                                 choices = list("FWER"="Bonferroni",
                                                "FDR"="FDR",
                                                "none"="none"),
-                                selected="FDR"),
-                    hr(),
-                    h4("Mapping and Multiplet estimation"),
+                                selected="FDR")
+                  ),
+                  box(width = 0,
+                    title="Mapping and Multiplet estimation",
+                    id="multiplet",
+                    solidHeader = TRUE,
+                    status="orange",
                     numericInput("map.eff", label = "Mapping efficiency",
                                  value = 0.8,step=0.05,min=0,max=1),
                     numericInput("multipletRate", label = "Multiplet rate",
@@ -112,16 +131,15 @@ body <- ## Body content
                     numericInput("multipletFactor", label = "Multiplet factor",
                                  value = 1.82, step=0.1,min=1),
                     hr(),
-                    h4("Expression cutoffs"),
+                    h5("Expression cutoffs"),
                     numericInput("minUMI", label = "Minimal number of UMI per gene",
                                  value = 3, step=1,min=1),
                     numericInput("percIndiv", label = "Fraction of individuals",
                                  value = 0.5,step=0.05,min=0,max=1),
                     hr(),
-                    h4("Special parameters"),
+                    h5("Special parameters"),
                     checkboxInput("speedCalc", "Skip power for lowly expressed genes", value = FALSE),
-                    checkboxInput("simPower", "Use simulated power for eQTLs",value=FALSE),
-                    width = 0
+                    checkboxInput("simPower", "Use simulated power for eQTLs",value=FALSE)
                     )
                   ),
                 
@@ -199,32 +217,22 @@ body <- ## Body content
     )
 
 
-footer <- shinydashboardPlus::dashboardFooter(
-  left = p ("This tool was developed by the Heinig lab at the",
-            a("Helmholtz Center Munich.",href="https://www.helmholtz-muenchen.de/ueber-uns/service/kontakt/index.html"),
-            tags$br(),
-            "The software is also available as R package and is available on",
-            a("Gihub",href="https://github.com/heiniglab/scPower")
-            ),
-  right = p(" ",
-            tags$br(),
-            a("Imprint",href="https://www.helmholtz-muenchen.de/impressum/index.html"), "-" ,
-            a("Privacy statement",href="https://www.helmholtz-muenchen.de/en/privacy-statement/index.html")
-           )
-)
+footer <-  tags$footer(class = "main-footer",
+                       # leftaligned part
+                       p("This tool was developed by the Heinig lab at the",
+                         a("Helmholtz Center Munich.",href="https://www.helmholtz-muenchen.de/ueber-uns/service/kontakt/index.html"),
+                         tags$br(),
+                         "The software is also available as R package and is available on",
+                         a("Gihub",href="https://github.com/heiniglab/scPower"),
+                         tags$br(),
+                         a("Imprint",href="https://www.helmholtz-muenchen.de/impressum/index.html"), "-" ,
+                         a("Privacy statement",href="https://www.helmholtz-muenchen.de/en/privacy-statement/index.html")
+                         )
+                       )
 
 dashboardPage(
   header = header, 
   sidebar = sidebar, 
   body = body, 
   footer = footer
-
   )
-
-              
-
-#             p(a("Contact",href="https://www.helmholtz-muenchen.de/ueber-uns/service/kontakt/index.html"),
-#               ", ",
-#               a("Imprint",href="https://www.helmholtz-muenchen.de/impressum/index.html"),
-#               ", ",
-#               a("Privacy statement",href="https://www.helmholtz-muenchen.de/en/data-protection-statement/index.html"))
