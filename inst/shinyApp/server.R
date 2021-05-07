@@ -229,20 +229,23 @@ shinyServer(
         xAxisLabel<-"Sample size"
         yAxis<-"totalCells"
         yAxisLabel<-"Cells per sample"
+        sizeAxis<-"readDepth"
+        sizeAxisLabel<-"Read depth"
       } else if(selectedPair=="sr"){
         xAxis<-"sampleSize"
         xAxisLabel<-"Sample size"
         yAxis<-"readDepth"
         yAxisLabel<-"Read depth"
+        sizeAxis<-"totalCells"
+        sizeAxisLabel<-"Cells per sample"
       } else {
         xAxis<-"totalCells"
         xAxisLabel<-"Cells per sample"
         yAxis<-"readDepth"
         yAxisLabel<-"Read depth"
+        sizeAxis<-"sampleSize"
+        sizeAxisLabel<-"Sample size"
       }
-
-      power.study.plot[,c(xAxis)]<-as.factor(power.study.plot[,c(xAxis)])
-      power.study.plot[,c(yAxis)]<-as.factor(power.study.plot[,c(yAxis)])
 
       #Round value to not display to many digits
       power.study.plot$powerDetect<-round(power.study.plot$powerDetect,3)
@@ -260,21 +263,29 @@ shinyServer(
 
       colnames(power.study.plot)[2]<-"Detection.power"
 
-      plot_ly(power.study.plot, x=as.formula(paste0("~",xAxis)),y=as.formula(paste0("~",yAxis)),
-              z=~Detection.power,type = "heatmap",
-              source="powerMap", hoverinfo = 'text',
+      plot_ly(power.study.plot, 
+              x=as.formula(paste0("~",xAxis)),
+              y=as.formula(paste0("~",yAxis)),
+              color=~Detection.power,
+              size=as.formula(paste0("~",sizeAxis)),
+              sizes=c(100,500), #choose a size range for the circles
+              type = "scatter",
+              mode="markers",
+              source="powerMap", 
+              hoverinfo = 'text',
               text = ~paste('Sample size: ', sampleSize,
                             '<br> Cells per individuum: ',totalCells,
                             '<br> Read depth: ',readDepth,
-                            '<br> Detection power: ', Detection.power))%>%
+                            '<br> Detection power: ', Detection.power)) %>%
         layout(annotations =  list(showarrow=TRUE,
-                                   x = as.numeric(max.study[,c(xAxis)])-1,
-                                   y = as.numeric(max.study[,c(yAxis)])-1,
+                                   x = max.study[,c(xAxis)],
+                                   y = max.study[,c(yAxis)],
                                    text = "Selected <br> study",
                                    bgcolor  ="white"),
-                       xaxis = list(title=xAxisLabel), 
-                       yaxis = list(title=yAxisLabel),
-                       legend=list(title="Detection power"))
+               xaxis = list(title=xAxisLabel),
+               yaxis = list(title=yAxisLabel),
+               legend=list(title="Detection power")
+               )
 
 
     })

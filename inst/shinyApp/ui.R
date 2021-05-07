@@ -1,12 +1,15 @@
 
 ##---NEW REQUIREMENT FOR INSTALLATION
 #install.packages("shinydashboard")
+#install.packages("shinydashboardPlus") # needed for proper positioning of footer and box status "orange"
 #install.packages("shinyjs")
 
 library(shiny)
 library(plotly)
 library(shinydashboard)
+library(shinydashboardPlus)
 library(shinyjs)
+library(shinyBS)
 
 header <- dashboardHeader(title = "scPower")
 
@@ -73,6 +76,9 @@ body <- ## Body content
                     radioButtons("study", label = "Study type", inline=TRUE,
                                  choices = list("DE study" = "de", "eQTL study" = "eqtl"),
                                  selected = "de"),
+                    bsPopover("study", title="Study type", placement="top", options = list(container = "body"),
+                              content="For what type of study do you want to design an experiment"),
+                    
                     selectInput("celltype", label = "Cell type",
                                 choices = list()),
                     numericInput("ct.freq", label = "Cell type frequency",
@@ -80,18 +86,29 @@ body <- ## Body content
                     selectInput("ref.study", label = "Reference study",
                                 choices = list(),
                                 selected = "Blueprint (Monocytes)"),
+                    
                     numericInput("budget", label = "Total budget", value = 50000, step=500,min=0),
+                    bsPopover("budget", title="Total budget", placement="top", options = list(container = "body"),
+                              content="The total budget available for the sequencing"),
+                    
                     selectInput("grid", label = "Parameter grid",
-                                choices = list("samples - cells"="sc",
-                                               "samples - reads"="sr",
-                                               "cells - reads"="cr")),
+                                choices = list("samples - cells per sample"="sc",
+                                               "samples - reads per sample"="sr",
+                                               "cells per sample - reads per sample"="cr")),
+                    bsPopover("grid", title="Parameter grid", placement="top", options = list(container = "body"),
+                              content="Chooses the x and y axis of the plot. The third paramter is determined through the fixed budget and will be displayed as circle size."),
+                    
                     numericInput("rangeX_min",label="Samples (min)",value=10),
                     numericInput("rangeX_max",label="Samples (max)",value=50),
                     numericInput("rangeY_min",label="Cells (min)",value=2000),
                     numericInput("rangeY_max",label="Cells (max)",value=10000),
                     numericInput("steps","Steps",value=5,min=0,step=1),
+                    
                     actionButton("recalc", "Calculate optimal study", icon("paper-plane"), 
                                  style="color: #fff; background-color: #337ab7; border-color: #2e6da4; display:center-align"),
+                    bsPopover("recalc", title="Calculate optimal study", placement="top", options = list(container = "body"),
+                              content="Computes the optimal study design for the give parameter combinations. Can take 1-2 minutes for big grids."),
+                    
                     hr(),
                     radioButtons("advanced", label = "Show advanced options", inline=TRUE,
                                  choices = list("yes"="yes","no"="no"), selected="no")
@@ -145,22 +162,18 @@ body <- ## Body content
                 
                 column(width=8,
                   box(width=0,
-                    title="Parameter grid with detection power",
+                    title="Detection power depending on parameter combinations",
                     solidHeader = TRUE,
                     status="primary",
+                    
+                    div("Detection power depending on cells per individual, read depth and sample size. "),
+                    br(),
+                    HTML("Click the <strong>Calculate optimal study</strong> button to update the plots with the current set of parameters."),
+                    #--------------------------
                     plotlyOutput("powerPlot"),
+                    #--------------------------
                     br(),
-                    div(paste0("The figure represents the detection power that can be gained with each parameter combination of ",
-                               "cells per individual and read depth. ",
-                               "The third parameter, the sample size, is defined uniquely by the other two parameters and the ",
-                               "overall experimental budget.")),
-                    br(),
-                    div(paste0("To update the plots with the currently set parameter combinitons on the left,",
-                               "please click the Calculate button.",
-                               "The calculation for a specific parameter combination can take ",
-                               "up to 1-2 minutes.")),
-                    br(),
-                    div("Click on a specific point in the plot to visualize the exact trace in the plots below"),
+                    HTML("<strong>Click</strong> on a specific point in the plot to visualize the exact trace in the plots below"),
                     br()
                     ),
                   box(width=0,
