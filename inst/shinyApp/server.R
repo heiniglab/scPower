@@ -263,15 +263,15 @@ shinyServer(
 
       colnames(power.study.plot)[2]<-"Detection.power"
 
-      plot_ly(power.study.plot, 
+      plot_ly(data=power.study.plot,
+              type = "scatter",
+              mode="markers",
               x=as.formula(paste0("~",xAxis)),
               y=as.formula(paste0("~",yAxis)),
               color=~Detection.power,
               size=as.formula(paste0("~",sizeAxis)),
-              sizes=c(100,500), #choose a size range for the circles
-              type = "scatter",
-              mode="markers",
-              source="powerMap", 
+              sizes=c(100,500), #choose a size range for the circles,
+              source="powerMap",
               hoverinfo = 'text',
               text = ~paste('Sample size: ', sampleSize,
                             '<br> Cells per individuum: ',totalCells,
@@ -286,8 +286,6 @@ shinyServer(
                yaxis = list(title=yAxisLabel),
                legend=list(title="Detection power")
                )
-
-
     })
 
     output$readPlot<-renderPlotly({

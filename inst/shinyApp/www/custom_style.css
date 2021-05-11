@@ -11,12 +11,16 @@ body{
 /* Change header text to imported font */
 h2 {
   font-family: 'Open Sans', sans-serif;
-  color: midnightblue;
+  color: #367fa9;
+  font-size: 26px;
+  text-align: center;
 }
 
 h3 {
   font-family: 'Open Sans', sans-serif;
   color: black;
+  font-size: 22px;
+  text-align: center;
 
 }
 
