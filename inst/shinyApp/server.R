@@ -76,7 +76,7 @@ shinyServer(
         selected<-"FDR"
       }
       choices<-setNames(studies,studies)
-      updateSelectInput(session,"ref.study", label = "Reference study",
+      updateSelectInput(session,"refstudy", label = "Reference study",
                         choices = choices)
 
       #Choose the preferred MT method
@@ -146,7 +146,7 @@ shinyServer(
       }
 
       type<-input$study
-      ref.study.name<-input$ref.study
+      ref.study.name<-input$refstudy
       ct.freq<-input$ct.freq
       ct<-input$celltype
 

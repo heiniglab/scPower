@@ -15,7 +15,11 @@ Imports:
     HardyWeinberg,
     plotly,
     ggplot2, 
-    shiny
+    shiny,
+    shinydashboard,
+    shinydashboardPlus,
+    shinyjs,
+    shinyBS
 License: GNU GPLv3
 Encoding: UTF-8
 LazyData: true
