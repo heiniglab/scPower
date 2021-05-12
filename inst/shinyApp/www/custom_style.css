@@ -1,0 +1,57 @@
+/* Get a fancy font from Google Fonts */
+
+@import url('https://fonts.googleapis.com/css2?family=Open+Sans:wght@300;400&display=swap');
+
+body{
+  /*font-family: 'Open Sans', sans-serif;
+  /*background-color: black;
+  /*color: white; /* text color */
+}
+
+/* Change header text to imported font */
+h2 {
+  font-family: 'Open Sans', sans-serif;
+  color: #367fa9;
+  font-size: 26px;
+  text-align: center;
+}
+
+h3 {
+  font-family: 'Open Sans', sans-serif;
+  color: black;
+  font-size: 22px;
+  text-align: center;
+
+}
+
+h4 {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: bold;
+  font-size: 20px;
+  color: #367fa9;
+  text-align: center;
+}
+
+h5 {
+  font-family: 'Open Sans', sans-serif;
+  font-weight: bold;
+  color: #367fa9;
+}
+
+/* highlight the active panel of the menu sidebar*/
+
+.skin-blue .main-sidebar .sidebar .sidebar-menu .active a{
+  background-color: white;
+  color:black;
+}
+
+/* Make text visible on inputs */
+.shiny-input-container {
+  color: #474747;
+}
+
+footer{
+    text-align: center;
+    margin-left: auto;
+    margin-right: auto;
+}
