@@ -27,6 +27,7 @@ power.smartseq(
   useSimulatedPower = TRUE,
   simThreshold = 4,
   speedPowerCalc = FALSE,
+  indepSNPs = 10,
   ssize.ratio.de = 1,
   returnResultsDetailed = FALSE
 )
@@ -85,6 +86,10 @@ or random sampling)}
 
 \item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
 an expression probability less than 0.01 (as overall power is anyway close to 0)}
+
+\item{indepSNPs}{Number of independent SNPs assumed for each loci (for eQTL
+Bonferroni multiple testing correction the number of tests are estimated
+as number expressed genes * indepSNPs)}
 
 \item{ssize.ratio.de}{In the DE case, ratio between sample size of group 0
 (control group) and group 1 (1=balanced design)}

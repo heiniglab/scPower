@@ -7,6 +7,11 @@ o Added the option to calculate the power for unbalanced DE sets (using the vari
   the group 0 sample size (control group). For this, the first argument of the 
   internal function power.de was changed from nSamples.group0 to nSamples (total sample
   size).
+o Added the option to use a different estimate for the number of independent SNPs per 
+  locus using the variable indepSNPs (default is still 10). The parameter is 
+  important for the Bonferroni multiple testing correction, as the total number of tests
+  to correct for is estimated by number of genes times number of independent SNPs 
+  per locus.
 
 CHANGES IN VERSION 0.1.2
 -------------------------
