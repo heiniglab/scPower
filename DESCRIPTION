@@ -17,7 +17,7 @@ Imports:
     ggplot2, 
     shiny,
     shinydashboard,
-    shinydashboardPlus,
+    shinydashboardPlus (>= 2.0.1),
     shinyjs,
     shinyBS
 License: GNU GPLv3
