@@ -16,7 +16,7 @@ Imports:
     plotly,
     ggplot2, 
     shiny,
-    shinydashboard,
+    shinydashboard (>= 0.7.1),
     shinydashboardPlus (>= 2.0.1),
     shinyjs,
     shinyBS
