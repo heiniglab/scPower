@@ -239,7 +239,9 @@ body <- ## Body content
                     title="Detection power depending on design parameters",
                     solidHeader = TRUE,
                     status="primary",
-                    div("Detection power depending on cells per individual, read depth and sample size. "),
+                    HTML("Detection power depending on <strong>cells per individual</strong>, <strong>read depth</strong> and <strong>sample size</strong>.",
+                    "Display two of those three parameters as x- and y-axis by selecting from the options in <strong>'Parameter grid'</strong>, the third one will be displayed as <strong>circle size</strong>."),
+                    br(),
                     br(),
                     HTML("Click the <strong>Calculate optimal study</strong> button to update the plots with the current set of parameters."),
                     #--------------------------
