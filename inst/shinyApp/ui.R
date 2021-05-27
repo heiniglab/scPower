@@ -127,13 +127,19 @@ body <- ## Body content
                     
                     selectInput("celltype", label = "Cell type",
                                 choices = list()),
-                    updateResistantPopover("celltype", title="Cell-type specific analysis", placement="top", #trigger = "hover",
+                    updateResistantPopover("celltype", title="Cell-type specific analysis", placement="top", 
                               content=paste("The expression distribution is selected for this cell type. Only one cell type at once can be analysed.", 
                                            "If multiple cell types are of interest (which is often the case), try different cell types,", 
                                            "focusing especially on the ones with small cell type frequencies.")),
 
-                    numericInput("ct.freq", label = "Cell type frequency",
+                    numericInput("ctfreq", label = "Cell type frequency",
                                  value = 0.25,step=0.05,min=0,max=1),
+                    bsPopover("ctfreq", title="Cell type frequency", placement="top", 
+                              content="Frequency of the cell type of interest"),
+                    
+                    numericInput("ssizeratiode", label="Sample size ratio", value=1, min=0, step=0.05),
+                    bsPopover("ssizeratiode", title="Sample size ratio", placement="top", 
+                                           content="ratio between sample size of group 0 (control group) and group 1 (Ratio=1 in case of balanced design)"),
                     
                     selectInput("refstudy", label = "Reference study",
                                 choices = list(),
@@ -212,7 +218,11 @@ body <- ## Body content
                                                "none"="none"),
                                 selected="FDR"),
                     bsPopover("MTmethod", title="Multiple testing method", placement="top", options = list(container = "body"),
-                              content="Possible is adjustment after the family-wise error rate (FWER), after the false discovery rate (FDR) or no adjustment at all (none).")
+                              content="Possible is adjustment after the family-wise error rate (FWER), after the false discovery rate (FDR) or no adjustment at all (none)."),
+                    numericInput("indepsnps", label="Independent SNPs", value=10, min=1, step=1),
+                    bsPopover("indepsnps", title="Independent SNPs", placement="top", 
+                                           content="Number of independent SNPs assumed for each locus (for eQTL Bonferroni multiple testing correction the number of tests are estimated as number expressed genes * indepSNPs)")
+                    
                   ),
                   box(width = 0,
                     title="Mapping and Multiplet estimation",
