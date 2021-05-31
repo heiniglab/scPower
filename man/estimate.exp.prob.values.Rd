@@ -10,21 +10,30 @@ estimate.exp.prob.values(
   nCellsCt,
   nSamples,
   min.counts = 3,
-  perc.indiv = 0.5
+  perc.indiv = 0.5,
+  cutoffVersion = "absolute"
 )
 }
 \arguments{
 \item{mu}{Estimated mean value in sc data per gene (vector)}
 
-\item{size}{Estimated size parameter in sc data from the negative binomial fit (1/dispersion parameter), also per gene (vector)}
+\item{size}{Estimated size parameter in sc data from the negative binomial fit
+(1/dispersion parameter), also per gene (vector)}
 
 \item{nCellsCt}{Mean number of cells per individual and cell type}
 
 \item{nSamples}{Total sample size}
 
-\item{min.counts}{More than is number of UMI counts for each gene per individual and cell type is required to defined it as expressed in one individual}
+\item{min.counts}{Expression cutoff in one individual: if cutoffVersion=absolute,
+more than is number of UMI counts for each gene per individual and
+cell type is required; if cutoffVersion=percentage, more than this percentage
+of cells need to have a count value large than 0}
 
-\item{perc.indiv}{Percentage of individuals that need to have this gene expressed to define it as globally expressed}
+\item{perc.indiv}{Expression cutoff on the population level: percentage of
+individuals that need to have this gene expressed to define it as globally expressed}
+
+\item{cutoffVersion}{Either "absolute" or "percentage" leading to different
+interpretations of min.counts (see description above)}
 }
 \value{
 Vector with expression probabilities for each gene

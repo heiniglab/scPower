@@ -26,6 +26,7 @@ optimize.constant.budget.restrictedDoublets(
   multipletFactor = 1.82,
   min.UMI.counts = 3,
   perc.indiv.expr = 0.5,
+  cutoffVersion = "absolute",
   nGenes = 21000,
   samplingMethod = "quantiles",
   multipletRateGrowth = "linear",
@@ -82,11 +83,8 @@ in the end (need to be between 1-0)}
 
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
-\item{min.UMI.counts}{Expression defition parameter: more than is number of UMI counts for each
-gene per individual and cell type is required to defined it as expressed in one individual}
-
-\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals
-that need to have this gene expressed to define it as globally expressed}
+\item{cutoffVersion}{Either "absolute" or "percentage" leading to different
+interpretations of min.counts (see description above)}
 
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 

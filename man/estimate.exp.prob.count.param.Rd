@@ -14,6 +14,7 @@ estimate.exp.prob.count.param(
   disp.fun.param,
   min.counts = 3,
   perc.indiv = 0.5,
+  cutoffVersion = "absolute",
   nGenes = 21000,
   samplingMethod = "quantiles",
   countMethod = "UMI"
@@ -32,9 +33,16 @@ estimate.exp.prob.count.param(
 \item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean
 (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))}
 
-\item{min.counts}{More than is number of UMI counts for each gene per individual and cell type is required to defined it as expressed in one individual}
+\item{min.counts}{Expression cutoff in one individual: if cutoffVersion=absolute,
+more than is number of UMI counts for each gene per individual and
+cell type is required; if cutoffVersion=percentage, more than this percentage
+of cells need to have a count value large than 0}
 
-\item{perc.indiv}{Percentage of individuals that need to have this gene expressed to define it as globally expressed}
+\item{perc.indiv}{Expression cutoff on the population level: percentage of
+individuals that need to have this gene expressed to define it as globally expressed}
+
+\item{cutoffVersion}{Either "absolute" or "percentage" leading to different
+interpretations of min.counts (see description above)}
 
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 

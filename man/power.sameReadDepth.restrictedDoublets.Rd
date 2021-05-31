@@ -63,12 +63,6 @@ power.sameReadDepth.restrictedDoublets(
 
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
-\item{min.UMI.counts}{Expression defition parameter: more than is number of UMI counts for each
-gene per individual and cell type is required to defined it as expressed in one individual}
-
-\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals
-that need to have this gene expressed to define it as globally expressed}
-
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
 \item{samplingMethod}{Approach to sample the gene mean values (either taking
