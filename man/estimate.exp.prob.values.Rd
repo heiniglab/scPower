@@ -10,7 +10,7 @@ estimate.exp.prob.values(
   nCellsCt,
   nSamples,
   min.counts = 3,
-  perc.indiv = 0.5,
+  perc.indiv.expr = 0.5,
   cutoffVersion = "absolute"
 )
 }
@@ -25,12 +25,13 @@ estimate.exp.prob.values(
 \item{nSamples}{Total sample size}
 
 \item{min.counts}{Expression cutoff in one individual: if cutoffVersion=absolute,
-more than is number of UMI counts for each gene per individual and
+more than this number of UMI counts for each gene per individual and
 cell type is required; if cutoffVersion=percentage, more than this percentage
 of cells need to have a count value large than 0}
 
-\item{perc.indiv}{Expression cutoff on the population level: percentage of
-individuals that need to have this gene expressed to define it as globally expressed}
+\item{perc.indiv.expr}{Expression cutoff on the population level: if number < 1, percentage of
+individuals that need to have this gene expressed to define it as globally expressed;
+if number >=1 absolute number of individuals that need to have this gene expressed}
 
 \item{cutoffVersion}{Either "absolute" or "percentage" leading to different
 interpretations of min.counts (see description above)}

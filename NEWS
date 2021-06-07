@@ -12,6 +12,16 @@ o Added the option to use a different estimate for the number of independent SNP
   important for the Bonferroni multiple testing correction, as the total number of tests
   to correct for is estimated by number of genes times number of independent SNPs 
   per locus.
+o Added the option to set for the individual level expression threshold a percentage
+  threshold (expressed in x% of the cells for the individual and cell type) instead of the 
+  absolute threshold (expressed with > x counts in sum for the individual and cell type)
+  using the parameter "cutoffVersion". Additionally, it is now also possible to set for
+  the population level expression threshold an absolute cutoff (expressed in > x of
+  individuals) instead of the percentage threshold (expressed in > x% of the individuals) 
+  by setting the value of "perc.indiv.expr" to a number greater or equal than 1.
+o Added a function to optimize the UMI count threshold for 
+o Improved shiny app layout (also visible in our website at scpower.helmholtz-muenchen.de
+ 
 
 CHANGES IN VERSION 0.1.2
 -------------------------

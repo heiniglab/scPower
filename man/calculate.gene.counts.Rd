@@ -4,7 +4,7 @@
 \alias{calculate.gene.counts}
 \title{Get expressed genes from pseudobulk}
 \usage{
-calculate.gene.counts(expr.array, min.counts = 3, perc.indiv = 0.5)
+calculate.gene.counts(expr.array, min.counts = 3, perc.indiv.expr = 0.5)
 }
 \arguments{
 \item{expr.array}{3d pesudobulk matrix of genes x individuals x cell type (output of create.pseudobulk)}
@@ -12,7 +12,7 @@ calculate.gene.counts(expr.array, min.counts = 3, perc.indiv = 0.5)
 \item{min.counts}{More than is number of UMI counts for each gene per individual and cell type is required
 to defined it as expressed in one individual}
 
-\item{perc.indiv}{Percentage of individuals that need to have this gene expressed
+\item{perc.indiv.expr}{Percentage of individuals that need to have this gene expressed
 to define it as globally expressed}
 }
 \value{
@@ -21,5 +21,5 @@ fraction in how many samples the gene is expressed)
 }
 \description{
 Return a data frame with all genes, which are defined as expressed per cell type (at least min.counts
-in perc.indiv fraction of all individuals)
+in perc.indiv.expr fraction of all individuals)
 }

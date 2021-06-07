@@ -72,6 +72,15 @@ in the end (need to be between 1-0)}
 
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
+\item{min.UMI.counts}{Expression cutoff in one individual: if cutoffVersion=absolute,
+more than this number of UMI counts for each gene per individual and
+cell type is required; if cutoffVersion=percentage, more than this percentage
+of cells need to have a count value large than 0}
+
+\item{perc.indiv.expr}{Expression cutoff on the population level: if number < 1, percentage of
+individuals that need to have this gene expressed to define it as globally expressed;
+if number >=1 absolute number of individuals that need to have this gene expressed}
+
 \item{cutoffVersion}{Either "absolute" or "percentage" leading to different
 interpretations of min.counts (see description above)}
 
