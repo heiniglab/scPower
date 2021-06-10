@@ -6,6 +6,25 @@ library(shinydashboardPlus)
 library(shinyjs)
 library(shinyBS)
 
+# the popovers for `selectInput` options need to be made updateresistant, or they won't show in the app
+# https://stackoverflow.com/questions/36965954/shinybs-bspopover-and-updateselectinput
+updateResistantPopover <- function(id, title, content, placement = "bottom", trigger = "hover", options = NULL){
+  options = shinyBS:::buildTooltipOrPopoverOptionsList(title, placement, trigger, options, content)
+  options = paste0("{'", paste(names(options), options, sep = "': '", collapse = "', '"), "'}") 
+  bsTag <- shiny::tags$script(shiny::HTML(paste0("
+    $(document).ready(function() {
+      var target = document.querySelector('#", id, "');
+      var observer = new MutationObserver(function(mutations) {
+        setTimeout(function() {
+          shinyBS.addTooltip('", id, "', 'popover', ", options, ");
+        }, 200);
+      });
+      observer.observe(target, { childList: true });
+    });
+  ")))
+  htmltools::attachDependencies(bsTag, shinyBS:::shinyBSDep)
+}
+
 header <- dashboardHeader(title = "scPower",
                           tags$li(class = "dropdown",
                                   a(href = 'https://www.biorxiv.org/content/10.1101/2020.04.01.019851v1',
@@ -108,20 +127,26 @@ body <- ## Body content
                     
                     selectInput("celltype", label = "Cell type",
                                 choices = list()),
-                    bsPopover("celltype", title="Cell-type specific analysis:", placement="top", trigger = "hover",
-                              content=HTML("The expression distribution is selected for this cell type. Only one cell type at once can be analysed.", 
+                    updateResistantPopover("celltype", title="Cell-type specific analysis", placement="top", 
+                              content=paste("The expression distribution is selected for this cell type. Only one cell type at once can be analysed.", 
                                            "If multiple cell types are of interest (which is often the case), try different cell types,", 
                                            "focusing especially on the ones with small cell type frequencies.")),
 
-                    numericInput("ct.freq", label = "Cell type frequency",
+                    numericInput("ctfreq", label = "Cell type frequency",
                                  value = 0.25,step=0.05,min=0,max=1),
+                    bsPopover("ctfreq", title="Cell type frequency", placement="top", 
+                              content="Frequency of the cell type of interest"),
+                    
+                    numericInput("ssizeratiode", label="Sample size ratio", value=1, min=0, step=0.05),
+                    bsPopover("ssizeratiode", title="Sample size ratio", placement="top", 
+                                           content="ratio between sample size of group 0 (control group) and group 1 (Ratio=1 in case of balanced design)"),
                     
                     selectInput("refstudy", label = "Reference study",
                                 choices = list(),
                                 selected = "Blueprint (Monocytes)"),
-                    # TO DO: figure out WHY this popover is not working?
-                    bsPopover("refstudy", title="Reference study", placement="top",
-                              content=HTML("effect sizes and expression ranks are taken from a reference study, performed on FACS sorted bulk RNA-seq data.",
+                    
+                    updateResistantPopover("refstudy", title="Reference study", placement="top",
+                              content=paste("effect sizes and expression ranks are taken from a reference study, performed on FACS sorted bulk RNA-seq data.",
                               "Different examples are available for DE as well as eQTL studies.")),
                     
                     numericInput("budget", label = "Total budget", value = 50000, step=500,min=0),
@@ -133,7 +158,7 @@ body <- ## Body content
                                                "samples - reads per sample"="sr",
                                                "cells per sample - reads per sample"="cr")),
                     bsPopover("grid", title="Parameter grid", placement="top", options = list(container = "body"),
-                              content=HTML("all possible combinations for two of the three experimental parameters (sample size, cells per person and read depth) are tested,", 
+                              content=paste("all possible combinations for two of the three experimental parameters (sample size, cells per person and read depth) are tested,", 
                               "the third parameter is defined uniquely given the other two and the overall budget and will be displayed as circle size. ",
                               "Which of the two shall be tested, can be selcted here. Depending on the selection, the four parameters below are adapted.")),
                     
@@ -193,7 +218,11 @@ body <- ## Body content
                                                "none"="none"),
                                 selected="FDR"),
                     bsPopover("MTmethod", title="Multiple testing method", placement="top", options = list(container = "body"),
-                              content="Possible is adjustment after the family-wise error rate (FWER), after the false discovery rate (FDR) or no adjustment at all (none).")
+                              content="Possible is adjustment after the family-wise error rate (FWER), after the false discovery rate (FDR) or no adjustment at all (none)."),
+                    numericInput("indepsnps", label="Independent SNPs", value=10, min=1, step=1),
+                    bsPopover("indepsnps", title="Independent SNPs", placement="top", 
+                                           content="Number of independent SNPs assumed for each locus (for eQTL Bonferroni multiple testing correction the number of tests are estimated as number expressed genes * indepSNPs)")
+                    
                   ),
                   box(width = 0,
                     title="Mapping and Multiplet estimation",
@@ -205,7 +234,7 @@ body <- ## Body content
                     numericInput("multipletRate", label = "Multiplet rate",
                                  value = 7.67e-06,step=1e-6,min=0),
                     bsPopover("multipletRate", title="Multiplet rate", placement="top", options = list(container = "body"),
-                              content=HTML("Rate factor to calculate the number of multiplets dependent on the number of cells loaded per lane.", 
+                              content=paste("Rate factor to calculate the number of multiplets dependent on the number of cells loaded per lane.", 
                               "We assume a linear relationship of multiplet fraction = cells per lane * multiplet rate.")),
                     numericInput("multipletFactor", label = "Multiplet factor",
                                  value = 1.82, step=0.1,min=1),
@@ -239,7 +268,9 @@ body <- ## Body content
                     title="Detection power depending on design parameters",
                     solidHeader = TRUE,
                     status="primary",
-                    div("Detection power depending on cells per individual, read depth and sample size. "),
+                    HTML("Detection power depending on <strong>cells per individual</strong>, <strong>read depth</strong> and <strong>sample size</strong>.",
+                    "Display two of those three parameters as x- and y-axis by selecting from the options in <strong>'Parameter grid'</strong>, the third one will be displayed as <strong>circle size</strong>."),
+                    br(),
                     br(),
                     HTML("Click the <strong>Calculate optimal study</strong> button to update the plots with the current set of parameters."),
                     #--------------------------

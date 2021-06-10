@@ -70,10 +70,14 @@ shinyServer(
         data(eQTLRefStudy)
         studies<-as.character(unique(eqtl.ref.study$name))
         selected<-"Bonferroni"
+        shinyjs::hide(id="ssizeratiode")
+        shinyjs::show(id="indepsnps")
       } else {
         data(DERefStudy)
         studies<-as.character(unique(de.ref.study$name))
         selected<-"FDR"
+        shinyjs::hide(id="indepsnps")
+        shinyjs::show(id="ssizeratiode")
       }
       choices<-setNames(studies,studies)
       updateSelectInput(session,"refstudy", label = "Reference study",
@@ -147,7 +151,7 @@ shinyServer(
 
       type<-input$study
       ref.study.name<-input$refstudy
-      ct.freq<-input$ct.freq
+      ct.freq<-input$ctfreq
       ct<-input$celltype
 
       costKit<-input$costKit
@@ -166,6 +170,10 @@ shinyServer(
 
       useSimulatedPower<-input$simPower
       speedPowerCalc<-input$speedCalc
+      
+      indepSNPs<-input$indepsnps
+      ssize.ratio.de<-input$ssizeratiode
+      
 
       #Load required data sets
       data(readDepthUmiFit) #Relation between reads and UMI
@@ -203,7 +211,9 @@ shinyServer(
                                                                     sign.threshold =sign.threshold,
                                                                     MTmethod = MTmethod,
                                                                     useSimulatedPower = useSimulatedPower,
-                                                                    speedPowerCalc = speedPowerCalc),
+                                                                    speedPowerCalc = speedPowerCalc,
+                                                                    indepSNPs=indepSNPs,
+                                                                    ssize.ratio.de=ssize.ratio.de),
         message="Calculating power optimization!", value=0.5
       )
 
