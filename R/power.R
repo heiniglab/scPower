@@ -293,6 +293,10 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param multipletFraction Multiplet fraction in the experiment as a constant factor
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param min.norm.count Expression cutoff in one individual: if cutoffVersion=absolute,
+#'        more than this number of counts per kilobase transcript for each gene per individual and
+#'        cell type is required; if cutoffVersion=percentage, more than this percentage
+#'        of cells need to have a count value large than 0
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles
 #'        or random sampling)
 #' @param sign.threshold Significance threshold
@@ -419,7 +423,7 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   #Calculate for each gene the expression probability
   sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
                                             nSamples=nSamples,min.counts=min.norm.count,
-                                            perc.indiv=perc.indiv.expr,
+                                            perc.indiv.expr=perc.indiv.expr,
                                             cutoffVersion=cutoffVersion)
 
   #Calculate the expected number of expressed genes
@@ -803,6 +807,10 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
 #'        filtered for the correct cell type (required columns: ct (cell type),
 #'        asymptDisp, extraPois (both from taken from DEseq))
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param min.UMI.counts Expression cutoff in one individual: if cutoffVersion=absolute,
+#'        more than this number of UMI counts for each gene per individual and
+#'        cell type is required; if cutoffVersion=percentage, more than this percentage
+#'        of cells need to have a count value large than 0
 #' @param samplingMethod Approach to sample the gene mean values (either taking
 #'        quantiles or random sampling)
 #' @param sign.threshold Significance threshold
@@ -862,7 +870,7 @@ calculate.probabilities<-function(nSamples,ctCells,type,
   #Calculate for each gene the expression probability
   sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
                                                 nSamples=nSamples,min.counts=min.UMI.counts,
-                                                perc.indiv=perc.indiv.expr,
+                                                perc.indiv.expr=perc.indiv.expr,
                                                 cutoffVersion=cutoffVersion)
 
   #Calculate the expected number of expressed genes
@@ -2244,4 +2252,72 @@ readDepthBudgetCalculation.libPrepCell<-function(nSamples,nCells,totalCost,
     (nSamples*nCells/readsPerFlowcell*costFlowCell)
 
   return(floor(readDepth))
+}
+
+
+#' Identifying the expression threshold combination that maximizes the detection power
+#'
+#' @param umi_range Vector with UMI counts to test
+#' @param pop_range Vector with population thresholds to test
+#' @param ... additional arguments that can be passed to
+#'        \code{\link[scPower:power.general.restrictedDoublets]{power.general.restrictedDoublets()}}
+#'        (excluding min.UMI.counts
+#'        and perc.indiv.expr that will be evaluated in the function)
+#' @inheritParams power.general.restrictedDoublets
+#'
+#' @return Results for threshold combination with the maximal detection power
+#'
+#' @export
+#'
+select.cutoffs<-function(umi_range,pop_range,
+                         nSamples,
+                         nCells,
+                         readDepth,
+                         ct.freq,
+                         type,
+                         ref.study,
+                         ref.study.name,
+                         cellsPerLane,
+                         read.umi.fit,
+                         gamma.mixed.fits,
+                         ct,
+                         disp.fun.param,...){
+
+  dots<-list(...)
+  if(any(c("min.UMI.counts","perc.indiv.expr") %in% names(dots))){
+    stop("Specifying min.UMI.counts or perc.indiv.expr not allowed!")
+  }
+
+  max_power<-0
+  param_combi<-NULL
+  for(umi in umi_range){
+    for(pop in pop_range){
+
+      res<-power.general.restrictedDoublets(nSamples,
+                                            nCells,
+                                            readDepth,
+                                            ct.freq,
+                                            type,
+                                            ref.study,
+                                            ref.study.name,
+                                            cellsPerLane,
+                                            read.umi.fit,
+                                            gamma.mixed.fits,
+                                            ct,
+                                            disp.fun.param,
+                                            min.UMI.counts=umi,
+                                            perc.indiv.expr=pop,
+                                            ...)
+
+      if(res$powerDetect > max_power){
+        max_power<-res$powerDetect
+        param_combi<-res
+        param_combi$umiThreshold<-umi
+        param_combi$popThreshold<-pop
+      }
+    }
+  }
+
+  return(param_combi)
+
 }

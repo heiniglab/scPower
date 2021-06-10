@@ -19,7 +19,9 @@ o Added the option to set for the individual level expression threshold a percen
   the population level expression threshold an absolute cutoff (expressed in > x of
   individuals) instead of the percentage threshold (expressed in > x% of the individuals) 
   by setting the value of "perc.indiv.expr" to a number greater or equal than 1.
-o Added a function to optimize the UMI count threshold for 
+o Added a function to optimize the expression thresholds to maximize the power, called
+  "select.cutoffs". Please aware that by optimizing the power, potential a higher fraction
+  of false positives is to be expected.
 o Improved shiny app layout (also visible in our website at scpower.helmholtz-muenchen.de
  
 
