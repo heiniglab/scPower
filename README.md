@@ -10,7 +10,7 @@ A detailed description of all methods and citation of all used tools and data se
 
 Schmid, K. T., Cruceanu, C., Boettcher, A., Lickert, H., Binder, E. B., Theis, F. J., & Heinig, M. (2020). Design and power analysis for multi-sample single cell genomics experiments. bioRxiv. https://doi.org/10.1101/2020.04.01.019851
 
-An explanation how the plots in the paper were generated can be found in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf).
+An explanation how the plots in the paper were generated can be found in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf) and an example how to combine our model with more complex designs is shown in the third vignette [extension-complex-design](vignettes/extension-complex-design.pdf).
 
 
 ## Installation
