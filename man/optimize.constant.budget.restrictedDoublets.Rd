@@ -26,6 +26,7 @@ optimize.constant.budget.restrictedDoublets(
   multipletFactor = 1.82,
   min.UMI.counts = 3,
   perc.indiv.expr = 0.5,
+  cutoffVersion = "absolute",
   nGenes = 21000,
   samplingMethod = "quantiles",
   multipletRateGrowth = "linear",
@@ -33,7 +34,9 @@ optimize.constant.budget.restrictedDoublets(
   MTmethod = "Bonferroni",
   useSimulatedPower = FALSE,
   simThreshold = 4,
-  speedPowerCalc = FALSE
+  speedPowerCalc = FALSE,
+  indepSNPs = 10,
+  ssize.ratio.de = 1
 )
 }
 \arguments{
@@ -80,11 +83,17 @@ in the end (need to be between 1-0)}
 
 \item{multipletFactor}{Expected read proportion of multiplet cells vs singlet cells}
 
-\item{min.UMI.counts}{Expression defition parameter: more than is number of UMI counts for each
-gene per individual and cell type is required to defined it as expressed in one individual}
+\item{min.UMI.counts}{Expression cutoff in one individual: if cutoffVersion=absolute,
+more than this number of UMI counts for each gene per individual and
+cell type is required; if cutoffVersion=percentage, more than this percentage
+of cells need to have a count value large than 0}
 
-\item{perc.indiv.expr}{Expression defition parameter: percentage of individuals
-that need to have this gene expressed to define it as globally expressed}
+\item{perc.indiv.expr}{Expression cutoff on the population level: if number < 1, percentage of
+individuals that need to have this gene expressed to define it as globally expressed;
+if number >=1 absolute number of individuals that need to have this gene expressed}
+
+\item{cutoffVersion}{Either "absolute" or "percentage" leading to different
+interpretations of min.counts (see description above)}
 
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
@@ -108,6 +117,13 @@ of the analytic (only for the eQTL analysis)}
 
 \item{speedPowerCalc}{Option to speed power calculation by skipping all genes with
 an expression probability less than 0.01 (as overall power is anyway close to 0)}
+
+\item{indepSNPs}{Number of independent SNPs assumed for each loci (for eQTL
+Bonferroni multiple testing correction the number of tests are estimated
+as number expressed genes * indepSNPs)}
+
+\item{ssize.ratio.de}{In the DE case, ratio between sample size of group 0
+(control group) and group 1 (1=balanced design)}
 }
 \value{
 Data frame with overall detection power, power and expression power for

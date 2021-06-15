@@ -1,4 +1,32 @@
 
+CHANGES IN VERSION 0.1.3
+-------------------------
+o Added the option to calculate the power for unbalanced DE sets (using the variable
+  ssize.ratio.de) for all power calculation functions (not yet for the optimization). 
+  The variable ssize.ratio.de represents the ratio of the group 1 sample size to 
+  the group 0 sample size (control group). For this, the first argument of the 
+  internal function power.de was changed from nSamples.group0 to nSamples (total sample
+  size).
+o Added the option to use a different estimate for the number of independent SNPs per 
+  locus using the variable indepSNPs (default is still 10). The parameter is 
+  important for the Bonferroni multiple testing correction, as the total number of tests
+  to correct for is estimated by number of genes times number of independent SNPs 
+  per locus.
+o Added the option to set for the individual level expression threshold a percentage
+  threshold (expressed in x% of the cells for the individual and cell type) instead of the 
+  absolute threshold (expressed with > x counts in sum for the individual and cell type)
+  using the parameter "cutoffVersion". Additionally, it is now also possible to set for
+  the population level expression threshold an absolute cutoff (expressed in > x of
+  individuals) instead of the percentage threshold (expressed in > x% of the individuals) 
+  by setting the value of "perc.indiv.expr" to a number greater or equal than 1.
+o Added a function to optimize the expression thresholds to maximize the power, called
+  "select.cutoffs". Please aware that by optimizing the power, potential a higher fraction
+  of false positives is to be expected.
+o Improved shiny app layout (also visible in our website at scpower.helmholtz-muenchen.de)
+o Included now a vignette "extension-complex-design" to show how to extend our method for
+  more complex experimental designs.
+ 
+
 CHANGES IN VERSION 0.1.2
 -------------------------
 

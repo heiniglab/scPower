@@ -80,6 +80,7 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      mappingEfficiency=0.8,
                                      multipletRate=7.67e-06,multipletFactor=1.82,
                                      min.UMI.counts=3,perc.indiv.expr=0.5,
+                                     cutoffVersion="absolute",
                                      nGenes=21000,samplingMethod="quantiles",
                                      multipletRateGrowth="linear",
                                      sign.threshold=0.05,
@@ -87,6 +88,8 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                      useSimulatedPower=TRUE,
                                      simThreshold=4,
                                      speedPowerCalc=FALSE,
+                                     indepSNPs=10,
+                                     ssize.ratio.de=1,
                                      returnResultsDetailed=FALSE){
 
   #Estimate multiplet fraction dependent on cells per lane
@@ -160,11 +163,14 @@ power.general.withDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                  ref.study,ref.study.name,
                                  gamma.parameters,disp.fun,
                                  min.UMI.counts,perc.indiv.expr,
+                                 cutoffVersion,
                                  nGenes,samplingMethod,
                                  sign.threshold,MTmethod,
                                  useSimulatedPower,
                                  simThreshold,
                                  speedPowerCalc,
+                                 indepSNPs,
+                                 ssize.ratio.de,
                                  returnResultsDetailed)
 
   #Return either detailed probabilities for each DE/eQTL gene or only overview
@@ -224,6 +230,7 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            mappingEfficiency=0.8,
                                            multipletRate=7.67e-06,multipletFactor=1.82,
                                            min.UMI.counts=3,perc.indiv.expr=0.5,
+                                           cutoffVersion="absolute",
                                            nGenes=21000,samplingMethod="quantiles",
                                            multipletRateGrowth="linear",
                                            sign.threshold=0.05,
@@ -231,6 +238,8 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                                            useSimulatedPower=TRUE,
                                            simThreshold=4,
                                            speedPowerCalc=FALSE,
+                                           indepSNPs=10,
+                                           ssize.ratio.de=1,
                                            returnResultsDetailed=FALSE){
 
   #Distribute individuals most optimal over the lanes
@@ -248,12 +257,15 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
                              mappingEfficiency,
                              multipletRate,multipletFactor,
                              min.UMI.counts,perc.indiv.expr,
+                             cutoffVersion,
                              nGenes,samplingMethod,
                              multipletRateGrowth,
                              sign.threshold,MTmethod,
                              useSimulatedPower,
                              simThreshold,
                              speedPowerCalc,
+                             indepSNPs,
+                             ssize.ratio.de,
                              returnResultsDetailed))
 }
 
@@ -280,12 +292,11 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #'        in the end (need to be between 1-0)
 #' @param multipletFraction Multiplet fraction in the experiment as a constant factor
 #' @param multipletFactor Expected read proportion of multiplet cells vs singlet cells
-#' @param min.norm.count Expression defition parameter: more than is number of
-#'        counts per kilobase transcript for each gene per individual and cell
-#'        type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals
-#'        that need to have this gene expressed to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param min.norm.count Expression cutoff in one individual: if cutoffVersion=absolute,
+#'        more than this number of counts per kilobase transcript for each gene per individual and
+#'        cell type is required; if cutoffVersion=percentage, more than this percentage
+#'        of cells need to have a count value large than 0
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles
 #'        or random sampling)
 #' @param sign.threshold Significance threshold
@@ -295,7 +306,13 @@ power.general.restrictedDoublets<-function(nSamples,nCells,readDepth,ct.freq,
 #' @param simThreshold Threshold until which the simulated power is taken instead of the analytic
 #' @param speedPowerCalc Option to speed power calculation by skipping all genes with
 #'        an expression probability less than 0.01 (as overall power is anyway close to 0)
+#' @param indepSNPs Number of independent SNPs assumed for each loci (for eQTL
+#'        Bonferroni multiple testing correction the number of tests are estimated
+#'        as number expressed genes * indepSNPs)
+#' @param ssize.ratio.de In the DE case, ratio between sample size of group 0
+#'        (control group) and group 1 (1=balanced design)
 #' @param returnResultsDetailed If true, return not only summary data frame, but additional list with exact probability vectors
+#' @inheritParams estimate.exp.prob.values
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -307,11 +324,14 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                          mappingEfficiency=0.8,
                          multipletFraction=0,multipletFactor=1.82,
                          min.norm.count=3,perc.indiv.expr=0.5,
+                         cutoffVersion="absolute",
                          nGenes=21000,samplingMethod="quantiles",
                          sign.threshold=0.05,MTmethod="Bonferroni",
                          useSimulatedPower=TRUE,
                          simThreshold=4,
                          speedPowerCalc=FALSE,
+                         indepSNPs=10,
+                         ssize.ratio.de=1,
                          returnResultsDetailed=FALSE){
 
   usableCells<-round((1-multipletFraction)*nCells)
@@ -403,7 +423,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
   #Calculate for each gene the expression probability
   sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
                                             nSamples=nSamples,min.counts=min.norm.count,
-                                            perc.indiv=perc.indiv.expr)
+                                            perc.indiv.expr=perc.indiv.expr,
+                                            cutoffVersion=cutoffVersion)
 
   #Calculate the expected number of expressed genes
   exp.genes<-round(sum(sim.genes$exp.probs))
@@ -471,8 +492,9 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
         alpha<-root$root
       }
     } else if (MTmethod=="Bonferroni"){
-      #Restrict the Bonferroni for eQTLs cut-off further, assuming 10 independent SNPs per gene
-      alpha<-alpha/10
+      #Restrict the Bonferroni for eQTLs cut-off further,
+      #assuming x independent SNPs per gene
+      alpha<-alpha/indepSNPs
     }
 
     #Skip power calculation for not expressed genes (if this option is chosen)
@@ -516,7 +538,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                           es.vector=foundSignGenes$FoldChange,
                           nSamples=nSamples,
                           mean.vector=foundSignGenes$mean.length.sum,
-                          disp.vector = foundSignGenes$disp.sum)>0){
+                          disp.vector = foundSignGenes$disp.sum,
+                          ssize.ratio.de=ssize.ratio.de)>0){
         alpha<-lowerBound
       } else {
         root<-uniroot(f=fdr.optimization,
@@ -526,7 +549,8 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
                       es.vector=foundSignGenes$FoldChange,
                       nSamples=nSamples,
                       mean.vector=foundSignGenes$mean.length.sum,
-                      disp.vector = foundSignGenes$disp.sum)
+                      disp.vector = foundSignGenes$disp.sum,
+                      ssize.ratio.de=ssize.ratio.de)
 
         alpha<-root$root
       }
@@ -538,20 +562,20 @@ power.smartseq<-function(nSamples,nCells,readDepth,ct.freq,
         if(foundSignGenes$exp.probs[i]<0.01){
           return(0)
         } else {
-          foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-            floor(nSamples/2),
+          power.de(
+            nSamples,
             foundSignGenes$mean.length.sum[i],
             foundSignGenes$FoldChange[i],
             1/foundSignGenes$disp.sum[i],
-            alpha,3,ssize.ratio=1))
+            alpha,3,ssize.ratio=ssize.ratio.de)
         })
     } else {
       foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-        floor(nSamples/2),
+        nSamples,
         foundSignGenes$mean.length.sum[i],
         foundSignGenes$FoldChange[i],
         1/foundSignGenes$disp.sum[i],
-        alpha,3,ssize.ratio=1))
+        alpha,3,ssize.ratio=ssize.ratio.de))
     }
 
   } else  {
@@ -616,12 +640,15 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
                               mappingEfficiency=0.8,
                               multipletRate=7.67e-06,multipletFactor=1.82,
                               min.UMI.counts=3,perc.indiv.expr=0.5,
+                              cutoffVersion="absolute",
                               nGenes=21000,samplingMethod="quantiles",
                               multipletRateGrowth="linear",
                               sign.threshold=0.05, MTmethod="Bonferroni",
                               useSimulatedPower=TRUE,
                               simThreshold=4,
                               speedPowerCalc=FALSE,
+                              indepSNPs=10,
+                              ssize.ratio.de=1,
                               returnResultsDetailed=FALSE){
 
 
@@ -666,11 +693,14 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
                                  ref.study,ref.study.name,
                                  gamma.parameters,disp.fun,
                                  min.UMI.counts,perc.indiv.expr,
+                                 cutoffVersion,
                                  nGenes,samplingMethod,
                                  sign.threshold,MTmethod,
                                  useSimulatedPower,
                                  simThreshold,
                                  speedPowerCalc,
+                                 indepSNPs,
+                                 ssize.ratio.de,
                                  returnResultsDetailed)
 
   #Return either detailed probabilities for each DE/eQTL gene or only overview
@@ -730,6 +760,8 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                               useSimulatedPower=TRUE,
                               simThreshold=4,
                               speedPowerCalc=FALSE,
+                              indepSNPs=10,
+                              ssize.ratio.de=1,
                               returnResultsDetailed=FALSE){
 
   #Distribute individuals most optimal over the lanes
@@ -754,6 +786,8 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                                           useSimulatedPower,
                                           simThreshold,
                                           speedPowerCalc,
+                                          indepSNPs,
+                                          ssize.ratio.de,
                                           returnResultsDetailed))
 }
 
@@ -772,11 +806,11 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
 #' @param disp.fun Function to fit the dispersion parameter dependent on the mean,
 #'        filtered for the correct cell type (required columns: ct (cell type),
 #'        asymptDisp, extraPois (both from taken from DEseq))
-#' @param min.UMI.counts Expression defition parameter: more than is number of UMI counts for each
-#'        gene per individual and cell type is required to defined it as expressed in one individual
-#' @param perc.indiv.expr Expression defition parameter: percentage of individuals
-#'        that need to have this gene expressed to define it as globally expressed
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
+#' @param min.UMI.counts Expression cutoff in one individual: if cutoffVersion=absolute,
+#'        more than this number of UMI counts for each gene per individual and
+#'        cell type is required; if cutoffVersion=percentage, more than this percentage
+#'        of cells need to have a count value large than 0
 #' @param samplingMethod Approach to sample the gene mean values (either taking
 #'        quantiles or random sampling)
 #' @param sign.threshold Significance threshold
@@ -788,8 +822,14 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
 #'        of the analytic (only for the eQTL analysis)
 #' @param speedPowerCalc Option to speed power calculation by skipping all genes with
 #'        an expression probability less than 0.01 (as overall power is anyway close to 0)
+#' @param indepSNPs Number of independent SNPs assumed for each loci (for eQTL
+#'        Bonferroni multiple testing correction the number of tests are estimated
+#'        as number expressed genes * indepSNPs)
+#' @param ssize.ratio.de In the DE case, ratio between sample size of group 0
+#'        (control group) and group 1 (1=balanced design)
 #' @param returnResultsDetailed If true, return not only summary data frame,
 #'        but additional list with exact probability vectors
+#' @inheritParams estimate.exp.prob.values
 #'
 #' @return Power to detect the DE/eQTL genes from the reference study in a single cell experiment with these parameters
 #'
@@ -797,11 +837,14 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                                   ref.study,ref.study.name,
                                   gamma.parameters,disp.fun,
                                   min.UMI.counts,perc.indiv.expr,
+                                  cutoffVersion,
                                   nGenes,samplingMethod,
                                   sign.threshold,MTmethod,
                                   useSimulatedPower,
                                   simThreshold,
                                   speedPowerCalc,
+                                  indepSNPs,
+                                  ssize.ratio.de,
                                   returnResultsDetailed){
 
   #Sample means values
@@ -827,7 +870,8 @@ calculate.probabilities<-function(nSamples,ctCells,type,
   #Calculate for each gene the expression probability
   sim.genes$exp.probs<-estimate.exp.prob.values(sim.genes$mean,1/sim.genes$disp,ctCells,
                                                 nSamples=nSamples,min.counts=min.UMI.counts,
-                                                perc.indiv=perc.indiv.expr)
+                                                perc.indiv.expr=perc.indiv.expr,
+                                                cutoffVersion=cutoffVersion)
 
   #Calculate the expected number of expressed genes
   exp.genes<-round(sum(sim.genes$exp.probs))
@@ -901,8 +945,9 @@ calculate.probabilities<-function(nSamples,ctCells,type,
         alpha<-root$root
       }
     } else if (MTmethod=="Bonferroni"){
-      #Restrict the Bonferroni for eQTLs cut-off further, assuming 10 independent SNPs per gene
-      alpha<-alpha/10
+      #Restrict the Bonferroni for eQTLs cut-off further,
+      #assuming x independent SNPs per gene
+      alpha<-alpha/indepSNPs
     }
 
     #Skip power calculation for not expressed genes (if this option is chosen)
@@ -946,7 +991,8 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                           es.vector=foundSignGenes$FoldChange,
                           nSamples=nSamples,
                           mean.vector=foundSignGenes$mean.sum,
-                          disp.vector = foundSignGenes$disp.sum)>0){
+                          disp.vector = foundSignGenes$disp.sum,
+                          ssize.ratio.de=ssize.ratio.de)>0){
         alpha<-lowerBound
       } else {
         root<-uniroot(f=fdr.optimization,
@@ -956,7 +1002,8 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                       es.vector=foundSignGenes$FoldChange,
                       nSamples=nSamples,
                       mean.vector=foundSignGenes$mean.sum,
-                      disp.vector = foundSignGenes$disp.sum)
+                      disp.vector = foundSignGenes$disp.sum,
+                      ssize.ratio.de=ssize.ratio.de)
 
         alpha<-root$root
       }
@@ -968,20 +1015,20 @@ calculate.probabilities<-function(nSamples,ctCells,type,
           if(foundSignGenes$exp.probs[i]<0.01){
             return(0)
           } else {
-            foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-              floor(nSamples/2),
+            power.de(
+              nSamples,
               foundSignGenes$mean.sum[i],
               foundSignGenes$FoldChange[i],
               1/foundSignGenes$disp.sum[i],
-              alpha,3,ssize.ratio=1))
+              alpha,3,ssize.ratio=ssize.ratio.de)
           })
     } else {
       foundSignGenes$power<-sapply(1:nrow(foundSignGenes),function(i) power.de(
-        floor(nSamples/2),
+        nSamples,
         foundSignGenes$mean.sum[i],
         foundSignGenes$FoldChange[i],
         1/foundSignGenes$disp.sum[i],
-        alpha,3,ssize.ratio=1))
+        alpha,3,ssize.ratio=ssize.ratio.de))
     }
 
   } else  {
@@ -1044,12 +1091,15 @@ optimize.constant.budget<-function(totalBudget,type,
                                    mappingEfficiency=0.8,
                                    multipletRate=7.67e-06,multipletFactor=1.82,
                                    min.UMI.counts=3,perc.indiv.expr=0.5,
+                                   cutoffVersion="absolute",
                                    nGenes=21000,samplingMethod="quantiles",
                                    multipletRateGrowth="linear",
                                    sign.threshold=0.05,MTmethod="Bonferroni",
                                    useSimulatedPower=FALSE,
                                    simThreshold=4,
-                                   speedPowerCalc=FALSE){
+                                   speedPowerCalc=FALSE,
+                                   indepSNPs=10,
+                                   ssize.ratio.de=1){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1126,6 +1176,7 @@ optimize.constant.budget<-function(totalBudget,type,
                                     mappingEfficiency=mappingEfficiency,
                                     min.UMI.counts=min.UMI.counts,
                                     perc.indiv.expr=perc.indiv.expr,
+                                    cutoffVersion=cutoffVersion,
                                     nGenes=nGenes,
                                     samplingMethod=samplingMethod,
                                     multipletRateGrowth=multipletRateGrowth,
@@ -1133,7 +1184,9 @@ optimize.constant.budget<-function(totalBudget,type,
                                     MTmethod=MTmethod,
                                     useSimulatedPower=useSimulatedPower,
                                     simThreshold=simThreshold,
-                                    speedPowerCalc=speedPowerCalc))
+                                    speedPowerCalc=speedPowerCalc,
+                                    indepSNPs=indepSNPs,
+                                    ssize.ratio.de=ssize.ratio.de))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -1175,12 +1228,15 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                                mappingEfficiency=0.8,
                                                multipletRate=7.67e-06,multipletFactor=1.82,
                                                min.UMI.counts=3,perc.indiv.expr=0.5,
+                                               cutoffVersion="absolute",
                                                nGenes=21000,samplingMethod="quantiles",
                                                multipletRateGrowth="linear",
                                                sign.threshold=0.05,MTmethod="Bonferroni",
                                                useSimulatedPower=FALSE,
                                                simThreshold=4,
-                                               speedPowerCalc=FALSE){
+                                               speedPowerCalc=FALSE,
+                                               indepSNPs=10,
+                                               ssize.ratio.de=1){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1254,6 +1310,7 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                     mappingEfficiency=mappingEfficiency,
                                     min.UMI.counts=min.UMI.counts,
                                     perc.indiv.expr=perc.indiv.expr,
+                                    cutoffVersion=cutoffVersion,
                                     nGenes=nGenes,
                                     samplingMethod=samplingMethod,
                                     multipletRateGrowth=multipletRateGrowth,
@@ -1261,7 +1318,9 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
                                     MTmethod=MTmethod,
                                     useSimulatedPower=useSimulatedPower,
                                     simThreshold=simThreshold,
-                                    speedPowerCalc=speedPowerCalc))
+                                    speedPowerCalc=speedPowerCalc,
+                                    indepSNPs=indepSNPs,
+                                    ssize.ratio.de=ssize.ratio.de))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -1302,12 +1361,15 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                      mappingEfficiency=0.8,
                                                      multipletRate=7.67e-06,multipletFactor=1.82,
                                                      min.UMI.counts=3,perc.indiv.expr=0.5,
+                                                     cutoffVersion="absolute",
                                                      nGenes=21000,samplingMethod="quantiles",
                                                      multipletRateGrowth="linear",
                                                      sign.threshold=0.05,MTmethod="Bonferroni",
                                                      useSimulatedPower=FALSE,
                                                      simThreshold=4,
-                                                     speedPowerCalc=FALSE){
+                                                     speedPowerCalc=FALSE,
+                                                     indepSNPs=10,
+                                                     ssize.ratio.de=1){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1385,6 +1447,7 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                     mappingEfficiency=mappingEfficiency,
                                     min.UMI.counts=min.UMI.counts,
                                     perc.indiv.expr=perc.indiv.expr,
+                                    cutoffVersion=cutoffVersion,
                                     nGenes=nGenes,
                                     samplingMethod=samplingMethod,
                                     multipletRateGrowth=multipletRateGrowth,
@@ -1392,7 +1455,9 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                     MTmethod=MTmethod,
                                     useSimulatedPower=useSimulatedPower,
                                     simThreshold=simThreshold,
-                                    speedPowerCalc=speedPowerCalc))
+                                    speedPowerCalc=speedPowerCalc,
+                                    indepSNPs=indepSNPs,
+                                    ssize.ratio.de=ssize.ratio.de))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -1433,11 +1498,14 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
                                            mappingEfficiency=0.8,
                                            multipletFraction=0,multipletFactor=1.82,
                                            min.norm.count=3,perc.indiv.expr=0.5,
+                                           cutoffVersion="absolute",
                                            nGenes=21000,samplingMethod="quantiles",
                                            sign.threshold=0.05,MTmethod="Bonferroni",
                                            useSimulatedPower=FALSE,
                                            simThreshold=4,
-                                           speedPowerCalc=FALSE){
+                                           speedPowerCalc=FALSE,
+                                           indepSNPs=10,
+                                           ssize.ratio.de=1){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1509,13 +1577,16 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
                                     mappingEfficiency=mappingEfficiency,
                                     min.norm.count=min.norm.count,
                                     perc.indiv.expr=perc.indiv.expr,
+                                    cutoffVersion=cutoffVersion,
                                     nGenes=nGenes,
                                     samplingMethod=samplingMethod,
                                     sign.threshold=sign.threshold,
                                     MTmethod=MTmethod,
                                     useSimulatedPower=useSimulatedPower,
                                     simThreshold=simThreshold,
-                                    speedPowerCalc=speedPowerCalc))
+                                    speedPowerCalc=speedPowerCalc,
+                                    indepSNPs=indepSNPs,
+                                    ssize.ratio.de=ssize.ratio.de))
 
   power.study<-data.frame(apply(power.study,1,unlist),stringsAsFactors = FALSE)
   power.study[,2:ncol(power.study)]<-apply(power.study[,2:ncol(power.study)],2,as.numeric)
@@ -1540,7 +1611,7 @@ optimize.constant.budget.smartseq<-function(totalBudget, type,
 power.eqtl<-function(count.mean,heritability, sig.level, nSamples,
                      useSimulatedPower=TRUE, simThreshold=4){
 
-  #Use a cut-off of 10 for power simulation!
+  #Check if simulated or analytic power shall be used
   if(useSimulatedPower){
     if(round(count.mean) == 0){
       return(0)
@@ -1771,25 +1842,41 @@ optimizeSizeFactor<-function(x,sd.error,beta.mean){
 #' by using the function power.nb.test of the package MKmisc. The power for a gene with mean of 0
 #' is defined as 0 (the gene will have an expression probability of 0, so the overall detection power is also 0).
 #'
-#' @param nSamples.group0 Sample size for group 0
+#' @param nSamples Total samples size (n0 + n1), group balancing defined by size.ratio
 #' @param mu.grou0 Mean value of group 0
-#' @param RR effect size of group 1 vs group 0
+#' @param RR effect size of group 1 vs group 0 (fold change mu1/mu0)
 #' @param theta 1/dispersion parameter of the negative binomial fit
 #' @param sig.level Significance threshold
 #' @param approach Choose between three different methods implemented in the package for the power calculation (1,2,3)
-#' @param ssize.ratio Sample size ratio between group 0 and 1
+#' @param ssize.ratio Sample size ratio between group 1 and 0 (n1/n0)
+#'        (Remark: there is a mistake in the package documentation that the ratio is n0/n1,
+#'        but I checked the code and the associated package)
 #'
 #' @return Power to detect the DE gene
 #'
-power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize.ratio=1){
+power.de<-function(nSamples,mu.group0,RR,theta,sig.level,approach=3,ssize.ratio=1){
 
   require(MKmisc)
+
+  #Calculate the sample size of group 0 based on total sample size and ssize ratio
+  #(always round down to never overestimate the total sample size)
+  nSamples.group0<-round(nSamples/(ssize.ratio+1))
+
+  #Break code if the chosen sample size ratio is too extreme
+  if(nSamples.group0==0 || nSamples.group0==nSamples){
+    warning(paste("Chosen sample size ratio of",ssize.ratio,
+                  "is too extreme and produces a group size of 0!",
+                  "Result power is always 0."))
+    return(0)
+  }
 
   if(mu.group0 == 0){
     return(0)
   } else {
-    calc<-MKmisc::power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,theta=theta, ssize.ratio=ssize.ratio,
-                        sig.level=sig.level,alternative="two.sided",approach=approach)
+    calc<-MKmisc::power.nb.test(n=nSamples.group0,mu0=mu.group0,RR=RR, duration=1,
+                                theta=theta, ssize.ratio=ssize.ratio,
+                                sig.level=sig.level,alternative="two.sided",
+                                approach=approach)
     return(calc$power)
   }
 }
@@ -1809,6 +1896,8 @@ power.de<-function(nSamples.group0,mu.group0,RR,theta,sig.level,approach=3,ssize
 #'        to increase accuracy (only required for the eQTL power)
 #' @param simThreshold Threshold until which the simulated power is taken
 #'        instead of the analytic (only required with eQTL power)
+#' @param ssize.ratio.de In the DE case, ratio between sample size of group 0
+#'        (control group) and group 1 (1=balanced design)
 #'
 #' @return Optimizing this function to 0 will lead to the correct adjusted
 #' significance threshold x
@@ -1820,13 +1909,15 @@ fdr.optimization<-function(x,fdr,m0,type,
                            mean.vector,
                            disp.vector=NULL,
                            useSimulatedPower=TRUE,
-                           simThreshold=4){
+                           simThreshold=4,
+                           ssize.ratio.de=ssize.ratio.de){
 
   #Calculate DE power (similar for eQTL power)
   if(type=="de"){
     power<-sapply(1:length(es.vector), function(i)
       power.de(floor(nSamples/2),mean.vector[i],
-               es.vector[i],1/disp.vector[i],x))
+               es.vector[i],1/disp.vector[i],x,
+               ssize.ratio=ssize.ratio.de))
   } else if (type=="eqtl"){
     power<-sapply(1:length(es.vector), function(i)
       power.eqtl(mean.vector[i],es.vector[i],x,nSamples,
@@ -2161,4 +2252,72 @@ readDepthBudgetCalculation.libPrepCell<-function(nSamples,nCells,totalCost,
     (nSamples*nCells/readsPerFlowcell*costFlowCell)
 
   return(floor(readDepth))
+}
+
+
+#' Identifying the expression threshold combination that maximizes the detection power
+#'
+#' @param umi_range Vector with UMI counts to test
+#' @param pop_range Vector with population thresholds to test
+#' @param ... additional arguments that can be passed to
+#'        \code{\link[scPower:power.general.restrictedDoublets]{power.general.restrictedDoublets()}}
+#'        (excluding min.UMI.counts
+#'        and perc.indiv.expr that will be evaluated in the function)
+#' @inheritParams power.general.restrictedDoublets
+#'
+#' @return Results for threshold combination with the maximal detection power
+#'
+#' @export
+#'
+select.cutoffs<-function(umi_range,pop_range,
+                         nSamples,
+                         nCells,
+                         readDepth,
+                         ct.freq,
+                         type,
+                         ref.study,
+                         ref.study.name,
+                         cellsPerLane,
+                         read.umi.fit,
+                         gamma.mixed.fits,
+                         ct,
+                         disp.fun.param,...){
+
+  dots<-list(...)
+  if(any(c("min.UMI.counts","perc.indiv.expr") %in% names(dots))){
+    stop("Specifying min.UMI.counts or perc.indiv.expr not allowed!")
+  }
+
+  max_power<-0
+  param_combi<-NULL
+  for(umi in umi_range){
+    for(pop in pop_range){
+
+      res<-power.general.restrictedDoublets(nSamples,
+                                            nCells,
+                                            readDepth,
+                                            ct.freq,
+                                            type,
+                                            ref.study,
+                                            ref.study.name,
+                                            cellsPerLane,
+                                            read.umi.fit,
+                                            gamma.mixed.fits,
+                                            ct,
+                                            disp.fun.param,
+                                            min.UMI.counts=umi,
+                                            perc.indiv.expr=pop,
+                                            ...)
+
+      if(res$powerDetect > max_power){
+        max_power<-res$powerDetect
+        param_combi<-res
+        param_combi$umiThreshold<-umi
+        param_combi$popThreshold<-pop
+      }
+    }
+  }
+
+  return(param_combi)
+
 }

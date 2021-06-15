@@ -7,7 +7,7 @@
 nbinom.estimation(counts.ct, sizeFactorMethod = "standard")
 }
 \arguments{
-\item{counts.ct}{Count matrix as in import for DEseq}
+\item{counts.ct}{Count matrix}
 
 \item{sizeFactorMethod}{Use to different size factor normalization methods,
 either the "standard" method from DEseq or "poscounts" of DESeq2}

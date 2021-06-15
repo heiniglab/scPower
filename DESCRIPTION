@@ -1,8 +1,9 @@
 Package: scPower
 Title: Experimental design framework for scRNAseq population studies (eQTL and DE)
-Version: 0.1.2
+Version: 0.1.3
 Authors@R: c(
 	person('Katharina', 'Schmid', NULL, 'katharina.schmid@helmholtz-muenchen.de', 'aut'),
+	person('Barbara', 'Hoellbacher', NULL, 'barbara.hoellbacher@helmholtz-muenchen.de', 'aut'),
 	person('Matthias', 'Heinig', NULL, 'matthias.heinig@helmholtz-muenchen.de', c('cre', 'aut'))
 	)
 Description: Statistical framework for experimental design and power analysis of single cell RNAseq (scRNAseq) population studies, performing cell type specific differential expression (DE) analysis between samples or cell type specific expression quantitative trait loci (eQTL) analysis. The package estimates the power for a specific combination of experimental parameters (number of samples, number of cells and read depths) dependent on experimental priors (effect sizes, expression ranks and expression distributions). Furthermore, it can identify the best parameter combination for a given budget, which maximizes the detection power.
@@ -15,7 +16,11 @@ Imports:
     HardyWeinberg,
     plotly,
     ggplot2, 
-    shiny
+    shiny,
+    shinydashboard (>= 0.7.1),
+    shinydashboardPlus (>= 2.0.1),
+    shinyjs,
+    shinyBS
 License: GNU GPLv3
 Encoding: UTF-8
 LazyData: true
