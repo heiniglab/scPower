@@ -658,7 +658,8 @@ power.sameReadDepth.withDoublets<-function(nSamples,nCells,ct.freq,
   } else if (multipletRateGrowth == "constant") {
     multipletFraction<-multipletRate
   } else {
-    stop("No known option for multipletRateGrowth. Use the values 'linear' or 'constant'.")
+    stop(paste("Input", multipletRateGrowth, "No known option for multipletRateGrowth.",
+               "Use the values 'linear' or 'constant'."))
   }
 
   #Check that the number of cells entered does not provide a multiplet rate of >100%
@@ -754,6 +755,7 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                               mappingEfficiency=0.8,
                               multipletRate=7.67e-06,multipletFactor=1.82,
                               min.UMI.counts=3,perc.indiv.expr=0.5,
+                              cutoffVersion="absolute",
                               nGenes=21000,samplingMethod="quantiles",
                               multipletRateGrowth="linear",
                               sign.threshold=0.05, MTmethod="Bonferroni",
@@ -779,6 +781,7 @@ power.sameReadDepth.restrictedDoublets<-function(nSamples,nCells,ct.freq,
                                           mappingEfficiency,
                                           multipletRate,multipletFactor,
                                           min.UMI.counts,perc.indiv.expr,
+                                          cutoffVersion,
                                           nGenes,samplingMethod,
                                           multipletRateGrowth,
                                           sign.threshold,

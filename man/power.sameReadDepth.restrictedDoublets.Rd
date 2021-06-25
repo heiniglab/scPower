@@ -20,6 +20,7 @@ power.sameReadDepth.restrictedDoublets(
   multipletFactor = 1.82,
   min.UMI.counts = 3,
   perc.indiv.expr = 0.5,
+  cutoffVersion = "absolute",
   nGenes = 21000,
   samplingMethod = "quantiles",
   multipletRateGrowth = "linear",
@@ -71,6 +72,9 @@ of cells need to have a count value large than 0}
 \item{perc.indiv.expr}{Expression cutoff on the population level: if number < 1, percentage of
 individuals that need to have this gene expressed to define it as globally expressed;
 if number >=1 absolute number of individuals that need to have this gene expressed}
+
+\item{cutoffVersion}{Either "absolute" or "percentage" leading to different
+interpretations of min.counts (see description above)}
 
 \item{nGenes}{Number of genes to simulate (should match the number of genes used for the fitting)}
 
