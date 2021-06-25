@@ -357,6 +357,44 @@ print(opt.design[which.max(opt.design$powerDetect),])
 
 Similar to the power calculation, variants of the function exist to model a restricted number of cells per lane (optimize.constant.budget.restrictedDoublets) and to model Smart-seq data (optimize.constant.budget.smartseq). Furthermore, there is the option to calculate the library preparation cost per cell instead of per kit (optimize.constant.budget.libPrepCell).
 
+### Selecting expression thresholds
+
+Both the individual level expression threshold "min.UMI.counts"/"min.counts" and
+the population level expression threshold "perc.indiv.expr" can be fexibly chosen
+by the user. As a rule of thumb, lower more lenient thresholds increase the number of expressed
+genes and so in many cases also the power, while higher more conservative thresholds
+select more likely only accuratly quantified genes and reduce so the number of false positives.
+
+If the users are interested in optimizing the threshold to reach the maximal
+possible power in their setting, scPower provides a function for that called
+"select.cutoffs". As a higher number of expressed genes is 
+increasing also the multiple testing burden, thresholds
+of zero are here necessarily always the optimal choice. The range of thresholds that should be
+considered can be specified both for the individual level threshold (umi_range)
+and the population level threshold (pop_range). The optimal thresholds in the example below
+are an UMI threshold of 3 and population threshold of 0.
+
+```{r}
+optimal_cutoffs<-select.cutoffs(umi_range=c(0,3,5),
+               pop_range=c(0,0.2,0.5),
+                nSamples=100,nCells=1500,readDepth=25000,
+                ct.freq=0.2,type="eqtl",
+                ref.study=scPower::eqtl.ref.study,
+                ref.study.name="Blueprint (Monocytes)",
+                cellsPerLane=20000,
+                read.umi.fit = scPower::read.umi.fit[
+                  read.umi.fit$type=="10X_PBMC_1",],
+                gamma.mixed.fits = scPower::gamma.mixed.fits,
+                ct="CD14+ Monocytes",
+                disp.fun.param=scPower::disp.fun.param,
+                mappingEfficiency = 0.8,
+                sign.threshold = 0.05,
+                MTmethod="Bonferroni")
+
+optimal_cutoffs
+
+```
+
 ## Part 2: Generation of new priors from a data set
 
 Additionally to the priors given by the package, scPower offers the option to generate new priors from your own data set. Two types of priors are necessary:
