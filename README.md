@@ -63,5 +63,5 @@ Be aware that additional libraries are required for building the vignettes:
 
 ```R
 #CRAN packages
-install.packages(c("knitr","rmarkdown","ggplot2","ggpubr","data.table", "viridis"))
+install.packages(c("knitr","rmarkdown","ggpubr","data.table", "viridis", "RColorBrewer","gridExtra","dplyr"))
 ```

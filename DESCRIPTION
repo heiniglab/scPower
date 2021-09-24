@@ -1,6 +1,6 @@
 Package: scPower
 Title: Experimental design framework for scRNAseq population studies (eQTL and DE)
-Version: 0.1.3
+Version: 1.0.0
 Authors@R: c(
 	person('Katharina', 'Schmid', NULL, 'katharina.schmid@helmholtz-muenchen.de', 'aut'),
 	person('Barbara', 'Hoellbacher', NULL, 'barbara.hoellbacher@helmholtz-muenchen.de', 'aut'),
@@ -30,5 +30,8 @@ Suggests:
     rmarkdown,
     ggpubr,
     data.table,
-    viridis
+    viridis,
+    RColorBrewer,
+    gridExtra,
+    dplyr
 VignetteBuilder: knitr

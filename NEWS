@@ -1,4 +1,9 @@
 
+CHANGES IN VERSION 1.0.0
+-------------------------
+o Updated vignette reproduce-paper-plots to match with the updated plots of the publication.
+
+
 CHANGES IN VERSION 0.1.3
 -------------------------
 o Added the option to calculate the power for unbalanced DE sets (using the variable
