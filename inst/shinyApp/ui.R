@@ -10,7 +10,7 @@ library(shinyBS)
 # https://stackoverflow.com/questions/36965954/shinybs-bspopover-and-updateselectinput
 updateResistantPopover <- function(id, title, content, placement = "bottom", trigger = "hover", options = NULL){
   options = shinyBS:::buildTooltipOrPopoverOptionsList(title, placement, trigger, options, content)
-  options = paste0("{'", paste(names(options), options, sep = "': '", collapse = "', '"), "'}") 
+  options = paste0("{'", paste(names(options), options, sep = "': '", collapse = "', '"), "'}")
   bsTag <- shiny::tags$script(shiny::HTML(paste0("
     $(document).ready(function() {
       var target = document.querySelector('#", id, "');
@@ -27,8 +27,8 @@ updateResistantPopover <- function(id, title, content, placement = "bottom", tri
 
 header <- dashboardHeader(title = "scPower",
                           tags$li(class = "dropdown",
-                                  a(href = 'https://www.biorxiv.org/content/10.1101/2020.04.01.019851v1',
-                                    img(src = "biorxiv_logo.png", height = "30px"),
+                                  a(href = 'https://doi.org/10.1038/s41467-021-26779-7',
+                                    img(src = "NatureComms_logo.png", height = "30px"),
                                     style = "padding-top:10px; padding-bottom:10px;",
                                     title = "Our preprint")
                           ),
@@ -69,13 +69,13 @@ body <- ## Body content
           });
         }
       ")),
-    
+
     # include our custom CSS style
     tags$head(
       tags$link(rel = "stylesheet", type = "text/css", href = "custom_style.css")
     ),
     tabItems(
-      
+
       tabItem(tabName="welcome",
               h2("Welcome to scPower"),
               h3("What would you like to do?"),
@@ -92,7 +92,7 @@ body <- ## Body content
                         icon=icon("search")),
               )
       ),
-      
+
       tabItem(tabName = "description",
               h2("Welcome to scPower"),
               h3("- a statistical framework for design and power analysis of multi-sample single cell transcriptomics experiments-"),
@@ -107,13 +107,13 @@ body <- ## Body content
       tabItem(tabName = "genes",
               fluidRow(
                 column(width=4,
-                
+
                   box(width = 0,
                     title = "General parameters",
                     solidHeader = TRUE,
                     status="orange",
-                    
-                    actionButton("recalc", "Calculate optimal study", icon("paper-plane"), 
+
+                    actionButton("recalc", "Calculate optimal study", icon("paper-plane"),
                                  style="color: #fff; background-color: #337ab7; border-color: #2e6da4; display:center-align"),
                     bsPopover("recalc", title="Calculate optimal study", placement="top", options = list(container = "body"),
                               content="Computes the optimal study design for the give parameter combinations. Can take 1-2 minutes for big grids."),
@@ -124,58 +124,58 @@ body <- ## Body content
                                  selected = "de"),
                     bsPopover("study", title="Study type:", placement="top", options = list(container = "body"),
                               content="For what type of study do you want to design an experiment"),
-                    
+
                     selectInput("celltype", label = "Cell type",
                                 choices = list()),
-                    updateResistantPopover("celltype", title="Cell-type specific analysis", placement="top", 
-                              content=paste("The expression distribution is selected for this cell type. Only one cell type at once can be analysed.", 
-                                           "If multiple cell types are of interest (which is often the case), try different cell types,", 
+                    updateResistantPopover("celltype", title="Cell-type specific analysis", placement="top",
+                              content=paste("The expression distribution is selected for this cell type. Only one cell type at once can be analysed.",
+                                           "If multiple cell types are of interest (which is often the case), try different cell types,",
                                            "focusing especially on the ones with small cell type frequencies.")),
 
                     numericInput("ctfreq", label = "Cell type frequency",
                                  value = 0.25,step=0.05,min=0,max=1),
-                    bsPopover("ctfreq", title="Cell type frequency", placement="top", 
+                    bsPopover("ctfreq", title="Cell type frequency", placement="top",
                               content="Frequency of the cell type of interest"),
-                    
+
                     numericInput("ssizeratiode", label="Sample size ratio", value=1, min=0, step=0.05),
-                    bsPopover("ssizeratiode", title="Sample size ratio", placement="top", 
+                    bsPopover("ssizeratiode", title="Sample size ratio", placement="top",
                                            content="ratio between sample size of group 0 (control group) and group 1 (Ratio=1 in case of balanced design)"),
-                    
+
                     selectInput("refstudy", label = "Reference study",
                                 choices = list(),
                                 selected = "Blueprint (Monocytes)"),
-                    
+
                     updateResistantPopover("refstudy", title="Reference study", placement="top",
                               content=paste("effect sizes and expression ranks are taken from a reference study, performed on FACS sorted bulk RNA-seq data.",
                               "Different examples are available for DE as well as eQTL studies.")),
-                    
+
                     numericInput("budget", label = "Total budget", value = 50000, step=500,min=0),
                     bsPopover("budget", title="Total budget", placement="top", options = list(container = "body"),
                               content="The total budget available for the sequencing"),
-                    
+
                     selectInput("grid", label = "Parameter grid",
                                 choices = list("samples - cells per sample"="sc",
                                                "samples - reads per sample"="sr",
                                                "cells per sample - reads per sample"="cr")),
                     bsPopover("grid", title="Parameter grid", placement="top", options = list(container = "body"),
-                              content=paste("all possible combinations for two of the three experimental parameters (sample size, cells per person and read depth) are tested,", 
+                              content=paste("all possible combinations for two of the three experimental parameters (sample size, cells per person and read depth) are tested,",
                               "the third parameter is defined uniquely given the other two and the overall budget and will be displayed as circle size. ",
                               "Which of the two shall be tested, can be selcted here. Depending on the selection, the four parameters below are adapted.")),
-                    
+
                     numericInput("rangeX_min",label="Samples (min)",value=10),
                     bsPopover("rangeX_min", title=" ", placement="top", options = list(container = "body"),
                               content="Minimal value of the tested ranges for the parameter on the x-Axis"),
                     numericInput("rangeX_max",label="Samples (max)",value=50),
                     bsPopover("rangeX_max", title=" ", placement="top", options = list(container = "body"),
                               content="Maximum value of the tested ranges for the parameter on the x-Axis"),
-                    
+
                     numericInput("rangeY_min",label="Cells (min)",value=2000),
                     bsPopover("rangeY_min", title=" ", placement="top", options = list(container = "body"),
                               content="Minimal value of the tested ranges for the parameter on the y-Axis"),
                     numericInput("rangeY_max",label="Cells (max)",value=10000),
                     bsPopover("rangeY_max", title=" ", placement="top", options = list(container = "body"),
                               content="Maximum value of the tested ranges for the parameter on the y-Axis"),
-                    
+
                     numericInput("steps","Steps",value=5,min=0,step=1),
                     bsPopover("steps", title="Steps", placement="top", options = list(container = "body"),
                               content="number of values in the parameter ranges for the parameter grid"),
@@ -192,20 +192,20 @@ body <- ## Body content
                                  value = 5600, step=100,min=0),
                     bsPopover("costKit", title="Cost 10X kit", placement="top", options = list(container = "body"),
                               content="Cost for one 10X Genomics kit"),
-                    
+
                     numericInput("costFlowCell", label = "Cost flow cell",
                                  value = 14032, step=100,min=0),
                     bsPopover("costFlowCell", title="Cost flow cell", placement="top", options = list(container = "body"),
                               content=" Cost for one flow cell"),
-                    
+
                     numericInput("readsPerFlowcell", label = "Number of reads per flow cell",
                                  value = 4100*10^6, step=10000,min=0),
-                    
+
                     numericInput("cellsLane", label = "Cells per lane", value = 20000,
                                  step=500,min=0),
                     bsPopover("cellsLane", title="Cells per lane", placement="top", options = list(container = "body"),
                               content="Number of cells meassured on one 10X lane, assuming 6 lanes per kit"),
-                    
+
                     hr(),
                     h5("Multiple testing correction"),
                     numericInput("pval",label="P-value",
@@ -220,9 +220,9 @@ body <- ## Body content
                     bsPopover("MTmethod", title="Multiple testing method", placement="top", options = list(container = "body"),
                               content="Possible is adjustment after the family-wise error rate (FWER), after the false discovery rate (FDR) or no adjustment at all (none)."),
                     numericInput("indepsnps", label="Independent SNPs", value=10, min=1, step=1),
-                    bsPopover("indepsnps", title="Independent SNPs", placement="top", 
+                    bsPopover("indepsnps", title="Independent SNPs", placement="top",
                                            content="Number of independent SNPs assumed for each locus (for eQTL Bonferroni multiple testing correction the number of tests are estimated as number expressed genes * indepSNPs)")
-                    
+
                   ),
                   box(width = 0,
                     title="Mapping and Multiplet estimation",
@@ -234,7 +234,7 @@ body <- ## Body content
                     numericInput("multipletRate", label = "Multiplet rate",
                                  value = 7.67e-06,step=1e-6,min=0),
                     bsPopover("multipletRate", title="Multiplet rate", placement="top", options = list(container = "body"),
-                              content=paste("Rate factor to calculate the number of multiplets dependent on the number of cells loaded per lane.", 
+                              content=paste("Rate factor to calculate the number of multiplets dependent on the number of cells loaded per lane.",
                               "We assume a linear relationship of multiplet fraction = cells per lane * multiplet rate.")),
                     numericInput("multipletFactor", label = "Multiplet factor",
                                  value = 1.82, step=0.1,min=1),
@@ -254,15 +254,15 @@ body <- ## Body content
                     h5("Special parameters"),
                     checkboxInput("speedCalc", "Skip power for lowly expressed genes", value = FALSE),
                     bsPopover("speedCalc", title="Skip power for lowly expressed genes:", placement="top", options = list(container = "body"),
-                              content="This parameter will speed the calculation by setting the power of lowly expressed genes (probability smaller than 0.01) automatically to 0. 
+                              content="This parameter will speed the calculation by setting the power of lowly expressed genes (probability smaller than 0.01) automatically to 0.
                               This will have only a marginal effect on the overall power, but of course change the DE/eQTL power estimates."),
                     checkboxInput("simPower", "Use simulated power for eQTLs",value=FALSE),
                     bsPopover("simPower", title="Use simulated power for eQTLs:", placement="top", options = list(container = "body"),
-                              content="For genes with small mean values, the method used for eQTL power calculation can get inaccurate. 
+                              content="For genes with small mean values, the method used for eQTL power calculation can get inaccurate.
                               Instead the eQTL power for these small mean values can be estimated via simulation, which however increases the runtime.")
                     )
                   ),
-                
+
                 column(width=8,
                   box(width=0,
                     title="Detection power depending on design parameters",
@@ -284,8 +284,8 @@ body <- ## Body content
                     title="Influence of design parameters on individual power components",
                     solidHeader = TRUE,
                     status="primary",
-                    HTML("The overall detection power is the result of <strong>expression probability</strong> 
-                         (probability that the DE/eQTL genes are detected) and <strong>DE power</strong> 
+                    HTML("The overall detection power is the result of <strong>expression probability</strong>
+                         (probability that the DE/eQTL genes are detected) and <strong>DE power</strong>
                          (probability that the DE/eQTL genes are found significant)."),
                     br(),
                     HTML("Below a visualization how the design choices influence those power components."),
@@ -298,10 +298,10 @@ body <- ## Body content
                   )
                 )
               ),
-      
+
       tabItem(tabName = "celltypes",
               fluidRow(
-                
+
                 box(
                   title="Study parameters",
                   solidHeader = TRUE,
@@ -344,8 +344,8 @@ body <- ## Body content
 
 footer <-  tags$footer(class = "main-footer",
                        # leftaligned part
-                       
-                       p("This tool was developed by the", 
+
+                       p("This tool was developed by the",
                          a("Heinig lab",href="https://www.helmholtz-muenchen.de/icb/research/labs/genetic-and-epigenetic-gene-regulation/overview/index.html"),
                          "at the",
                          a("Helmholtz Center Munich.",href="https://www.helmholtz-muenchen.de/ueber-uns/service/kontakt/index.html"),
@@ -360,8 +360,8 @@ footer <-  tags$footer(class = "main-footer",
                        )
 
 dashboardPage(
-  header = header, 
-  sidebar = sidebar, 
-  body = body, 
+  header = header,
+  sidebar = sidebar,
+  body = body,
   footer = footer
   )
