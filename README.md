@@ -8,9 +8,9 @@ A short tutorial is given in the vignette [introduction-scPower](vignettes/intro
 
 A detailed description of all methods and citation of all used tools and data sets can be found in the associated paper 
 
-Schmid, K. T., Cruceanu, C., Boettcher, A., Lickert, H., Binder, E. B., Theis, F. J., & Heinig, M. (2021). Design and power analysis for multi-sample single cell genomics experiments. ResearchSquare. https://doi.org/10.21203/rs.3.rs-331370/v1
+Schmid, K. T., Höllbacher, B., Cruceanu, C., Boettcher, A., Lickert, H., Binder, E. B., Theis, F. J., & Heinig, M. (2021). scPower accelerates and optimizes the design of multi-sample single cell transcriptomic studies. Nature Communications. https://doi.org/10.1038/s41467-021-26779-7
 
-An explanation how the plots in the paper were generated can be found in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf) and an example how to combine our model with more complex designs is shown in the third vignette [extension-complex-design](vignettes/extension-complex-design.pdf).
+An explanation how the plots in the paper were generated is shown in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf) and an example how to combine our model with more complex designs is shown in the third vignette [extension-complex-design](vignettes/extension-complex-design.pdf).
 
 
 ## Installation
