@@ -800,10 +800,11 @@ labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
 
 g.rd<-g.rd + 
   scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
-                                              labels=sapply(labels,function(c)floor(
-                                                                      sampleSizeBudgetCalculation.restrictedDoublets(c,max.study$readDepth,
-    totalBudget, costKit, cellsPerLane, costFlowCell,readsPerFlowcell))),                           
-    name="Sample size"))+               
+                     labels=sapply(labels, function(c) floor(
+                     sampleSizeBudgetCalculation.restrictedDoublets(c, 
+                     max.study$readDepth, totalBudget, costKit, cellsPerLane,
+                     costFlowCell,readsPerFlowcell))),                           
+                     name="Sample size"))+               
   geom_vline(xintercept = max.study$totalCells)+
   ylab("Probability")+
   scale_color_manual("",values=col.power)+
@@ -830,9 +831,10 @@ g.cp<-ggplot(power.study.plot,aes(readDepth,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
 
 g.cp <- g.cp + scale_x_continuous("Read depth",sec.axis=sec_axis(~., breaks=labels,
-                                                      labels=sapply(labels,function(c)floor(
-                                                        sampleSizeBudgetCalculation.restrictedDoublets(max.study$totalCells,
-    c,totalBudget, costKit, cellsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
+                                  labels=sapply(labels,function(c) floor(
+                                  sampleSizeBudgetCalculation.restrictedDoublets(
+                                  max.study$totalCells, c,totalBudget, costKit, 
+                                  cellsPerLane, costFlowCell,readsPerFlowcell))),                                                               name="Sample size"))+
   geom_vline(xintercept = max.study$readDepth)+
   ylab("Probability")+
   scale_color_manual("",values=col.power)+
@@ -869,9 +871,11 @@ labels<-as.numeric(ggplot_build(g.rd)$layout$panel_params[[1]]$x.labels)
 
 g.rd.b<-g.rd.b + 
   scale_x_continuous("Cells per individual",sec.axis=sec_axis(~., breaks=labels,
-                                                              labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation.restrictedDoublets(
-                                                                max.study$totalCells,
-    c,totalBudget, costKit, cellsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+               
+                     labels=sapply(labels,function(c) floor(
+                     sampleSizeBudgetCalculation.restrictedDoublets(
+                    max.study$totalCells, c,totalBudget, costKit, cellsPerLane,
+                    costFlowCell,readsPerFlowcell))),                                                   
+                    name="Sample size"))+               
   geom_vline(xintercept = max.study$totalCells)+
   ylab("Probability")+
   scale_color_manual("",values=col.power)+
@@ -898,9 +902,10 @@ g.cp.b<-ggplot(power.study.plot,aes(readDepth,value,color=variable))+geom_line()
 labels<-as.numeric(ggplot_build(g.cp)$layout$panel_params[[1]]$x.labels)
 
 g.cp.b <- g.cp.b + scale_x_continuous("Read depth",sec.axis=sec_axis(~., breaks=labels,
-                                                      labels=sapply(labels,function(c)floor(sampleSizeBudgetCalculation.restrictedDoublets(
-                                                        max.study$totalCells,
-    c,totalBudget, costKit, cellsPerLane, costFlowCell,readsPerFlowcell))),                                                              name="Sample size"))+
+                                      labels=sapply(labels, function(c)floor(
+                                      sampleSizeBudgetCalculation.restrictedDoublets(
+                                      max.study$totalCells, c,totalBudget, costKit, 
+                                      cellsPerLane, costFlowCell,readsPerFlowcell))),                                                               name="Sample size"))+
   geom_vline(xintercept = max.study$readDepth)+
   scale_color_manual("",values=col.power)+
   ylab("Probability")+

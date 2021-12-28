@@ -1,4 +1,9 @@
 
+CHANGES IN VERSION 1.0.1
+-------------------------
+o Corrected mistake in FDR optimization function (see Issue #4).
+
+
 CHANGES IN VERSION 1.0.0
 -------------------------
 o Updated vignette reproduce-paper-plots to match with the updated plots of the publication.

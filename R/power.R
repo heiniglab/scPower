@@ -1862,7 +1862,6 @@ power.de<-function(nSamples,mu.group0,RR,theta,sig.level,approach=3,ssize.ratio=
   require(MKmisc)
 
   #Calculate the sample size of group 0 based on total sample size and ssize ratio
-  #(always round down to never overestimate the total sample size)
   nSamples.group0<-round(nSamples/(ssize.ratio+1))
 
   #Break code if the chosen sample size ratio is too extreme
@@ -1918,7 +1917,7 @@ fdr.optimization<-function(x,fdr,m0,type,
   #Calculate DE power (similar for eQTL power)
   if(type=="de"){
     power<-sapply(1:length(es.vector), function(i)
-      power.de(floor(nSamples/2),mean.vector[i],
+      power.de(nSamples,mean.vector[i],
                es.vector[i],1/disp.vector[i],x,
                ssize.ratio=ssize.ratio.de))
   } else if (type=="eqtl"){
