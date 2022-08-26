@@ -694,7 +694,7 @@ sample.disp.values<-function(mean.vals,disp.parameter){
 #' @export
 #'
 meanUMI.calculation<-function(countMatrix){
-  return(mean(colSums(countMatrix)))
+  return(mean(Matrix::colSums(countMatrix)))
 }
 
 #' Converts two different gamma parameterizations, one using rate

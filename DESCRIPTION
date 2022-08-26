@@ -9,7 +9,8 @@ Authors@R: c(
 Description: Statistical framework for experimental design and power analysis of single cell RNAseq (scRNAseq) population studies, performing cell type specific differential expression (DE) analysis between samples or cell type specific expression quantitative trait loci (eQTL) analysis. The package estimates the power for a specific combination of experimental parameters (number of samples, number of cells and read depths) dependent on experimental priors (effect sizes, expression ranks and expression distributions). Furthermore, it can identify the best parameter combination for a given budget, which maximizes the detection power.
 Depends: R (>= 3.3.1)
 biocViews:
-Imports: 
+Imports:
+    Matrix, 
     pwr,
     MKmisc,
     reshape2,
