@@ -4,7 +4,9 @@
 \name{eqtl.ref.study}
 \alias{eqtl.ref.study}
 \title{eQTL priors}
-\format{Data frame with prior information of eQTL genes}
+\format{
+Data frame with prior information of eQTL genes
+}
 \usage{
 data(eQTLRefStudy)
 }

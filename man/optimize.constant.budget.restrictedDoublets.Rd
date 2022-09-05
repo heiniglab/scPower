@@ -36,7 +36,8 @@ optimize.constant.budget.restrictedDoublets(
   simThreshold = 4,
   speedPowerCalc = FALSE,
   indepSNPs = 10,
-  ssize.ratio.de = 1
+  ssize.ratio.de = 1,
+  reactionsPerKit = 6
 )
 }
 \arguments{
@@ -124,6 +125,9 @@ as number expressed genes * indepSNPs)}
 
 \item{ssize.ratio.de}{In the DE case, ratio between sample size of group 0
 (control group) and group 1 (1=balanced design)}
+
+\item{reactionsPerKit}{Reactions (=lanes) per kit, defines the total
+number of tested individuals per kit}
 }
 \value{
 Data frame with overall detection power, power and expression power for

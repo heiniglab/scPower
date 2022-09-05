@@ -5,7 +5,9 @@
 \alias{observed.gene.counts}
 \title{Observed gene counts from multiple data sets to reproduce figures curves in the vignette
 reproduce-figure-plots faster}
-\format{Data frame with observed gene counts from multiple data sets}
+\format{
+Data frame with observed gene counts from multiple data sets
+}
 \usage{
 data(precalculatedObservedGeneCounts)
 }

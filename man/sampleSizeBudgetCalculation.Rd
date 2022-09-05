@@ -11,7 +11,8 @@ sampleSizeBudgetCalculation(
   costKit,
   samplesPerLane,
   costFlowCell,
-  readsPerFlowcell
+  readsPerFlowcell,
+  reactionsPerKit = 6
 )
 }
 \arguments{
@@ -28,6 +29,9 @@ sampleSizeBudgetCalculation(
 \item{costFlowCell}{Cost of one flow cells for sequencing}
 
 \item{readsPerFlowcell}{Number reads that can be sequenced with one flow cell}
+
+\item{reactionsPerKit}{Reactions (=lanes) per kit, defines the total
+number of tested individuals per kit}
 }
 \value{
 Number of samples that can be measured with this budget and other parameters

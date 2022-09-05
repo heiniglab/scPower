@@ -4,7 +4,9 @@
 \name{gamma.mixed.fits}
 \alias{gamma.mixed.fits}
 \title{Parameters for gamma umi fit}
-\format{Data frame with parameter of UMI-gamma parameter fit}
+\format{
+Data frame with parameter of UMI-gamma parameter fit
+}
 \usage{
 data(gammaUmiFits)
 }

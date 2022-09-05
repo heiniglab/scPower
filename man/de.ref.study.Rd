@@ -4,7 +4,9 @@
 \name{de.ref.study}
 \alias{de.ref.study}
 \title{DE priors}
-\format{Data frame with prior information of DE genes}
+\format{
+Data frame with prior information of DE genes
+}
 \usage{
 data(DERefStudy)
 }

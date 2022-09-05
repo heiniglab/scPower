@@ -909,6 +909,15 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                "Bonferroni, FDR and none!"))
   }
 
+  #Check if
+  if(m0==0){
+    stop(paste0("With the current parameter, all genes that are predicted to be ",
+               "expressed (in total ",exp.genes,") are defined as DE genes. ",
+               "FDR correction not possible in this case. Please verify your input ",
+               "data.frame ref.study contains only rows with DE genes!"))
+  }
+
+
   #Calculate power
   if(type=="eqtl"){
 
@@ -998,7 +1007,7 @@ calculate.probabilities<-function(nSamples,ctCells,type,
                           ssize.ratio.de=ssize.ratio.de)>0){
         alpha<-lowerBound
       } else {
-        root<-uniroot(f=fdr.optimization,
+        root<-uniroot(f=scPower:::fdr.optimization,
                       interval=c(lowerBound,sign.threshold),
                       fdr=sign.threshold,m0=m0,type=type,
                       exp.vector=foundSignGenes$exp.probs,
@@ -1070,6 +1079,8 @@ calculate.probabilities<-function(nSamples,ctCells,type,
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
 #' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #' @inheritParams power.general.withDoublets
 #'
 #' @return Data frame with overall detection power, power and expression power for
@@ -1102,7 +1113,8 @@ optimize.constant.budget<-function(totalBudget,type,
                                    simThreshold=4,
                                    speedPowerCalc=FALSE,
                                    indepSNPs=10,
-                                   ssize.ratio.de=1){
+                                   ssize.ratio.de=1,
+                                   reactionsPerKit=6){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1123,7 +1135,8 @@ optimize.constant.budget<-function(totalBudget,type,
                                                                                param.combis$readDepth[i],
                                                                                totalBudget,
                                                                                costKit,samplesPerLane,
-                                                                               costFlowCell,readsPerFlowcell)))
+                                                                               costFlowCell,readsPerFlowcell,
+                                                                               reactionsPerKit=reactionsPerKit)))
   #Case 2: estimate the number of cells per individuals
   } else if (is.null(nCellsRange)){
     #Build a frame of all possible combinations
@@ -1135,7 +1148,8 @@ optimize.constant.budget<-function(totalBudget,type,
                                                                           param.combis$readDepth[i],
                                                                           totalBudget,
                                                                           costKit,samplesPerLane,
-                                                                          costFlowCell,readsPerFlowcell))
+                                                                          costFlowCell,readsPerFlowcell,
+                                                                     reactionsPerKit=reactionsPerKit))
   # Case 3: estimate the read depth
   } else {
     #Build a frame of all possible combinations
@@ -1147,7 +1161,8 @@ optimize.constant.budget<-function(totalBudget,type,
                                                                          param.combis$nCells[i],
                                                                          totalBudget,
                                                                          costKit,samplesPerLane,
-                                                                         costFlowCell,readsPerFlowcell))
+                                                                         costFlowCell,readsPerFlowcell,
+                                                                         reactionsPerKit=reactionsPerKit))
   }
 
   #Remove all combinations where one of the parameters is <=0
@@ -1345,6 +1360,8 @@ optimize.constant.budget.libPrepCell<-function(totalBudget, type,
 #' @param nSamplesRange Range of sample sizes that should be tested (vector)
 #' @param nCellsRange Range of cells per individual that should be tested (vector)
 #' @param readDepthRange Range of read depth values that should be tested (vector)
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #' @inheritParams power.general.restrictedDoublets
 #'
 #' @return Data frame with overall detection power, power and expression power for
@@ -1372,7 +1389,8 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                      simThreshold=4,
                                                      speedPowerCalc=FALSE,
                                                      indepSNPs=10,
-                                                     ssize.ratio.de=1){
+                                                     ssize.ratio.de=1,
+                                                     reactionsPerKit=6){
 
   #Check that exactly two of the parameters are set and the third one is not defined
   if(sum(is.null(nSamplesRange),is.null(nCellsRange),is.null(readDepthRange))!=1){
@@ -1393,7 +1411,8 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                                                                  param.combis$readDepth[i],
                                                                                                  totalBudget,
                                                                                                  costKit,cellsPerLane,
-                                                                                                 costFlowCell,readsPerFlowcell)))
+                                                                                                 costFlowCell,readsPerFlowcell,
+                                                                                                 reactionsPerKit=reactionsPerKit)))
     #Case 2: estimate the number of cells per individuals
   } else if (is.null(nCellsRange)){
     #Build a frame of all possible combinations
@@ -1405,7 +1424,8 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                                                           param.combis$readDepth[i],
                                                                                           totalBudget,
                                                                                           costKit,cellsPerLane,
-                                                                                          costFlowCell,readsPerFlowcell))
+                                                                                          costFlowCell,readsPerFlowcell,
+                                                                                     reactionsPerKit=reactionsPerKit))
     # Case 3: estimate the read depth
   } else {
     #Build a frame of all possible combinations
@@ -1417,7 +1437,8 @@ optimize.constant.budget.restrictedDoublets<-function(totalBudget,type,
                                                                                            param.combis$nCells[i],
                                                                                            totalBudget,
                                                                                            costKit,cellsPerLane,
-                                                                                           costFlowCell,readsPerFlowcell))
+                                                                                           costFlowCell,readsPerFlowcell,
+                                                                                           reactionsPerKit=reactionsPerKit))
   }
 
 
@@ -1944,7 +1965,9 @@ fdr.optimization<-function(x,fdr,m0,type,
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #' @param rounding Rounds up the number of used kits and flow cells
-#' (which might give a more realistic estimation of costs)
+#'                 (which might give a more realistic estimation of costs)
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #'
 #' @return Total experimental cost dependent on the parameters
 #'
@@ -1952,17 +1975,17 @@ fdr.optimization<-function(x,fdr,m0,type,
 budgetCalculation<-function(nSamples,nCells,readDepth,
                             costKit,samplesPerLane,
                             costFlowCell,readsPerFlowcell,
-                            rounding=FALSE){
+                            rounding=FALSE,
+                            reactionsPerKit=6){
 
   if(rounding){
-    totalBudget<-ceiling(nSamples/(6*samplesPerLane))*costKit+
+    totalBudget<-ceiling(nSamples/(reactionsPerKit*samplesPerLane))*costKit+
       ceiling(nSamples*nCells*readDepth/readsPerFlowcell)*costFlowCell
   } else {
-    totalBudget<-nSamples/(6*samplesPerLane)*costKit+
+    totalBudget<-nSamples/(reactionsPerKit*samplesPerLane)*costKit+
       nSamples*nCells*readDepth/readsPerFlowcell*costFlowCell
   }
   return(totalBudget)
-
 }
 
 #' Estimate possible sample size depending on the total cost and the other parameters for 10X design
@@ -1976,16 +1999,19 @@ budgetCalculation<-function(nSamples,nCells,readDepth,
 #' @param samplesPerLane Number of individuals sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #'
 #' @return Number of samples that can be measured with this budget and other parameters
 #'
 #' @export
 sampleSizeBudgetCalculation<-function(nCells,readDepth,totalCost,
                                       costKit,samplesPerLane,
-                                      costFlowCell,readsPerFlowcell){
+                                      costFlowCell,readsPerFlowcell,
+                                      reactionsPerKit=6){
 
   #Estimate the maximal sample size dependent on the cost for the other parameter
-  samples <- totalCost / (costKit/(6*samplesPerLane) +
+  samples <- totalCost / (costKit/(reactionsPerKit*samplesPerLane) +
                  nCells * readDepth / readsPerFlowcell * costFlowCell)
 
   #Return only even sample sizes (due to the balanced design)
@@ -2002,15 +2028,18 @@ sampleSizeBudgetCalculation<-function(nCells,readDepth,totalCost,
 #' @param samplesPerLane Number of individuals sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #'
 #' @return Cells per individual that can be measured with this budget and other parameters
 #'
 #' @export
 cellsBudgetCalculation<-function(nSamples,readDepth,totalCost,
-                                     costKit,samplesPerLane,
-                                     costFlowCell,readsPerFlowcell){
+                                 costKit,samplesPerLane,
+                                 costFlowCell,readsPerFlowcell,
+                                 reactionsPerKit=6){
 
-  nCells <- (totalCost - nSamples/(6*samplesPerLane)*costKit)/
+  nCells <- (totalCost - nSamples/(reactionsPerKit*samplesPerLane)*costKit)/
     (nSamples*readDepth/readsPerFlowcell*costFlowCell)
 
   return(floor(nCells))
@@ -2026,15 +2055,18 @@ cellsBudgetCalculation<-function(nSamples,readDepth,totalCost,
 #' @param samplesPerLane Number of individuals sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #'
 #' @return Read depth that can be measured with this budget and other parameters
 #'
 #' @export
 readDepthBudgetCalculation<-function(nSamples,nCells,totalCost,
                                       costKit,samplesPerLane,
-                                      costFlowCell,readsPerFlowcell){
+                                      costFlowCell,readsPerFlowcell,
+                                     reactionsPerKit=6){
 
-  readDepth <- (totalCost - nSamples/(6*samplesPerLane)*costKit)/
+  readDepth <- (totalCost - nSamples/(reactionsPerKit*samplesPerLane)*costKit)/
     (nSamples*nCells/readsPerFlowcell*costFlowCell)
 
   return(floor(readDepth))
@@ -2051,6 +2083,8 @@ readDepthBudgetCalculation<-function(nSamples,nCells,totalCost,
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
 #' @param rounding Rounds up the number of used kits and flow cells
 #' (which might give a more realistic estimation of costs)
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #'
 #' @return Total experimental cost dependent on the parameters
 #'
@@ -2058,14 +2092,15 @@ readDepthBudgetCalculation<-function(nSamples,nCells,totalCost,
 budgetCalculation.restrictedDoublets<-function(nSamples,nCells,readDepth,
                                                costKit,cellsPerLane,
                                                costFlowCell,readsPerFlowcell,
-                                               rounding=FALSE){
+                                               rounding=FALSE, reactionsPerKit=6){
 
   #Estimate individuals per lane
   samplesPerLane<-floor(cellsPerLane/nCells)
 
   return(budgetCalculation(nSamples,nCells,readDepth,
                            costKit,samplesPerLane, costFlowCell,
-                           readsPerFlowcell, rounding))
+                           readsPerFlowcell, rounding,
+                           reactionsPerKit = reactionsPerKit))
 
 }
 
@@ -2082,20 +2117,24 @@ budgetCalculation.restrictedDoublets<-function(nSamples,nCells,readDepth,
 #' @param cellsPerLane Number of cells sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #'
 #' @return Number of samples that can be measured with this budget and other parameters
 #'
 #' @export
 sampleSizeBudgetCalculation.restrictedDoublets<-function(nCells,readDepth,totalCost,
                                                         costKit,cellsPerLane,
-                                                        costFlowCell,readsPerFlowcell){
+                                                        costFlowCell,readsPerFlowcell,
+                                                        reactionsPerKit=6){
 
   #Estimate individuals per lane
   samplesPerLane<-floor(cellsPerLane/nCells)
 
   #Calculate sample size dependent on the estimated number of individuals per lane
   return(sampleSizeBudgetCalculation(nCells,readDepth,totalCost,costKit,samplesPerLane,
-                               costFlowCell,readsPerFlowcell))
+                               costFlowCell,readsPerFlowcell,
+                               reactionsPerKit=reactionsPerKit))
 }
 
 #' Estimate possible number of cells per individual depending on the total cost
@@ -2110,16 +2149,19 @@ sampleSizeBudgetCalculation.restrictedDoublets<-function(nCells,readDepth,totalC
 #' @param cellsPerLane Number of cells sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #'
 #' @return Cells per individual that can be measured with this budget and other parameters
 #'
 #' @export
 cellsBudgetCalculation.restrictedDoublets<-function(nSamples,readDepth,totalCost,
-                                                          costKit,cellsPerLane,
-                                                          costFlowCell,readsPerFlowcell){
+                                                    costKit,cellsPerLane,
+                                                    costFlowCell,readsPerFlowcell,
+                                                    reactionsPerKit=6){
 
   #Estimate the maximal sample size dependent on the cost for the other parameter
-  nCells <- totalCost / (nSamples*costKit/(6*cellsPerLane) +
+  nCells <- totalCost / (nSamples*costKit/(reactionsPerKit*cellsPerLane) +
                            nSamples * readDepth / readsPerFlowcell * costFlowCell)
 
   return(floor(nCells))
@@ -2136,19 +2178,23 @@ cellsBudgetCalculation.restrictedDoublets<-function(nSamples,readDepth,totalCost
 #' @param cellsPerLane Number of cells sequenced per lane
 #' @param costFlowCell Cost of one flow cells for sequencing
 #' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
 #'
 #' @return Read depth that can be measured with this budget and other parameters
 #'
 #' @export
 readDepthBudgetCalculation.restrictedDoublets<-function(nSamples,nCells,totalCost,
                                                         costKit,cellsPerLane,
-                                                        costFlowCell,readsPerFlowcell){
+                                                        costFlowCell,readsPerFlowcell,
+                                                        reactionsPerKit=6){
 
   #Estimate individuals per lane
   samplesPerLane<-floor(cellsPerLane/nCells)
 
   return(readDepthBudgetCalculation(nSamples,nCells,totalCost,costKit,samplesPerLane,
-                                     costFlowCell,readsPerFlowcell))
+                                     costFlowCell,readsPerFlowcell,
+                                    reactionsPerKit=reactionsPerKit))
 }
 
 

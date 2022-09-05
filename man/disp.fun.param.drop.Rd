@@ -4,7 +4,9 @@
 \name{disp.fun.param.drop}
 \alias{disp.fun.param.drop}
 \title{Parameters for mean dispersion fit - Drop-seq data}
-\format{Data frame with parameter of mean-dispersion function}
+\format{
+Data frame with parameter of mean-dispersion function
+}
 \usage{
 data(dispFunParamDrop)
 }

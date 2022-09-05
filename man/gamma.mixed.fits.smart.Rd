@@ -4,7 +4,9 @@
 \name{gamma.mixed.fits.smart}
 \alias{gamma.mixed.fits.smart}
 \title{Parameters for gamma read fit - Smart-seq2 data}
-\format{Data frame with parameter of read-gamma parameter fit}
+\format{
+Data frame with parameter of read-gamma parameter fit
+}
 \usage{
 data(gammaMixedFitsSmart)
 }

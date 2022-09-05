@@ -4,7 +4,9 @@
 \name{count.matrix.example}
 \alias{count.matrix.example}
 \title{Example count matrices to test the expression curve estimation}
-\format{List with four count matrices (complete and subsampled to 75\%, 50\% and 25\%)}
+\format{
+List with four count matrices (complete and subsampled to 75\%, 50\% and 25\%)
+}
 \usage{
 data(countMatrixExample)
 }

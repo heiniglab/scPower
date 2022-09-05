@@ -4,7 +4,9 @@
 \name{disp.fun.param.smart}
 \alias{disp.fun.param.smart}
 \title{Parameters for mean dispersion fit - Smart-seq2 data}
-\format{Data frame with parameter of mean-dispersion function}
+\format{
+Data frame with parameter of mean-dispersion function
+}
 \usage{
 data(dispFunParamSmart)
 }

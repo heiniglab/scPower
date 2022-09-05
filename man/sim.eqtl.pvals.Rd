@@ -4,9 +4,11 @@
 \name{sim.eqtl.pvals}
 \alias{sim.eqtl.pvals}
 \title{Precalcuated p-values from eQTL simulation}
-\format{Matrix of with 100 p-values (columns) and rownames in the format
+\format{
+Matrix of with 100 p-values (columns) and rownames in the format
 "mean_Rsq_sampleSize" showing the corresponding parameter combination with
-which the p-values were generated}
+which the p-values were generated
+}
 \usage{
 data(simEqtlPvals)
 }

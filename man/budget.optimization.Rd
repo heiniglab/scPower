@@ -5,7 +5,9 @@
 \alias{budget.optimization}
 \title{Optimal parameters for increasing budget and simulated and observed priors from different
 single cell technologies to reproduce figures curves in the vignette reproduce-figure-plots faster}
-\format{Data frame with optimal parameter for increasing budget and different priors}
+\format{
+Data frame with optimal parameter for increasing budget and different priors
+}
 \usage{
 data(precalculatedBudgetOptim)
 }

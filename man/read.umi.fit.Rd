@@ -4,7 +4,9 @@
 \name{read.umi.fit}
 \alias{read.umi.fit}
 \title{Parameters for read umi fit}
-\format{Data frame with parameter of read-UMI fit}
+\format{
+Data frame with parameter of read-UMI fit
+}
 \usage{
 data(readDepthUmiFit)
 }

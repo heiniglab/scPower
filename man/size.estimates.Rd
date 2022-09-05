@@ -4,7 +4,9 @@
 \name{size.estimates}
 \alias{size.estimates}
 \title{Precalcuated size estimates for eQTL power simulation}
-\format{Data frame with precalculated size estimates (depending on Rsq, af and mean)}
+\format{
+Data frame with precalculated size estimates (depending on Rsq, af and mean)
+}
 \usage{
 data(sizeEstimates)
 }

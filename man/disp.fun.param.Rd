@@ -4,7 +4,9 @@
 \name{disp.fun.param}
 \alias{disp.fun.param}
 \title{Parameters for mean dispersion fit}
-\format{Data frame with parameter of mean-dispersion function}
+\format{
+Data frame with parameter of mean-dispersion function
+}
 \usage{
 data(dispFunParam)
 }

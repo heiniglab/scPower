@@ -12,7 +12,8 @@ budgetCalculation.restrictedDoublets(
   cellsPerLane,
   costFlowCell,
   readsPerFlowcell,
-  rounding = FALSE
+  rounding = FALSE,
+  reactionsPerKit = 6
 )
 }
 \arguments{
@@ -32,6 +33,9 @@ budgetCalculation.restrictedDoublets(
 
 \item{rounding}{Rounds up the number of used kits and flow cells
 (which might give a more realistic estimation of costs)}
+
+\item{reactionsPerKit}{Reactions (=lanes) per kit, defines the total
+number of tested individuals per kit}
 }
 \value{
 Total experimental cost dependent on the parameters

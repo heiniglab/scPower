@@ -4,7 +4,9 @@
 \name{gamma.mixed.fits.drop}
 \alias{gamma.mixed.fits.drop}
 \title{Parameters for gamma umi fit - Drop-seq}
-\format{Data frame with parameter of UMI-gamma parameter fit}
+\format{
+Data frame with parameter of UMI-gamma parameter fit
+}
 \usage{
 data(gammaMixedFitsDrop)
 }
