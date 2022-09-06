@@ -904,19 +904,19 @@ calculate.probabilities<-function(nSamples,ctCells,type,
   } else if(MTmethod=="FDR"){
     lowerBound<-sign.threshold/exp.genes
     m0<-exp.genes-round(sum(foundSignGenes$exp.probs))
+
+    #Check that there are expressed non-DE genes (otherwise probably input issue)
+    if(m0==0){
+      stop(paste0("With the current parameter, all genes that are predicted to be ",
+                  "expressed (in total ",exp.genes,") are defined as DE genes. ",
+                  "FDR correction not possible in this case. Please verify your input ",
+                  "data.frame ref.study contains only rows with DE genes!"))
+    }
+
   } else {
     stop(paste("MTmethod",MTmethod,"is unknown! Please choose between",
                "Bonferroni, FDR and none!"))
   }
-
-  #Check if
-  if(m0==0){
-    stop(paste0("With the current parameter, all genes that are predicted to be ",
-               "expressed (in total ",exp.genes,") are defined as DE genes. ",
-               "FDR correction not possible in this case. Please verify your input ",
-               "data.frame ref.study contains only rows with DE genes!"))
-  }
-
 
   #Calculate power
   if(type=="eqtl"){
@@ -2368,4 +2368,40 @@ select.cutoffs<-function(umi_range,pop_range,
 
   return(param_combi)
 
+}
+
+#' Print design parameters of optimal design
+#'
+#' Convenience function to read the output of the budget optimization functions
+#' more easily: selected the row with the optimal detection power and showing
+#' sample size, cells and read depth as well as the number of 10X kits and flow cells
+#' for this specific design
+#'
+#' @param optim_output Result data frame of the optimization functions
+#'                    (optimize.constant.budget and variants of the function)
+#' @param samplesPerLane Number of individuals sequenced per lane
+#' @param readsPerFlowcell Number reads that can be sequenced with one flow cell
+#' @param reactionsPerKit Reactions (=lanes) per kit, defines the total
+#'                        number of tested individuals per kit
+#'
+#' @return Nothing (print output instead)
+#'
+#' @export
+#'
+print_optimalDesign_10X<-function(optim_output,
+                               samplesPerLane,
+                               readsPerFlowcell,
+                               reactionsPerKit=6){
+  #Get best performing design
+  best_design<-optim_output[which.max(optim_output$powerDetect),]
+
+  #Print resulting parameters of the optimal design
+  print(paste("Optimal design with power",best_design$powerDetect))
+  print(paste("Sample size:",best_design$sampleSize))
+  print(paste("Cells per sample:",best_design$totalCells))
+  print(paste("Read depth:",best_design$readDepth))
+  print(paste("Number 10X kits:",
+              ceiling(best_design$sampleSize/(samplesPerLane*reactionsPerKit))))
+  print(paste("Number sequencing flowcells:",
+              ceiling(best_design$sampleSize*best_design$totalCells*best_design$readDepth/readsPerFlowcell)))
 }
