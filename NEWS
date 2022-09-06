@@ -1,3 +1,13 @@
+CHANGES IN VERSION 1.0.2
+-------------------------
+o Added the Matrix package in order to run part of the functions with sparse matrices (however, 
+  fitting itself is not implemented for sparse matrices yet, conversion still needed here)
+o Added the number of 10X reactions per kit as an parameter called "reactionsPerKit" (before 
+  always 6 rxns per kit)
+o Added a function "print_optimalDesign_10X", which shows the optimal design in the end including
+  the number of required kits and flow cells
+o Improved error message in FDR optimization if DE genes are specified wrong
+
 
 CHANGES IN VERSION 1.0.1
 -------------------------
