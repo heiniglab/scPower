@@ -529,7 +529,7 @@ parametricDispersionFit_DEseq <- function( means, disps ) {
 #'
 #' @export
 mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
-                                 num.genes.kept=21000, proportion.values=NULL,
+                                 num.genes.kept=22000, proportion.values=NULL,
                                  return.df=TRUE){
 
   #Check if the mean vector is matching the num.genes.kept parameter
