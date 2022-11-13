@@ -155,8 +155,8 @@ body <- ## Body content
 
                     selectInput("grid", label = "Parameter grid",
                                 choices = list("samples - cells per sample"="sc",
-                                               "samples - reads per sample"="sr",
-                                               "cells per sample - reads per sample"="cr")),
+                                               "samples - reads per cell"="sr",
+                                               "cells per sample - reads per cell"="cr")),
                     bsPopover("grid", title="Parameter grid", placement="top", options = list(container = "body"),
                               content=paste("all possible combinations for two of the three experimental parameters (sample size, cells per person and read depth) are tested,",
                               "the third parameter is defined uniquely given the other two and the overall budget and will be displayed as circle size. ",
