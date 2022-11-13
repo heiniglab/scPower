@@ -201,7 +201,7 @@ body <- ## Body content
                     numericInput("readsPerFlowcell", label = "Number of reads per flow cell",
                                  value = 4100*10^6, step=10000,min=0),
 
-                    numericInput("cellsLane", label = "Cells per lane", value = 20000,
+                    numericInput("cellsLane", label = "Cells per lane", value = 8000,
                                  step=500,min=0),
                     bsPopover("cellsLane", title="Cells per lane", placement="top", options = list(container = "body"),
                               content="Number of cells meassured on one 10X lane, assuming 6 lanes per kit"),
