@@ -206,6 +206,11 @@ body <- ## Body content
                     bsPopover("cellsLane", title="Cells per lane", placement="top", options = list(container = "body"),
                               content="Number of cells meassured on one 10X lane, assuming 6 lanes per kit"),
 
+                    numericInput("reactionsPerKit", label = "Reactions Per Kit",
+                                 value = 8000, step = 100, min = 0),
+                    bsPopover("reactionsPerKit", title = "Reactions Per Kit", placement = "top", options = list(container = "body"),
+                              content = "Reactions Per Kit"),
+
                     hr(),
                     h5("Multiple testing correction"),
                     numericInput("pval",label="P-value",
