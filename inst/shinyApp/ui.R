@@ -164,10 +164,10 @@ body <- ## Body content
 
                     numericInput("rangeX_min",label="Samples (min)",value=10),
                     bsPopover("rangeX_min", title=" ", placement="top", options = list(container = "body"),
-                              content="Minimal value of the tested ranges for the parameter on the x-Axis"),
+                              content="Minimal value of the tested ranges for the parameter on the x-Axis. Here \"samples\" means the total sample size."),
                     numericInput("rangeX_max",label="Samples (max)",value=50),
                     bsPopover("rangeX_max", title=" ", placement="top", options = list(container = "body"),
-                              content="Maximum value of the tested ranges for the parameter on the x-Axis"),
+                              content="Maximum value of the tested ranges for the parameter on the x-Axis. Here \"samples\" means the total sample size."),
 
                     numericInput("rangeY_min",label="Cells (min)",value=2000),
                     bsPopover("rangeY_min", title=" ", placement="top", options = list(container = "body"),
