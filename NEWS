@@ -1,3 +1,7 @@
+CHANGES IN VERSION 1.0.3
+-------------------------
+o Added the parameter reactionsPerKit to the Shiny Server.
+
 CHANGES IN VERSION 1.0.2
 -------------------------
 o Added the Matrix package in order to run part of the functions with sparse matrices (however, 
