@@ -155,8 +155,8 @@ body <- ## Body content
 
                     selectInput("grid", label = "Parameter grid",
                                 choices = list("samples - cells per sample"="sc",
-                                               "samples - reads per sample"="sr",
-                                               "cells per sample - reads per sample"="cr")),
+                                               "samples - reads per cell"="sr",
+                                               "cells per sample - reads per cell"="cr")),
                     bsPopover("grid", title="Parameter grid", placement="top", options = list(container = "body"),
                               content=paste("all possible combinations for two of the three experimental parameters (sample size, cells per person and read depth) are tested,",
                               "the third parameter is defined uniquely given the other two and the overall budget and will be displayed as circle size. ",
@@ -164,10 +164,10 @@ body <- ## Body content
 
                     numericInput("rangeX_min",label="Samples (min)",value=10),
                     bsPopover("rangeX_min", title=" ", placement="top", options = list(container = "body"),
-                              content="Minimal value of the tested ranges for the parameter on the x-Axis"),
+                              content="Minimal value of the tested ranges for the parameter on the x-Axis. Here \"samples\" means the total sample size."),
                     numericInput("rangeX_max",label="Samples (max)",value=50),
                     bsPopover("rangeX_max", title=" ", placement="top", options = list(container = "body"),
-                              content="Maximum value of the tested ranges for the parameter on the x-Axis"),
+                              content="Maximum value of the tested ranges for the parameter on the x-Axis. Here \"samples\" means the total sample size."),
 
                     numericInput("rangeY_min",label="Cells (min)",value=2000),
                     bsPopover("rangeY_min", title=" ", placement="top", options = list(container = "body"),
@@ -201,10 +201,15 @@ body <- ## Body content
                     numericInput("readsPerFlowcell", label = "Number of reads per flow cell",
                                  value = 4100*10^6, step=10000,min=0),
 
-                    numericInput("cellsLane", label = "Cells per lane", value = 20000,
+                    numericInput("cellsLane", label = "Cells per lane", value = 8000,
                                  step=500,min=0),
                     bsPopover("cellsLane", title="Cells per lane", placement="top", options = list(container = "body"),
                               content="Number of cells meassured on one 10X lane, assuming 6 lanes per kit"),
+
+                    numericInput("reactionsPerKit", label = "Reactions Per Kit",
+                                 value = 8000, step = 100, min = 0),
+                    bsPopover("reactionsPerKit", title = "Reactions Per Kit", placement = "top", options = list(container = "body"),
+                              content = "Reactions Per Kit"),
 
                     hr(),
                     h5("Multiple testing correction"),
