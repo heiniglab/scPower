@@ -90,18 +90,18 @@ shinyServer(
 
     #Set labels for the parameter pair properly
     observe({if(input$grid=="sc"){
-              updateNumericInput(session,"rangeX_min", label="Samples (min)",
+              updateNumericInput(session,"rangeX_min", label="Total sample size (min)",
                            value = 10)
-              updateNumericInput(session,"rangeX_max", label="Samples (max)",
+              updateNumericInput(session,"rangeX_max", label="Total sample size (max)",
                          value = 50)
               updateNumericInput(session,"rangeY_min", label="Cells (min)",
                            value = 2000)
               updateNumericInput(session,"rangeY_max", label="Cells (max)",
                                  value = 10000)
             } else if(input$grid=="sr"){
-              updateNumericInput(session,"rangeX_min", label="Samples (min)",
+              updateNumericInput(session,"rangeX_min", label="Total sample size (min)",
                                  value = 10)
-              updateNumericInput(session,"rangeX_max", label="Samples (max)",
+              updateNumericInput(session,"rangeX_max", label="Total sample size (max)",
                                  value = 50)
               updateNumericInput(session,"rangeY_min", label="Reads (min)",
                                 value = 100000)
@@ -174,6 +174,7 @@ shinyServer(
       indepSNPs<-input$indepsnps
       ssize.ratio.de<-input$ssizeratiode
       
+      reactionsPerKit <- input$reactionsPerKit
 
       #Load required data sets
       data(readDepthUmiFit) #Relation between reads and UMI
@@ -213,7 +214,8 @@ shinyServer(
                                                                     useSimulatedPower = useSimulatedPower,
                                                                     speedPowerCalc = speedPowerCalc,
                                                                     indepSNPs=indepSNPs,
-                                                                    ssize.ratio.de=ssize.ratio.de),
+                                                                    ssize.ratio.de=ssize.ratio.de,
+                                                                    reactionsPerKit = reactionsPerKit),
         message="Calculating power optimization!", value=0.5
       )
 

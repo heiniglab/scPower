@@ -162,12 +162,12 @@ body <- ## Body content
                               "the third parameter is defined uniquely given the other two and the overall budget and will be displayed as circle size. ",
                               "Which of the two shall be tested, can be selcted here. Depending on the selection, the four parameters below are adapted.")),
 
-                    numericInput("rangeX_min",label="Samples (min)",value=10),
+                    numericInput("rangeX_min",label="Total sample size (min)",value=10),
                     bsPopover("rangeX_min", title=" ", placement="top", options = list(container = "body"),
-                              content="Minimal value of the tested ranges for the parameter on the x-Axis. Here \"samples\" means the total sample size."),
-                    numericInput("rangeX_max",label="Samples (max)",value=50),
+                              content="Minimal value of the tested ranges for the parameter on the x-Axis."),
+                    numericInput("rangeX_max",label="Total sample size (max)",value=50),
                     bsPopover("rangeX_max", title=" ", placement="top", options = list(container = "body"),
-                              content="Maximum value of the tested ranges for the parameter on the x-Axis. Here \"samples\" means the total sample size."),
+                              content="Maximum value of the tested ranges for the parameter on the x-Axis."),
 
                     numericInput("rangeY_min",label="Cells (min)",value=2000),
                     bsPopover("rangeY_min", title=" ", placement="top", options = list(container = "body"),
@@ -204,12 +204,12 @@ body <- ## Body content
                     numericInput("cellsLane", label = "Cells per lane", value = 8000,
                                  step=500,min=0),
                     bsPopover("cellsLane", title="Cells per lane", placement="top", options = list(container = "body"),
-                              content="Number of cells meassured on one 10X lane, assuming 6 lanes per kit"),
+                              content="Number of cells meassured on one 10X lane (dependent on the parameter \"Reactions Per Kit\")"),
 
                     numericInput("reactionsPerKit", label = "Reactions Per Kit",
-                                 value = 8000, step = 100, min = 0),
+                                 value = 6, step = 1, min = 1),
                     bsPopover("reactionsPerKit", title = "Reactions Per Kit", placement = "top", options = list(container = "body"),
-                              content = "Reactions Per Kit"),
+                              content = "Number of reactions/lanes on one 10X kit (different kit versions possible)"),
 
                     hr(),
                     h5("Multiple testing correction"),
