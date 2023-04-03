@@ -463,7 +463,7 @@ BIC <- function(emfit) {
 
 # iteratively estimate a mixture
 # also accept preinitialized models
-em <- function(x, ncomp, prop=NULL, maxit=100, eps=1e-3, model.constructor="Zinba", models=NULL) {
+em <- function(x, ncomp, prop=NULL, maxit=100, eps=1e-4, model.constructor="Zinba", models=NULL) {
   n = length(x)
   if (is.matrix(x) || is.data.frame(x)) {
     n = nrow(x)
