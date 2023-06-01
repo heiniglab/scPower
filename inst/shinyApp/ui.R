@@ -117,8 +117,16 @@ body <- ## Body content
                                  style="color: #fff; background-color: #337ab7; border-color: #2e6da4; display:center-align"),
                     bsPopover("recalc", title="Calculate optimal study", placement="top", options = list(container = "body"),
                               content="Computes the optimal study design for the give parameter combinations. Can take 1-2 minutes for big grids."),
+                    downloadButton("downloadData", "Download"),
+                    bsPopover("downloadData", title="Download", placement="top", options = list(container = "body"),
+                              content="Download the data of the current plot as CSV or TSV file."),
+                    
                     br(),
                     br(),
+
+                    radioButtons("fileType", "File type to download:", inline = TRUE, choices = c("CSV", "TSV")),
+                    bsPopover("fileType", title="File type to download", placement="top", options = list(container = "body"),
+                              content="The file type of the downloaded file. CSV is the default, but TSV is recommended for Excel users."),
                     radioButtons("study", label = "Study type", inline=TRUE,
                                  choices = list("DE study" = "de", "eQTL study" = "eqtl"),
                                  selected = "de"),

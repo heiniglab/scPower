@@ -287,6 +287,38 @@ shinyServer(
       return(list(power.study.plot, parameter.vector))
     }, ignoreNULL = FALSE)
 
+    output$downloadData <- downloadHandler(
+      filename = function() {
+        if (input$fileType == "CSV") {
+          "input_parameters.csv"
+        } else {
+          "input_parameters.tsv"
+        }
+      },
+      content = function(file) {
+        # Convert the input parameters to a list
+        input_list <- reactiveValuesToList(input)
+        
+        # Convert each input to a single string
+        input_list <- lapply(input_list, function(x) {
+          if (is.vector(x)) {
+            paste(x, collapse = ", ")
+          } else {
+            as.character(x)
+          }
+        })
+        
+        # Convert the list to a data frame
+        df <- data.frame(t(unlist(input_list)), stringsAsFactors = FALSE)
+        
+        if (input$fileType == "CSV") {
+          write.csv(df, file, row.names = FALSE)
+        } else {
+          write.table(df, file, sep = "\t", row.names = FALSE)
+        }
+      }
+    )
+
     #Create main plot with optimization grid
     output$powerPlot<-renderPlotly({
 
