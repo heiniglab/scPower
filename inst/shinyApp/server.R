@@ -3,6 +3,61 @@ library(plotly)
 library(reshape2)
 library(scPower)
 
+establishDBConnection <- function() {
+  connectionInstance <- dbConnect(
+      Postgres(),
+      dbname = Sys.getenv("POSTGRES_DBNAME"),
+      host = Sys.getenv("POSTGRES_HOST"),
+      port = as.integer(Sys.getenv("POSTGRES_PORT")),
+      user = Sys.getenv("POSTGRES_USER"),
+      password = Sys.getenv("POSTGRES_PASSWORD"))
+
+  print("Connection to database established successfully.")
+  return(connectionInstance)
+}
+
+constructGammaLinearFit <- function(conn) {
+  query <- "
+    SELECT g.*, a.id_to_name 
+    FROM gamma_linear_fit_results AS g 
+    LEFT JOIN main_table AS a 
+    ON encode(g.primary_key, 'hex') = a.primary_key
+  "
+
+  # Execute the SQL query and fetch results
+  result <- dbGetQuery(conn, query)
+  result$id_to_name <- sapply(strsplit(result$id_to_name, "_", fixed = TRUE), function(x) if(length(x) > 2) paste(x[3:length(x)], collapse = "_") else NA)
+  names(result)[5] <- "ct"
+  result <- result[, c("parameter", "intercept", "mean_umi", "ct")]
+  names(result)[3] <- "meanUMI"
+  result$intercept <- as.numeric(result$intercept)
+  result$meanUMI <- as.numeric(result$meanUMI)
+
+  return(result)
+}
+
+constructDisFunParam <- function(conn) {
+  query <- "
+    SELECT g.*, a.id_to_name 
+    FROM disp_fun_estimation_results AS g 
+    LEFT JOIN main_table AS a 
+    ON encode(g.primary_key, 'hex') = a.primary_key
+  "
+
+  # Execute the SQL query and fetch results
+  result <- dbGetQuery(conn, query)
+  result$id_to_name <- sapply(strsplit(result$id_to_name, "_", fixed = TRUE), function(x) if(length(x) > 2) paste(x[3:length(x)], collapse = "_") else NA)
+  names(result)[4] <- "ct"
+  result <- result[, c("ct", "asympt_disp", "extra_pois")]
+  names(result)[2] <- "asymptDisp"
+  names(result)[3] <- "extraPois"
+  result$asymptDisp <- as.numeric(result$asymptDisp)
+  result$extraPois <- as.numeric(result$extraPois)
+  
+  dbDisconnect(conn)
+  return(result)
+}
+
 shinyServer(
 
   function(input, output, session) {
@@ -180,6 +235,10 @@ shinyServer(
       data(readDepthUmiFit) #Relation between reads and UMI
       data(gammaUmiFits) #Relation between UMI and gamma parameters
       data(dispFunParam) #Parameters of mean-dispersion curve
+
+      conn <- establishDBConnection()
+      gamma.mixed.fits <- rbind(gamma.mixed.fits, constructGammaLinearFit(conn))
+      disp.fun.param <- rbind(disp.fun.param, constructDisFunParam(conn))
 
       #Select priors dependent on study type
       if(type=="eqtl"){
