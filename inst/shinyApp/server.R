@@ -26,7 +26,6 @@ constructGammaLinearFit <- function(conn) {
 
   # Execute the SQL query and fetch results
   result <- dbGetQuery(conn, query)
-  result$id_to_name <- sapply(strsplit(result$id_to_name, "_", fixed = TRUE), function(x) if(length(x) > 2) paste(x[3:length(x)], collapse = "_") else NA)
   names(result)[5] <- "ct"
   result <- result[, c("parameter", "intercept", "mean_umi", "ct")]
   names(result)[3] <- "meanUMI"
@@ -46,7 +45,6 @@ constructDisFunParam <- function(conn) {
 
   # Execute the SQL query and fetch results
   result <- dbGetQuery(conn, query)
-  result$id_to_name <- sapply(strsplit(result$id_to_name, "_", fixed = TRUE), function(x) if(length(x) > 2) paste(x[3:length(x)], collapse = "_") else NA)
   names(result)[4] <- "ct"
   result <- result[, c("ct", "asympt_disp", "extra_pois")]
   names(result)[2] <- "asymptDisp"
@@ -111,13 +109,25 @@ shinyServer(
     })
     
     #Set the cell types correctly
+    conn <- establishDBConnection()
+    query <- "SELECT id_to_name FROM main_table"
+    idToName <- as.list(dbGetQuery(conn, query))[[1]]
+    dbDisconnect(conn)
+    uniqueAssays <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[1]))
+    uniqueTissues <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[2]))
+    uniqueCelltypes <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[3]))
+
     observe({
       data(gammaUmiFits)
       celltypes<-as.character(unique(gamma.mixed.fits$ct))
+      celltypes<-append(celltypes, idToName)
       choices<-setNames(celltypes,celltypes)
       updateSelectInput(session, "celltype", label = "Cell type",
-                        choices = choices)
-    })
+                        choices = c("", choices))      
+      updateSelectInput(session, "tissue", choices = c("", sort(uniqueTissues)))
+      updateSelectInput(session, "assay", choices = c("", sort(uniqueAssays)))
+    })    
+    
 
     #Set the accessible prior studies correctly (dependent on eQTL/DE)
     observe({
