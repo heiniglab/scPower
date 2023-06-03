@@ -123,11 +123,28 @@ shinyServer(
       celltypes<-append(celltypes, idToName)
       choices<-setNames(celltypes,celltypes)
       updateSelectInput(session, "celltype", label = "Cell type",
-                        choices = c("", choices))      
+                        choices = c("B cells", choices))      
       updateSelectInput(session, "tissue", choices = c("", sort(uniqueTissues)))
       updateSelectInput(session, "assay", choices = c("", sort(uniqueAssays)))
     })    
-    
+
+    # Update cell types when tissue is selected
+    observeEvent(input$tissue, {
+      if (!(input$tissue == "")) {  
+        filtered_celltypes <- idToName[grepl(input$tissue, idToName)]
+        filtered_assays <- unique(sapply(filtered_celltypes, function(x) unlist(strsplit(x, "_"))[1]))
+        updateSelectInput(session, "assay", choices = filtered_assays)
+        updateSelectInput(session, "celltype", choices = filtered_celltypes)
+      }
+    })
+
+    # Update cell types when assay is selected
+    observeEvent(input$assay, {
+      if (!(input$assay == "")) {  
+        filtered_celltypes <- idToName[grepl(input$assay, idToName) & grepl(input$tissue, idToName)]
+        updateSelectInput(session, "celltype", choices = filtered_celltypes)
+      }
+    })
 
     #Set the accessible prior studies correctly (dependent on eQTL/DE)
     observe({
