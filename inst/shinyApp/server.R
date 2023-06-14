@@ -1,19 +1,15 @@
-library(shiny)
-library(plotly)
-library(reshape2)
-library(scPower)
+# Loading libraries
+lapply(c("DBI", "dplyr", "plotly", "reshape2", "RPostgres", "RPostgreSQL", "scPower", "shiny"), 
+      library, character.only = TRUE)
 
 establishDBConnection <- function() {
-  connectionInstance <- dbConnect(
+  return(dbConnect(
       Postgres(),
       dbname = Sys.getenv("POSTGRES_DBNAME"),
       host = Sys.getenv("POSTGRES_HOST"),
       port = as.integer(Sys.getenv("POSTGRES_PORT")),
       user = Sys.getenv("POSTGRES_USER"),
-      password = Sys.getenv("POSTGRES_PASSWORD"))
-
-  print("Connection to database established successfully.")
-  return(connectionInstance)
+      password = Sys.getenv("POSTGRES_PASSWORD")))
 }
 
 constructGammaLinearFit <- function(conn) {
@@ -54,6 +50,14 @@ constructDisFunParam <- function(conn) {
   
   dbDisconnect(conn)
   return(result)
+}
+
+formatLabel <- function(choice, index, cutoff) {
+  if(index <= cutoff){
+    return(choice)
+  }
+  parts <- strsplit(choice, "_")[[1]]
+  sprintf("%s (Assay: %s, Tissue: %s)", parts[3], parts[1], parts[2])
 }
 
 shinyServer(
@@ -117,32 +121,52 @@ shinyServer(
     uniqueTissues <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[2]))
     uniqueCelltypes <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[3]))
 
+    # initializing each of the dropdown menu items
     observe({
       data(gammaUmiFits)
       celltypes<-as.character(unique(gamma.mixed.fits$ct))
       celltypes<-append(celltypes, idToName)
-      choices<-setNames(celltypes,celltypes)
+      choices <- celltypes
+
+      labels <- sapply(seq_along(choices), function(i) formatLabel(choices[i], i, 7))
+      choices <- setNames(choices, labels)
+
       updateSelectInput(session, "celltype", label = "Cell type",
-                        choices = c("B cells", choices))      
+                        choices = c("B cells", choices))
       updateSelectInput(session, "tissue", choices = c("", sort(uniqueTissues)))
       updateSelectInput(session, "assay", choices = c("", sort(uniqueAssays)))
-    })    
+    })
 
     # Update cell types when tissue is selected
     observeEvent(input$tissue, {
-      if (!(input$tissue == "")) {  
-        filtered_celltypes <- idToName[grepl(input$tissue, idToName)]
+      if (!(input$tissue == "")) {
+        tissue_input <- input$tissue
+        filtered_celltypes <- idToName[sapply(idToName, function(x) {
+          parts <- strsplit(x, "_")[[1]]
+          tissue_part <- parts[2]
+          tissue_part == tissue_input
+        })]
         filtered_assays <- unique(sapply(filtered_celltypes, function(x) unlist(strsplit(x, "_"))[1]))
+        choices <- sapply(seq_along(filtered_celltypes), function(i) formatLabel(filtered_celltypes[i], i, 0))
+        
         updateSelectInput(session, "assay", choices = filtered_assays)
-        updateSelectInput(session, "celltype", choices = filtered_celltypes)
+        updateSelectInput(session, "celltype", choices = sort(choices))
       }
     })
 
     # Update cell types when assay is selected
     observeEvent(input$assay, {
-      if (!(input$assay == "")) {  
-        filtered_celltypes <- idToName[grepl(input$assay, idToName) & grepl(input$tissue, idToName)]
-        updateSelectInput(session, "celltype", choices = filtered_celltypes)
+      if (!(input$assay == "")) {
+        tissue_input <- input$tissue
+        assay_input <- input$assay
+        filtered_celltypes <- idToName[sapply(idToName, function(x) {
+          parts <- strsplit(x, "_")[[1]]
+          assay_part <- parts[1]
+          tissue_part <- parts[2]
+          assay_part == assay_input & tissue_part == tissue_input
+        })]
+        choices <- sapply(seq_along(filtered_celltypes), function(i) formatLabel(filtered_celltypes[i], i, 0))
+        updateSelectInput(session, "celltype", choices = sort(choices))
       }
     })
 
