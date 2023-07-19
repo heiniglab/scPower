@@ -121,7 +121,7 @@ estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
 
 }
 
-#' Estimate gene expression probability based on experimental parameters - variant for smart-seq or when calculating
+#' Estimate gene expression probability based on experimental parameters - variant for Smart-seq or when calculating
 #' directly based on UMI counts (without read UMI fit)
 #'
 #' This is an adaption of function estimate.exp.prob.param were directly the mean UMI parameter can be set in the
@@ -134,12 +134,14 @@ estimate.exp.prob.param<-function(nSamples,readDepth,nCellsCt,
 #' @param gamma.mixed.fits Data frame with gamma mixed fit parameters for each cell type
 #' (required columns: parameter, ct (cell type), intercept, meanUMI (slope))
 #' @param ct Cell type of interest (name from the gamma mixed models)
-#' @param disp.fun.param Function to fit the dispersion parameter dependent on the mean
+#' @param disp.fun.param Data frame with parameters to fit the dispersion parameter dependent on the mean
 #' (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))
 #' @param nGenes Number of genes to simulate (should match the number of genes used for the fitting)
 #' @param samplingMethod Approach to sample the gene mean values (either taking quantiles or random sampling)
 #' @param countMethod Specify if it is a UMI or read based method (by "UMI" or "read"). For a read based method,
 #' the dispersion function is fitted linear, for a UMI based method constant.
+#' @param gene_length_prior Vector with gene length, ordered by expression rank 
+#' (the first entry for the highest expressed gene); only required for Smart-seq (countMethod="read")
 #' @inheritParams estimate.exp.prob.values
 #'
 #' @return Vector with expression probabilities for each gene
@@ -152,7 +154,8 @@ estimate.exp.prob.count.param<-function(nSamples,nCellsCt,meanCellCounts,
                                         min.counts=3,perc.indiv.expr=0.5,
                                         cutoffVersion="absolute",
                                         nGenes=21000,samplingMethod="quantiles",
-                                        countMethod="UMI"){
+                                        countMethod="UMI",
+                                        gene_length_prior=NULL){
 
 
   #Check if gamma fit data for the cell type exists
@@ -161,6 +164,10 @@ estimate.exp.prob.count.param<-function(nSamples,nCellsCt,meanCellCounts,
                ct,". Check that the cell type is correctly spelled and the right gamma.mixed.fits object used."))
   }
 
+  if(countMethod=="read" & is.null(gene_length_prior)){
+    stop("Parameter gene_length_prior needs to be specified when the countMethod read is chosen!")
+  }
+    
   #Get gamma values dependent on mean umi
   gamma.fits.ct<-gamma.mixed.fits[gamma.mixed.fits$ct==ct,]
   if(countMethod=="UMI"){
@@ -200,6 +207,8 @@ estimate.exp.prob.count.param<-function(nSamples,nCellsCt,meanCellCounts,
   #Fit dispersion parameter dependent on mean parameter
   if(countMethod=="UMI"){
     disp.fun<-disp.fun.param[disp.fun.param$ct==ct,]
+    gene.disps<-sample.disp.values(gene.means,disp.fun)
+    
   } else if (countMethod=="read"){
     #Get dispersion values dependent on mean reads
     disp.fun.ct<-disp.fun.param[disp.fun.param$ct==ct,]
@@ -209,9 +218,13 @@ estimate.exp.prob.count.param<-function(nSamples,nCellsCt,meanCellCounts,
     disp.fun<-data.frame(asymptDisp=disp.fun.ct$fitted.value[disp.fun.ct$parameter=="asymptDisp"],
                          extraPois=disp.fun.ct$fitted.value[disp.fun.ct$parameter=="extraPois"],
                          ct=ct)
+    
+    #Get normalized mean expression values dependent on gene length 
+    #(sorted by mean value in decreasing order)
+    gene.means<-sort(gene.means,decreasing=TRUE)
+    gene.means.norm<-gene.means*gene_length/1000
+    gene.disps<-sample.disp.values(gene.means.norm,disp.fun)
   }
-
-  gene.disps<-sample.disp.values(gene.means,disp.fun)
 
   return(estimate.exp.prob.values(gene.means,1/gene.disps,nCellsCt,
                                   nSamples,min.counts,perc.indiv.expr,cutoffVersion))

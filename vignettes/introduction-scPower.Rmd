@@ -369,8 +369,7 @@ If the users are interested in optimizing the threshold to reach the maximal
 possible power in their setting, scPower provides a function for that called
 "select.cutoffs". As a higher number of expressed genes is 
 increasing also the multiple testing burden, thresholds
-of zero are here necessarily always the optimal choice. The range of thresholds that should be
-considered can be specified both for the individual level threshold (umi_range)
+of zero are here necessarily always the optimal choice. The range of thresholds that should be considered can be specified both for the individual level threshold (umi_range)
 and the population level threshold (pop_range). The optimal thresholds in the example below
 are an UMI threshold of 3 and population threshold of 0.
 
@@ -403,36 +402,54 @@ Additionally to the priors given by the package, scPower offers the option to ge
 
 * effect sizes and expression ranks of the DE/eQTL genes, which can be taken from any kind of study or simulated. We recommend studies with FACS sorted bulk RNA-seq to get a realistic cell type specific estimations of the priors.
 
-### Expression probability curves
+### Generating new cell type specific expression priors (droplet-based methods)
 
-A small example data set of a UMI count matrix is provided in the package to show the fitting of the expression probability curves. It contains data of one cell type, as each cell type needs to be fitted separately.
+The cell type specific expression priors differ dependent whether they should be used for droplet-based methods or plate-based methods. In the following, the approach for generating priors for droplet-based methods, such as 10X Genomics or Drop-Seq, is explained, the adaptions for plate-based methods are further discussed in the downstream section "[Generating new cell type specific expression priors (plate-based methods)]".
 
-The data set is a list of four raw count matrices, the first one is the original count matrix and 3 subsampled matrices to evaluate the effect of the read depth. The subsampling was performed on the reads using the tool fastq-sample from fastq-tools version 0.8 and then the mapping repeated with cellranger.
+A small toy data set with a UMI count matrix is provided in the package to show the fitting of the expression priors for droplet-based methods (sampled from [GSE185714](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE185714)). It contains data of one cell type, as each cell type needs to be fitted separately. The data set is a list of four raw count matrices, the first one is the original count matrix and 3 subsampled matrices to evaluate the effect of the read depth. The subsampling was performed on the reads using the tool fastq-sample from fastq-tools version 0.8 and then the mapping was repeated with cellranger.
+
+Additionally, an annotation data frame is necessary, which defines for each cell
+the cell type and the donor/sample. This information is typically saved in the meta data
+of the single cell objects (e.g. for Scanpy or Seurat objects). Importantly, the rows of the annotation data frame must match the columns in the count matrix, including the same ordering of the cells. In this example, the dataset comprises cells from 14 different donors (S1-S14) and one cell type called "default_ct".
 
 ```{r}
+
+#Load example count matrices (list with count matrix and 3 subsampled versions of it)
 data(countMatrixExample)
 
 #Dimensions of the three count matrices
 sapply(count.matrix.example,dim)
 
+#Load the associated annotation data frame with the necessary meta data columns 
+#for cell type and donor information
+data(annotDfExample)
+head(annot.df)
+
+#Make sure that the annotation data frame is order the same way as the count matrix
+all(colnames(count.matrix.example[["complete"]]) == annot.df$cell)
+
 ```
 
 #### Counting observed expressed genes 
 
-The number of expressed genes in the data set can be estimated by reformating the 2d count matrix into a 3d pseudobulk matrix, using the function "create.pseudobulk". Therefore, an annotation data frame is required with individual and cell type annotations for each cells. The rows of the annotaiton data frame must match the columns in the count matrix (same ordering of cells). After the pseudobulk matrix is created, the expressed genes are extracted using the function "calculate.gene.counts". Here, we use a threshold of more than 3 counts in more 50% of the individuals.
+The number of expressed genes in the data set can be estimated by reformating the 2d count matrix into a 3d pseudobulk matrix, using the function "create.pseudobulk". The rows of the annotation data frame must match the columns in the count matrix in this step (same ordering of cells). After the pseudobulk matrix is created, the expressed genes are extracted using the function "calculate.gene.counts". Here, we use a threshold of more than 3 counts in more 50% of the individuals.
 
 ```{r}
 expressed.genes.df<-NULL
+
+#Assign rownames to annot dataframe for easier filtering later
+rownames(annot.df)<-annot.df$cell
+
 #Iterate over each count matrix
 for(name in names(count.matrix.example)){
   
   count.matrix<-count.matrix.example[[name]]
   
-  #Create an annotation file (here containing only one cell type, but can be more)
-  annot.df<-data.frame(individual=paste0("S",rep(1:14,length.out=ncol(count.matrix))),
-                       cell.type=rep("default_ct",ncol(count.matrix)))
+  #Filter the annotation data frame to be ordered in the same way as the count matrix
+  annot.df<-annot.df[colnames(count.matrix),]
+  
   #Reformat count matrix into pseudobulk matrix
-  pseudo.bulk<-create.pseudobulk(count.matrix,annot.df)
+  pseudo.bulk<-create.pseudobulk(count.matrix,annot.df,colName="cell_type")
   #Calculate expressed genes in the pseudobulk matrix
   expressed.genes<-calculate.gene.counts(pseudo.bulk,min.counts=3, perc.indiv=0.5)
   #Get the number of expressed genes
@@ -482,7 +499,7 @@ print(disp.param)
 
 ```
 
-### Estimation of a gamma mixed distribution over all means
+#### Estimation of a gamma mixed distribution over all means
 
 A mixed distribution of a zero component and two left zensored gamma components is fitted for each mean value vector (one fit per count matrix). The count matrix contains often a large number of genes with a mean of zero. To reduce the matrix size and faciliate so the fit, the parameter of "num.genes.kept" regulates the number of mean values for the fit (it removes only genes with a mean of zero). The number should however never be smaller than the number of positive means values. As a fraction of the zero values can be expressed genes below the detection threshold of the experiment, the gamma distributions are modelled as left censored. If no censoring point is set in the variable "censoredPoint", the smallest positive value in the data set is taken as the censoring point. For our models, we use 1/num_cells_celltype as the censoring point.
 
@@ -594,17 +611,21 @@ print(read.umi.fit.new)
 In the section "Counting observed expressed genes", the number of expressed genes in our example count matrices were calculated and saved in the data frame "expressed.genes.df". To validate our model, we try to predict the same number of expressed genes using our fitted model.
 
 ```{r,fig.width=5, fig.height=3}
+
 #Merge the observed numbers of expressed genes with the read depth
 expressed.genes.df<-merge(expressed.genes.df,mapped.reads,
                           by="matrix")
 
+#Choose the same number of donors in the example count matrix
+nDonors <- length(unique(annot.df$donor))
+
 #Get the number of cells per cell type and individual
-expressed.genes.df$cells.indiv<-expressed.genes.df$num.cells/14
+expressed.genes.df$cells.indiv<-expressed.genes.df$num.cells/nDonors
 expressed.genes.df$estimated.genes<-NA
 for(i in 1:nrow(expressed.genes.df)){
   
   #Vector with the expression probability for each gene
-  expr.prob<-estimate.exp.prob.param(nSamples=14,
+  expr.prob<-estimate.exp.prob.param(nSamples=nDonors,
                                     readDepth=expressed.genes.df$
                                       transcriptome.mapped.reads[i],
                                     nCellsCt=expressed.genes.df$cells.indiv[i],
@@ -692,8 +713,82 @@ print(power)
 
 ```
 
+### Generating new cell type specific expression priors (plate-based methods)
 
-### Effect sizes and expression ranks
+Power analysis for plate-based methods, such as Smart-seq2, follows a very similar approach, however, a few small adaptations are necessary. As explained already in the section "[Case 4: Smart-seq2]", Smart-seq2 data contains read counts instead of UMI counts and reads are obtained from the full length of the transcript, i.e. counts dependent on the gene length.
+For these reasons, the gamma-mixed distribution is directly parameterized over the read depth, a UMI-read fit is not necessary and the gene length of the eQTL/DE genes is required as an additional parameter for the power calculation.
+
+In the following, the differences are shown based on a small toy data set from Smart-seq2 data (sampled from [GSE81547](https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE81547)). The dataset comprise a count matrix (read counts instead of UMI counts), an annotation data frame with cell type and donor annotation and additionally a gene length data frame, which shows the gene length for each gene in the count matrix. The length information was obtained from UCSC here (gene annotation GRCh37hg19, exonic regions), but any gene annotation can be used.
+
+```{r}
+data(smartseqExample)
+
+#Smart-seq2 read count matrix
+dim(counts_smartseq)
+
+#Smart-seq2 annotation data frame
+head(annot_smartseq)
+
+#Cell ordering is identical between count matrix and annotation data frame
+all(colnames(counts_smartseq)==annot_smartseq$cell)
+
+#Gene length data frame
+head(gene_length)
+
+#Also the gene ordering is identical between the count matrix and the data frame
+all(rownames(counts_smartseq)==gene_length$gene.symbol)
+
+```
+
+#### Counting observed expressed genes
+
+The number of expressed genes for Smart-seq2 is estimated in a very similar way as for the droplet-based technologies, based on the pseudobulk matrix and two expression thresholds - an expressed gene has a certain number of counts in a certain percentage of individuals. However, as the number of counts per gene depends on the gene length, the first threshold is normalized separately for each gene using its respective length.
+
+```{r}
+
+#Create pseudobulk matrix
+pseudo.bulk<-create.pseudobulk(counts_smartseq,annot_smartseq,colName="cell_type")
+
+#Normalize the minimal number of read counts per gene
+min_counts<-10
+min_counts_norm<-ceiling(min_counts*gene_length$geneLength/1000)
+
+#Calculate the number of expressed genes
+expressed.genes<-calculate.gene.counts(pseudo.bulk,
+                                       min_counts_norm,perc.indiv=0.5)
+
+nrow(expressed.genes)
+
+```
+
+#### Fitting the first two steps of the expression prior
+
+Similar adaptions are required when fitting the expression priors. The negative 
+binomial fit is done on the raw count matrix, the same way as for the droplet-based
+methods. However, afterwards the estimated mean values need to be normalized based on the gene length before running the gamma mixed fits. The downstream processing afterwards is again equivalent to the droplet-based methods and not shown in this code (fitting gamma mixed model for different read depth and parameterizing the gamma parameters based on the read depth).
+
+The fitted priors are only suitable for the functions specifically implemented for Smart-seq data, i.e. power.smartseq, optimize.constant.budget.smartseq and estimate.exp.prob.count.param (with the parameter countMethod="read").
+
+```{r}
+
+#Negative binomial curve fitting
+fit<-nbinom.estimation(counts_smartseq,sizeFactorMethod="poscounts")
+means.deseq<-fit[[1]]
+disp.fun<-fit[[3]]
+
+#Normalize the NB means by the gene length
+mean.length.norm<-means.deseq$mean/gene_length$geneLength*1000
+
+#Gamma mixed fits
+censoredPoint<-1/ncol(counts_smartseq)
+gamma.fit<-mixed.gamma.estimation(mean.length.norm, 
+                                  censoredPoint = censoredPoint,
+                                  return.df=TRUE)
+gamma.fit
+
+```
+
+### Generating new priros for effect sizes and expression ranks
 
 To use other effect size and expression rank priors either data from other DE / eQTL studies or simulated data can be taken.
 
