@@ -225,6 +225,77 @@
 #' head(count.matrix.example)
 "count.matrix.example"
 
+#' Example annotation data frame matching the example count matrix to 
+#' test the expression curve estimation
+#'
+#' Contains three columns necessary for fitting the expression priors 
+#' (cell barcode, cell type and donor)
+#'
+#' @docType data
+#'
+#' @usage data(annotDfExample)
+#'
+#' @format Data frame with three columns (cell, cell_type, donor)
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(annotDfExample)
+#' head(annot.df)
+"annot.df"
+
+#' Example Smart-seq2 count matrix for the tutorial
+#'
+#' Contains a read count matrix of genes times cells
+#'
+#' @docType data
+#'
+#' @usage data(smartseqExample)
+#'
+#' @format Read count matrix of genes times cells
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(smartseqExample)
+#' dim(counts_smartseq)
+"counts_smartseq"
+
+#' Example Smart-seq2 annotation data frame (matching the Smart-seq2 count matrix)
+#'
+#' Contains an annotation data frame with cell type and donor information per cell
+#'
+#' @docType data
+#'
+#' @usage data(smartseqExample)
+#'
+#' @format Annotation data frame with cell type and donor information per cell
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(smartseqExample)
+#' head(annot_smartseq)
+"annot_smartseq"
+
+#' Example gene length data frame
+#'
+#' Contains gene length (only exonic regions) in bp for the genes from the Smart-seq2 example data frame;
+#' information obtained from UCSC (gene annotation GRCh37hg19)
+#'
+#' @docType data
+#'
+#' @usage data(smartseqExample)
+#'
+#' @format Gene length data frame with gene symbol and gene length in bp (exonic regions)
+#'
+#' @keywords datasets
+#'
+#' @examples
+#' data(smartseqExample)
+#' head(gene_length)
+"gene_length"
+
 #' Observed gene counts from multiple data sets to reproduce figures curves in the vignette
 #' reproduce-figure-plots faster
 #'

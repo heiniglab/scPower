@@ -2,7 +2,7 @@
 % Please edit documentation in R/expression_fit.R
 \name{estimate.exp.prob.count.param}
 \alias{estimate.exp.prob.count.param}
-\title{Estimate gene expression probability based on experimental parameters - variant for smart-seq or when calculating
+\title{Estimate gene expression probability based on experimental parameters - variant for Smart-seq or when calculating
 directly based on UMI counts (without read UMI fit)}
 \usage{
 estimate.exp.prob.count.param(
@@ -17,7 +17,8 @@ estimate.exp.prob.count.param(
   cutoffVersion = "absolute",
   nGenes = 21000,
   samplingMethod = "quantiles",
-  countMethod = "UMI"
+  countMethod = "UMI",
+  gene_length_prior = NULL
 )
 }
 \arguments{
@@ -30,7 +31,7 @@ estimate.exp.prob.count.param(
 
 \item{ct}{Cell type of interest (name from the gamma mixed models)}
 
-\item{disp.fun.param}{Function to fit the dispersion parameter dependent on the mean
+\item{disp.fun.param}{Data frame with parameters to fit the dispersion parameter dependent on the mean
 (required columns: ct (cell type), asymptDisp, extraPois (both from taken from DEseq))}
 
 \item{min.counts}{Expression cutoff in one individual: if cutoffVersion=absolute,
@@ -51,6 +52,9 @@ interpretations of min.counts (see description above)}
 
 \item{countMethod}{Specify if it is a UMI or read based method (by "UMI" or "read"). For a read based method,
 the dispersion function is fitted linear, for a UMI based method constant.}
+
+\item{gene_length_prior}{Vector with gene length, ordered by expression rank 
+(the first entry for the highest expressed gene); only required for Smart-seq (countMethod="read")}
 
 \item{meanCellCount}{Either mean UMI counts per cell for UMI-based methods or mean read counts per cell for read-based methods}
 }

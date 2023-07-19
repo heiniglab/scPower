@@ -1,3 +1,10 @@
+CHANGES in VERSION 1.0.4
+-------------------------
+o Extended the vignette to explain the fitting of the expression priors better, especially for 
+  Smart-seq data. For this, additional toy data for the tutorial was added to the package.
+o Added the parameter "gene_length_prior" for the function "estimate.exp.prob.count.param" to
+  calculate the expression probabilities for Smart-seq data more accurately.
+
 CHANGES IN VERSION 1.0.3
 -------------------------
 o Added the parameter reactionsPerKit to the Shiny Server.
