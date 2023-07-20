@@ -149,11 +149,11 @@ shinyServer(
 
       updateSelectInput(session, "celltype", label = "Cell type",
                         choices = c("B cells", choices))
-      updateSelectInput(session, "tissue", choices = c("", sort(uniqueTissues)))
-      updateSelectInput(session, "assay", choices = c("", sort(uniqueAssays)))
+      updateSelectInput(session, "tissue", choices = c("Select a tissue..." = "", sort(uniqueTissues)))
+      updateSelectInput(session, "assay", choices = c("Select an assay..." = "", sort(uniqueAssays)))
     })
 
-    # Update cell types when tissue is selected
+    # Update assays and cell types when tissue is selected
     observeEvent(input$tissue, {
       if (!(input$tissue == "")) {
         tissue_input <- input$tissue
@@ -165,12 +165,12 @@ shinyServer(
         filtered_assays <- unique(sapply(filtered_celltypes, function(x) unlist(strsplit(x, "_"))[1]))
         choices <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
         
-        updateSelectInput(session, "assay", choices = filtered_assays)
-        updateSelectInput(session, "celltype", choices = sort(choices))
+        updateSelectInput(session, "assay", choices = c("Select an assay..." = "", filtered_assays))
+        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(choices)))
       }
     })
 
-    # Update cell types when assay is selected
+    # Update tissues and cell types when assay is selected
     observeEvent(input$assay, {
       if (!(input$assay == "")) {
         tissue_input <- input$tissue
@@ -182,7 +182,7 @@ shinyServer(
           assay_part == assay_input & tissue_part == tissue_input
         })]
         choices <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
-        updateSelectInput(session, "celltype", choices = sort(choices))
+        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(choices)))
       }
     })
 
