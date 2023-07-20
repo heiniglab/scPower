@@ -52,13 +52,29 @@ constructDisFunParam <- function(conn) {
   return(result)
 }
 
-formatLabel <- function(choice, index, cutoff) {
+encodeLabel <- function(choice, index, cutoff) {
   if(index <= cutoff){
     return(choice)
   }
   parts <- strsplit(choice, "_")[[1]]
   sprintf("%s (Assay: %s, Tissue: %s)", parts[3], parts[1], parts[2])
 }
+
+decodeLabel <- function(encodedChoice) {
+  parts <- strsplit(encodedChoice, " \\(Assay: ")[[1]]
+  
+  if (length(parts) == 1) {
+    return(encodedChoice)
+  }
+  
+  cellType <- parts[1]
+  subParts <- strsplit(parts[2], ", Tissue: ")[[1]]
+  assay <- subParts[1]
+  tissue <- substr(subParts[2], 1, nchar(subParts[2]) - 1)
+  
+  sprintf("%s_%s_%s", assay, tissue, cellType)
+}
+
 
 shinyServer(
 
@@ -128,7 +144,7 @@ shinyServer(
       celltypes<-append(celltypes, idToName)
       choices <- celltypes
 
-      labels <- sapply(seq_along(choices), function(i) formatLabel(choices[i], i, 7))
+      labels <- sapply(seq_along(choices), function(i) encodeLabel(choices[i], i, 7))
       choices <- setNames(choices, labels)
 
       updateSelectInput(session, "celltype", label = "Cell type",
@@ -147,7 +163,7 @@ shinyServer(
           tissue_part == tissue_input
         })]
         filtered_assays <- unique(sapply(filtered_celltypes, function(x) unlist(strsplit(x, "_"))[1]))
-        choices <- sapply(seq_along(filtered_celltypes), function(i) formatLabel(filtered_celltypes[i], i, 0))
+        choices <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
         
         updateSelectInput(session, "assay", choices = filtered_assays)
         updateSelectInput(session, "celltype", choices = sort(choices))
@@ -165,7 +181,7 @@ shinyServer(
           tissue_part <- parts[2]
           assay_part == assay_input & tissue_part == tissue_input
         })]
-        choices <- sapply(seq_along(filtered_celltypes), function(i) formatLabel(filtered_celltypes[i], i, 0))
+        choices <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
         updateSelectInput(session, "celltype", choices = sort(choices))
       }
     })
@@ -258,7 +274,7 @@ shinyServer(
       type<-input$study
       ref.study.name<-input$refstudy
       ct.freq<-input$ctfreq
-      ct<-input$celltype
+      ct<-decodeLabel(input$celltype)
 
       costKit<-input$costKit
       costFlowCell<-input$costFlowCell
