@@ -163,10 +163,10 @@ shinyServer(
           tissue_part == tissue_input
         })]
         filtered_assays <- unique(sapply(filtered_celltypes, function(x) unlist(strsplit(x, "_"))[1]))
-        choices <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
+        filtered_celltypes <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
         
         updateSelectInput(session, "assay", choices = c("Select an assay..." = "", filtered_assays))
-        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(choices)))
+        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(filtered_celltypes)))
       }
     })
 
@@ -181,8 +181,8 @@ shinyServer(
           tissue_part <- parts[2]
           assay_part == assay_input & tissue_part == tissue_input
         })]
-        choices <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
-        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(choices)))
+        filtered_celltypes <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
+        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(filtered_celltypes)))
       }
     })
 
