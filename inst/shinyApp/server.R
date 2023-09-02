@@ -151,6 +151,7 @@ shinyServer(
                         choices = c("B cells", choices))
       updateSelectInput(session, "tissue", choices = c("Select a tissue..." = "", sort(uniqueTissues)))
       updateSelectInput(session, "assay", choices = c("Select an assay..." = "", sort(uniqueAssays)))
+      updateSelectInput(session, "organism", choices = c("Select an organism..." = "", "Homo sapiens", "Mus musculus"))
     })
 
     # Update assays and cell types when tissue is selected

@@ -133,6 +133,10 @@ body <- ## Body content
                     bsPopover("study", title="Study type:", placement="top", options = list(container = "body"),
                               content="For what type of study do you want to design an experiment"),
 
+                    selectInput("organism", label = "Organism",
+                                choices = list()),
+                    updateResistantPopover("organism", title="Organism", placement="top",
+                              content=paste("The organism of interest. The datasets are available for different cell types and different studies.")),
                     selectInput("tissue", label = "Tissue",
                                 choices = list()),
                     updateResistantPopover("tissue", title="Tissue", placement="top",
