@@ -357,35 +357,24 @@ shinyServer(
     output$downloadData <- downloadHandler(
       filename = function() {
         if (input$fileType == "CSV") {
-          "input_parameters.csv"
+          paste("power_results_", Sys.Date(), ".csv", sep="")
         } else {
-          "input_parameters.tsv"
+          paste("power_results_", Sys.Date(), ".tsv", sep="")
         }
       },
       content = function(file) {
-        # Convert the input parameters to a list
-        input_list <- reactiveValuesToList(input)
-        
-        # Convert each input to a single string
-        input_list <- lapply(input_list, function(x) {
-          if (is.vector(x)) {
-            paste(x, collapse = ", ")
-          } else {
-            as.character(x)
-          }
-        })
-        
-        # Convert the list to a data frame
-        df <- data.frame(t(unlist(input_list)), stringsAsFactors = FALSE)
+        power_results_df <- selectedData()
         
         if (input$fileType == "CSV") {
-          write.csv(df, file, row.names = FALSE)
+          write.csv(power_results_df, file, row.names = FALSE)
         } else {
-          write.table(df, file, sep = "\t", row.names = FALSE)
+          write.table(power_results_df, file, sep = "\t", row.names = FALSE)
         }
       }
     )
 
+    selectedData <- reactiveVal(NULL)
+    
     #Create main plot with optimization grid
     output$powerPlot<-renderPlotly({
 
@@ -426,9 +415,11 @@ shinyServer(
         #Select study of interest dependent on the click
         max.study<-power.study.plot[power.study.plot[,c(xAxis)]==s[["x"]] &
                                       power.study.plot[,c(yAxis)]==s[["y"]],]
+        selectedData(max.study)
 
       } else {
         max.study<-power.study.plot[which.max(power.study.plot$powerDetect),]
+        selectedData(max.study)
       }
 
       colnames(power.study.plot)[2]<-"Detection.power"
