@@ -1,5 +1,6 @@
 # Loading libraries
-lapply(c("DBI", "dplyr", "plotly", "reshape2", "RPostgres", "RPostgreSQL", "scPower", "shiny"), 
+lapply(c("DBI", "dplyr", "plotly", "reshape2", "RPostgres", "RPostgreSQL", "scPower", "shiny",
+         "RSQLite", "readr", "magrittr", "zeallot"), 
       library, character.only = TRUE)
 
 establishDBConnection <- function() {
@@ -52,6 +53,62 @@ constructDisFunParam <- function(conn) {
   return(result)
 }
 
+offlineQuery <- function(conn) {
+  main_table_sql <- read_file(Sys.getenv("MAIN_TABLE_SQLITE"))
+  disp_fun_sql <- read_file(Sys.getenv("DISP_FUN_SQLITE"))
+  gamma_fits_sql <- read_file(Sys.getenv("GAMMA_LINEAR_FITS_SQLITE"))
+
+  # since sqlite does not have a keyword such as "public", it needs to be removed
+  main_table_sql <- gsub("\"public\"\\.", "", main_table_sql)
+  disp_fun_sql <- gsub("\"public\"\\.", "", disp_fun_sql)
+  gamma_fits_sql <- gsub("\"public\"\\.", "", gamma_fits_sql)
+
+  # Split the SQL script into individual statements
+  main_table_sql_statements <- strsplit(main_table_sql, ";", fixed = TRUE)[[1]]
+  disp_fun_sql_statements <- strsplit(disp_fun_sql, ";", fixed = TRUE)[[1]]
+  gamma_fits_sql_statements <- strsplit(gamma_fits_sql, ";", fixed = TRUE)[[1]]
+
+  for (statement in list(main_table_sql_statements, disp_fun_sql_statements, gamma_fits_sql_statements)) {
+    for (sql in statement) {
+      try(dbExecute(conn, sql))
+    }
+  }
+
+  gamma_query <- "
+      SELECT g.*, a.id_to_name 
+      FROM gamma_linear_fit_results AS g 
+      LEFT JOIN main_table AS a
+      ON SUBSTRING(g.primary_key, 3) = a.primary_key"
+
+  disp_fun_query <- "
+      SELECT d.*, a.id_to_name 
+      FROM disp_fun_estimation_results AS d 
+      LEFT JOIN main_table AS a 
+      ON SUBSTRING(d.primary_key, 3) = a.primary_key"
+
+  gamma_result <- dbGetQuery(conn, gamma_query)
+  disp_fun_result <- dbGetQuery(conn, disp_fun_query)
+
+  # gamma changes
+  names(gamma_result)[5] <- "ct"
+  gamma_result <- gamma_result[, c("parameter", "intercept", "mean_umi", "ct")]
+  names(gamma_result)[3] <- "meanUMI"
+  gamma_result$intercept <- as.numeric(gamma_result$intercept)
+  gamma_result$meanUMI <- as.numeric(gamma_result$meanUMI)
+
+  # dispfun changes
+  names(disp_fun_result)[4] <- "ct"
+  disp_fun_result <- disp_fun_result[, c("ct", "asympt_disp", "extra_pois")]
+  names(disp_fun_result)[2] <- "asymptDisp"
+  names(disp_fun_result)[3] <- "extraPois"
+  disp_fun_result$asymptDisp <- as.numeric(disp_fun_result$asymptDisp)
+  disp_fun_result$extraPois <- as.numeric(disp_fun_result$extraPois)
+
+  dbDisconnect(conn)
+
+  return(list(gamma_result, disp_fun_result))
+}
+
 encodeLabel <- function(choice, index, cutoff) {
   if(index <= cutoff){
     return(choice)
@@ -80,6 +137,8 @@ shinyServer(
 
   function(input, output, session) {
 
+    onlineToggle <- TRUE
+    
     ###############################
     # Power to detect rare cell type
 
@@ -113,6 +172,12 @@ shinyServer(
 
     })
 
+    # Toggle switch is turned ON/OFF
+    observeEvent(input$online, {
+      if (input$online) { onlineToggle <<- TRUE } 
+      else { onlineToggle <<- FALSE }
+    })
+    
     ###############################
     # Power to detect DE/eQTL genes
 
@@ -133,6 +198,7 @@ shinyServer(
     query <- "SELECT id_to_name FROM main_table"
     idToName <- as.list(dbGetQuery(conn, query))[[1]]
     dbDisconnect(conn)
+    
     uniqueAssays <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[1]))
     uniqueTissues <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[2]))
     uniqueCelltypes <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[3]))
@@ -303,10 +369,19 @@ shinyServer(
       data(readDepthUmiFit) #Relation between reads and UMI
       data(gammaUmiFits) #Relation between UMI and gamma parameters
       data(dispFunParam) #Parameters of mean-dispersion curve
-
-      conn <- establishDBConnection()
-      gamma.mixed.fits <- rbind(gamma.mixed.fits, constructGammaLinearFit(conn))
-      disp.fun.param <- rbind(disp.fun.param, constructDisFunParam(conn))
+      
+      if(onlineToggle){
+        conn <- establishDBConnection()
+        gamma.mixed.fits <- rbind(gamma.mixed.fits, constructGammaLinearFit(conn))
+        disp.fun.param <- rbind(disp.fun.param, constructDisFunParam(conn))
+      }
+      else{
+        conn <- dbConnect(RSQLite::SQLite(), ":memory:")
+        c(gamma_result, disp_fun_result) %<-% offlineQuery(conn)
+        
+        gamma.mixed.fits <- rbind(gamma.mixed.fits, gamma_result)
+        disp.fun.param <- rbind(disp.fun.param, disp_fun_result)
+      }
 
       #Select priors dependent on study type
       if(type=="eqtl"){

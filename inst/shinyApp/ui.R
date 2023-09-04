@@ -5,6 +5,7 @@ library(shinydashboard)
 library(shinydashboardPlus)
 library(shinyjs)
 library(shinyBS)
+library(shinyWidgets)
 
 # the popovers for `selectInput` options need to be made updateresistant, or they won't show in the app
 # https://stackoverflow.com/questions/36965954/shinybs-bspopover-and-updateselectinput
@@ -113,13 +114,25 @@ body <- ## Body content
                     solidHeader = TRUE,
                     status="orange",
 
-                    actionButton("recalc", "Calculate optimal study", icon("paper-plane"),
-                                 style="color: #fff; background-color: #337ab7; border-color: #2e6da4; display:center-align"),
-                    bsPopover("recalc", title="Calculate optimal study", placement="top", options = list(container = "body"),
-                              content="Computes the optimal study design for the give parameter combinations. Can take 1-2 minutes for big grids."),
-                    downloadButton("downloadData", "Download"),
-                    bsPopover("downloadData", title="Download", placement="top", options = list(container = "body"),
-                              content="Download the data of the current plot as CSV or TSV file."),
+                    div(style = "display: flex; align-items: center; justify-content: space-between;",
+                        actionButton("recalc", "Calculate optimal study", icon("paper-plane"),
+                                    style = "color: #fff; background-color: #337ab7; border-color: #2e6da4; margin-right: 5px;"),
+                        bsPopover("recalc", title = "Calculate optimal study", placement = "top", options = list(container = "body"),
+                                  content = "Computes the optimal study design for the given parameter combinations. Can take 1-2 minutes for big grids."),
+                        downloadButton("downloadData", "", style = "width: 15%;"),
+                        bsPopover("downloadData", title = "Download", placement = "top", options = list(container = "body"),
+                                  content = "Download the data of the current plot as a CSV or TSV file."),
+                        div(style = "padding-top: 12px; margin-left: 10px;",  
+                            prettySwitch(
+                              inputId = "online",
+                              label = "",
+                              fill = TRUE,
+                              value = TRUE,
+                              status = "primary"
+                            )
+                        )
+                    ),
+
                     
                     br(),
                     br(),
