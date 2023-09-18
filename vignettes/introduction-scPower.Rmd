@@ -617,7 +617,7 @@ expressed.genes.df<-merge(expressed.genes.df,mapped.reads,
                           by="matrix")
 
 #Choose the same number of donors in the example count matrix
-nDonors <- length(unique(annot.df$donor))
+nDonors <- length(unique(annot.df$individual))
 
 #Get the number of cells per cell type and individual
 expressed.genes.df$cells.indiv<-expressed.genes.df$num.cells/nDonors
