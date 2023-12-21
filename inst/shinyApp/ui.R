@@ -381,7 +381,7 @@ body <- ## Body content
       tabItem(tabName = "license",
         h2("The 3-Clause BSD License"),
         HTML("
-          <p>Copyright &copy; 2023 Your Company Name</p>
+          <p>Copyright &copy; 2023 Helmholtz Munich</p>
           <p>Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:</p>
           <ol>
             <li>Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.</li>
