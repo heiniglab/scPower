@@ -12,16 +12,9 @@ Schmid, K. T., Höllbacher, B., Cruceanu, C., Boettcher, A., Lickert, H., Binder
 
 An explanation how the plots in the paper were generated is shown in the second vignette [reproduce-paper-plots](vignettes/reproduce-paper-plots.pdf) and an example how to combine our model with more complex designs is shown in the third vignette [extension-complex-design](vignettes/extension-complex-design.pdf).
 
-## Update: web server for scPower temporarily down
+## A new and improved web server for scPower is now available
 
-Helmholtz Munich has been the target of a cyberattack, which our IT responded with immediate defensive measures. This also means that our scientific web services are currently not available. We hope that they will soon be restored, including our webserver for scPower. In the meanwhile, you can use the graphical inferface of scPower by launching the shiny app on your local computer. After installing the package (see section [Installation](#installation)), you can call the app using:
-
-```{R}
-library(scPower)
-runShiny()
-```
-
-Sorry for the inconvenience, please contact us in case you need further assistance.
+A new version of the scPower webserver https://scpower.helmholtz-muenchen.de/ is now featuring parameters derived atlas scale data sets, enabling power analysis across 66 tissues, 891 cell types, profiled with 6 different technology platforms.
 
 ## Installation
 
