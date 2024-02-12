@@ -132,6 +132,39 @@ decodeLabel <- function(encodedChoice) {
   sprintf("%s_%s_%s", assay, tissue, cellType)
 }
 
+generateDEScenario <- function(N, ndiff, among_top_N, mean_fc, sd_fc) {
+  set.seed(0)
+  
+  # Initialize the data frame
+  de.scenario <- data.frame(name = "Custom", 
+                            FoldChange = 2^rnorm(N, sd = sd_fc), 
+                            DE = FALSE, 
+                            rank = 1:N)
+  
+  # Randomly assign DE = TRUE to 'ndiff' genes within the top 'among_top_N'
+  de.scenario$DE[sample(1:among_top_N, ndiff)] <- TRUE
+  
+  # Assign fold changes to DE genes based on specified mean and sd
+  de.scenario$FoldChange[de.scenario$DE] <- 2^rnorm(ndiff, log2(mean_fc), sd = sd_fc)
+  
+  # Calculate cumulative fraction of DE genes
+  de.scenario$cumFraction <- cumsum(de.scenario$DE) / ndiff
+
+  # only getting DE genes
+  de.scenario <- de.scenario[de.scenario$DE == TRUE, ]
+
+  # Filling NA on not to be used fields
+  de.scenario$gene <- NA
+  de.scenario$FDR <- NA
+  de.scenario$geneLength <- NA
+  de.scenario$type <- NA
+  
+  # Reorder columns
+  de.scenario <- de.scenario[, c("name", "gene", "FoldChange", "FDR", "cumFraction", "rank", "geneLength", "type")]
+  
+  return(de.scenario)
+}
+
 
 shinyServer(
 
@@ -176,6 +209,21 @@ shinyServer(
     observeEvent(input$online, {
       if (input$online) { onlineToggle <<- TRUE } 
       else { onlineToggle <<- FALSE }
+    })
+
+    observeEvent(input$refstudy, {
+      if(input$refstudy == "Custom") {
+        showModal(modalDialog(
+          title = "Enter Custom Values for a Reference Study",
+          numericInput("n_sim", "Number of Simulations", value = 25000),
+          numericInput("ndiff", "Number of Relevant Genes", value = 50),
+          numericInput("among_top_N", "Ranking Among Top N", value = 5000),
+          numericInput("mean_fc", "Fold Change Mean", value = 1.5),
+          numericInput("sd_fc", "Fold Change Standard Deviation", value = 0.5),
+          easyClose = TRUE,
+          footer = modalButton("Close")
+        ))
+      }
     })
     
     ###############################
@@ -264,6 +312,7 @@ shinyServer(
       } else {
         data(DERefStudy)
         studies<-as.character(unique(de.ref.study$name))
+        studies <- c(studies, "Custom")
         selected<-"FDR"
         shinyjs::hide(id="indepsnps")
         shinyjs::show(id="ssizeratiode")
@@ -391,6 +440,10 @@ shinyServer(
       } else {
         data(DERefStudy)
         ref.study<-de.ref.study
+        if(!is.null(input$n_sim)){
+          custom.study <- generateDEScenario(input$n_sim, input$ndiff, input$among_top_N, input$mean_fc, input$sd_fc)
+          ref.study <- rbind(ref.study, custom.study)
+        }
       }
 
       withProgress(
