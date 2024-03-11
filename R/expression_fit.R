@@ -586,22 +586,35 @@ mixed.gamma.estimation<-function(mean.vals, censoredPoint=NULL,
   }
 
   #Initialize first gamma component
-  y<-mean.vals[mean.vals > 0 & mean.vals<quantile(mean.vals,probs=1-outlier.prop)]
+  y <- mean.vals[mean.vals > 0 & mean.vals < quantile(mean.vals, 
+        probs = (1 - outlier.prop) / 2) ]
   Gamma1<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
 
   #Initialize second gamma component
-  y<-mean.vals[mean.vals>=quantile(mean.vals,probs=1-outlier.prop)]
+  y <- mean.vals[mean.vals > quantile(mean.vals, 
+        probs = (1 - outlier.prop) / 2) & mean.vals <  quantile(mean.vals, 
+        probs = 1 - outlier.prop)]
   Gamma2<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
 
-  log<-capture.output({emfit <-em(mean.vals, ncomp=3,
-                                  prop=c(zero.prop,1-(zero.prop+outlier.prop),outlier.prop),
-                                  model.constructor=c("Zero","Gamma","Gamma"),
-                                  models=c(Zero(),Gamma1,Gamma2))})
+  #initialize the third gamma component
+  y<-mean.vals[mean.vals>=quantile(mean.vals,probs=1-outlier.prop)]
+  Gamma3<-LeftCensoredGamma(shape=mean(y)^2/var(y),rate=mean(y)/var(y),cutoff=censoredPoint)
+
+  log<-capture.output({emfit <-em(mean.vals, ncomp=4,
+                                  prop=c(zero.prop,((1-(zero.prop+outlier.prop))/2), ((1-(zero.prop+outlier.prop))/2), outlier.prop),
+                                  model.constructor=c("Zero","Gamma","Gamma","Gamma"),
+                                  models=c(Zero(),Gamma1,Gamma2,Gamma3))})
 
   if(return.df){
-    df<-data.frame(p1=emfit@proportions[1],p2=emfit@proportions[2],
-                   s1=emfit@models[[2]]@shape,s2=emfit@models[[3]]@shape,
-                   r1=emfit@models[[2]]@rate,r2=emfit@models[[3]]@rate)
+    df<-data.frame(p1=emfit@proportions[1],
+                   p2=emfit@proportions[2], 
+                   p3=emfit@proportions[3],
+                   s1=emfit@models[[2]]@shape,
+                   s2=emfit@models[[3]]@shape, 
+                   s3=emfit@models[[4]]@shape,
+                   r1=emfit@models[[2]]@rate,
+                   r2=emfit@models[[3]]@rate, 
+                   r3=emfit@models[[4]]@rate)
     return(df)
   } else {
     return(emfit)

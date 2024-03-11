@@ -30,16 +30,16 @@ visualize.gamma.fits<-function(mean.vals,gamma.parameters,nGenes=21000,
   }
 
   #Simulate mean values
-  sim.mean.vals<-sample.mean.values.quantiles(gamma.parameters,
-                                              nGenes=nGenes)
+  sim.mean.vals<-sample.mean.values.quantiles(gamma.parameters, nGenes)
 
   #Set p1 to a minimal value of 0.01
   gamma.parameters$p1<-max(gamma.parameters$p1,0.01)
 
   #Calculate from which component each value in the simulation originates (ZI + LZG1 + LZG2)
-  nZeros<-round(nGenes*gamma.parameters$p1)
+  nZeros <-round(nGenes*gamma.parameters$p1)
   nGamma1<-round(nGenes*gamma.parameters$p2)
-  nGamma2<-nGenes-nZeros-nGamma1
+  nGamma2<-round(nGenes*gamma.parameters$p3)
+  nGamma3<-nGenes-nZeros-nGamma1-nGamma2
 
   #Remove zero values from mean vector to reduce it to a size of nGenes
   zeroGenes<-mean.vals==0
@@ -54,9 +54,10 @@ visualize.gamma.fits<-function(mean.vals,gamma.parameters,nGenes=21000,
 
   mean.vals<-mean.vals[!zeroGenes]
 
-  plot.values<-data.frame(means=c(mean.vals,sim.mean.vals),
-                          type=c(rep("Observed",nGenes), rep("sim.mean.zero",nZeros),
-                                 rep("sim.mean.c1",nGamma1), rep("sim.mean.c2",nGamma2)))
+  plot.values <- data.frame(means = c(mean.vals, sim.mean.vals),
+                          type = c(rep("Observed", nGenes), rep("sim.mean.zero", nZeros),
+                                   rep("sim.mean.c1", nGamma1), rep("sim.mean.c2", nGamma2),
+                                   rep("sim.mean.c3", nGamma3)))
 
   #Set zero values to a very small value to be able to plot on logarithmic scale
   plot.values<-plot.values[plot.values$means==0 | plot.values$means>=lower.dist,]
@@ -66,9 +67,9 @@ visualize.gamma.fits<-function(mean.vals,gamma.parameters,nGenes=21000,
   plot.values<-plot.values[plot.values$means<1e2,]
 
   #Order estimated means
-  plot.values$type<-factor(plot.values$type,
-                           levels=c("Observed","sim.mean.zero",
-                                    "sim.mean.c1","sim.mean.c2"))
+  plot.values$type <- factor(plot.values$type,
+                           levels = c("Observed", "sim.mean.zero",
+                                      "sim.mean.c1", "sim.mean.c2", "sim.mean.c3"))
 
   g<-ggplot(data=plot.values,aes(x=means, fill=type))+
     geom_histogram(position="dodge",bins=num.bins)+
