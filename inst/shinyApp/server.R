@@ -244,6 +244,7 @@ shinyServer(
     #Set the cell types correctly
     conn <- establishDBConnection()
     idToName <- as.list(dbGetQuery(conn, "SELECT id_to_name FROM main_table"))[[1]]
+    organism <- as.list(dbGetQuery(conn, "SELECT organism FROM main_table"))[[1]]
     dbDisconnect(conn)
     
     uniqueAssays <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[1]))
