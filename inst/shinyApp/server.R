@@ -6,11 +6,11 @@ lapply(c("DBI", "dplyr", "plotly", "reshape2", "RPostgres", "RPostgreSQL", "scPo
 establishDBConnection <- function() {
   return(dbConnect(
       Postgres(),
-      dbname = Sys.getenv("POSTGRES_DBNAME"),
-      host = Sys.getenv("POSTGRES_HOST"),
-      port = as.integer(Sys.getenv("POSTGRES_PORT")),
-      user = Sys.getenv("POSTGRES_USER"),
-      password = Sys.getenv("POSTGRES_PASSWORD")))
+      dbname = "todos",
+      host = "localhost",
+      port = as.integer("5432"),
+      user = "postgres",
+      password = "asdasd12x"))
 }
 
 constructGammaLinearFit <- function(conn) {
@@ -215,7 +215,7 @@ shinyServer(
       if(input$refstudy == "Custom") {
         showModal(modalDialog(
           title = "Enter Custom Values for a Reference Study",
-          numericInput("n_sim", "Number of Simulations", value = 25000),
+          numericInput("n_sim", "Number of Genes", value = 25000),
           numericInput("ndiff", "Number of Relevant Genes", value = 50),
           numericInput("among_top_N", "Ranking Among Top N", value = 5000),
           numericInput("mean_fc", "Fold Change Mean", value = 1.5),
@@ -243,8 +243,7 @@ shinyServer(
     
     #Set the cell types correctly
     conn <- establishDBConnection()
-    query <- "SELECT id_to_name FROM main_table"
-    idToName <- as.list(dbGetQuery(conn, query))[[1]]
+    idToName <- as.list(dbGetQuery(conn, "SELECT id_to_name FROM main_table"))[[1]]
     dbDisconnect(conn)
     
     uniqueAssays <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[1]))
