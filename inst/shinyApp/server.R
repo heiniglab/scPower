@@ -280,7 +280,7 @@ shinyServer(
         filtered_assays <- unique(sapply(filtered_celltypes, function(x) unlist(strsplit(x, "_"))[1]))
         filtered_celltypes <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
         
-        updateSelectInput(session, "assay", choices = c("Select an assay..." = "", filtered_assays))
+        updateSelectInput(session, "assay", choices = c("Select an assay..." = "", sort(unique(filtered_assays))))
         updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(filtered_celltypes)))
       }
     })
@@ -288,15 +288,16 @@ shinyServer(
     # Update tissues and cell types when assay is selected
     observeEvent(input$assay, {
       if (!(input$assay == "")) {
-        tissue_input <- input$tissue
         assay_input <- input$assay
-        filtered_celltypes <- idToName[sapply(idToName, function(x) {
+        filtered_data <- idToName[sapply(idToName, function(x) {
           parts <- strsplit(x, "_")[[1]]
           assay_part <- parts[1]
-          tissue_part <- parts[2]
-          assay_part == assay_input & tissue_part == tissue_input
+          assay_part == assay_input
         })]
-        filtered_celltypes <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
+        filtered_tissues <- unique(sapply(filtered_data, function(x) unlist(strsplit(x, "_"))[2]))
+        filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
+        
+        updateSelectInput(session, "tissue", choices = c("Select a tissue..." = "", sort(unique(filtered_tissues))))
         updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(filtered_celltypes)))
       }
     })
