@@ -243,8 +243,13 @@ shinyServer(
     
     #Set the cell types correctly
     conn <- establishDBConnection()
+    query_organism <- "
+        SELECT id_to_name, organism
+        FROM main_table
+    "
     idToName <- as.list(dbGetQuery(conn, "SELECT id_to_name FROM main_table"))[[1]]
-    organism <- as.list(dbGetQuery(conn, "SELECT organism FROM main_table"))[[1]]
+    organism <- dbGetQuery(conn, query_organism)
+    organism_list <- setNames(organism$organism, organism$id_to_name)
     dbDisconnect(conn)
     
     uniqueAssays <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[1]))
@@ -268,39 +273,74 @@ shinyServer(
       updateSelectInput(session, "organism", choices = c("Select an organism..." = "", "Homo sapiens", "Mus musculus"))
     })
 
+    observeEvent(input$organism, {
+      if (!is.null(input$organism) && input$organism != "") {
+        organism_input <- input$organism
+        
+        # Filter data based on organism selection
+        filtered_data <- Filter(function(x) organism_list[x] == organism_input, names(organism_list))
+        
+        # Extracting assays, tissues, and cell types from filtered data
+        assays_tissues_celltypes <- t(sapply(filtered_data, function(x) strsplit(x, "_")[[1]]))
+        filtered_assays <- unique(assays_tissues_celltypes[, 1])
+        filtered_tissues <- unique(assays_tissues_celltypes[, 2])
+        filtered_celltypes <- unique(assays_tissues_celltypes[, 3])
+        
+        # Update UI elements based on filtered options
+        updateSelectInput(session, "assay", choices = c("Select an assay..." = "", sort(unique(filtered_assays))))
+        updateSelectInput(session, "tissue", choices = c("Select a tissue..." = "", sort(unique(filtered_tissues))))
+        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(unique(filtered_celltypes))))
+      }
+    })
+
+
     # Update assays and cell types when tissue is selected
     observeEvent(input$tissue, {
       if (!(input$tissue == "")) {
         tissue_input <- input$tissue
-        filtered_celltypes <- idToName[sapply(idToName, function(x) {
-          parts <- strsplit(x, "_")[[1]]
-          tissue_part <- parts[2]
-          tissue_part == tissue_input
-        })]
-        filtered_assays <- unique(sapply(filtered_celltypes, function(x) unlist(strsplit(x, "_"))[1]))
-        filtered_celltypes <- sapply(seq_along(filtered_celltypes), function(i) encodeLabel(filtered_celltypes[i], i, 0))
         
+        # Filter data based on tissue selection, adjusted for organism
+        filtered_data <- Filter(function(x) {
+          parts <- strsplit(x, "_")[[1]]
+          parts[2] == tissue_input
+        }, names(organism_list))
+        
+        # Extract assays and cell types from filtered data, adjust for organism
+        filtered_assays <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][1]))
+        filtered_celltypes <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][3]))
+        filtered_organisms <- unique(sapply(filtered_data, function(x) organism_list[x]))
+        
+        # Update UI elements
         updateSelectInput(session, "assay", choices = c("Select an assay..." = "", sort(unique(filtered_assays))))
-        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(filtered_celltypes)))
+        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(unique(filtered_celltypes))))
+        updateSelectInput(session, "organism", choices = c("Select an organism..." = "", sort(unique(filtered_organisms))))
       }
     })
+
 
     # Update tissues and cell types when assay is selected
     observeEvent(input$assay, {
       if (!(input$assay == "")) {
         assay_input <- input$assay
-        filtered_data <- idToName[sapply(idToName, function(x) {
-          parts <- strsplit(x, "_")[[1]]
-          assay_part <- parts[1]
-          assay_part == assay_input
-        })]
-        filtered_tissues <- unique(sapply(filtered_data, function(x) unlist(strsplit(x, "_"))[2]))
-        filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
         
+        # Filter data based on assay selection, adjusted for organism
+        filtered_data <- Filter(function(x) {
+          parts <- strsplit(x, "_")[[1]]
+          parts[1] == assay_input
+        }, names(organism_list))
+        
+        # Extract tissues and cell types from filtered data, adjust for organism
+        filtered_tissues <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][2]))
+        filtered_celltypes <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][3]))
+        filtered_organisms <- unique(sapply(filtered_data, function(x) organism_list[x]))
+        
+        # Update UI elements
         updateSelectInput(session, "tissue", choices = c("Select a tissue..." = "", sort(unique(filtered_tissues))))
-        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(filtered_celltypes)))
+        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(unique(filtered_celltypes))))
+        updateSelectInput(session, "organism", choices = c("Select an organism..." = "", sort(unique(filtered_organisms))))
       }
     })
+
 
     #Set the accessible prior studies correctly (dependent on eQTL/DE)
     observe({
