@@ -307,7 +307,7 @@ shinyServer(
         
         # Extract assays and cell types from filtered data, adjust for organism
         filtered_assays <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][1]))
-        filtered_celltypes <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][3]))
+        filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
         filtered_organisms <- unique(sapply(filtered_data, function(x) organism_list[x]))
         
         # Update UI elements
@@ -331,7 +331,7 @@ shinyServer(
         
         # Extract tissues and cell types from filtered data, adjust for organism
         filtered_tissues <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][2]))
-        filtered_celltypes <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][3]))
+        filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
         filtered_organisms <- unique(sapply(filtered_data, function(x) organism_list[x]))
         
         # Update UI elements
