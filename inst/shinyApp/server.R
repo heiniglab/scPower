@@ -284,7 +284,7 @@ shinyServer(
         assays_tissues_celltypes <- t(sapply(filtered_data, function(x) strsplit(x, "_")[[1]]))
         filtered_assays <- unique(assays_tissues_celltypes[, 1])
         filtered_tissues <- unique(assays_tissues_celltypes[, 2])
-        filtered_celltypes <- unique(assays_tissues_celltypes[, 3])
+        filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
         
         # Update UI elements based on filtered options
         updateSelectInput(session, "assay", choices = c("Select an assay..." = "", sort(unique(filtered_assays))))
