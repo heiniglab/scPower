@@ -255,6 +255,8 @@ shinyServer(
     uniqueAssays <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[1]))
     uniqueTissues <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[2]))
     uniqueCelltypes <- unique(sapply(idToName, function(x) unlist(strsplit(x, "_"))[3]))
+    
+    filteredData <- reactiveValues(currentList = names(organism_list))
 
     # initializing each of the dropdown menu items
     observe({
@@ -280,6 +282,8 @@ shinyServer(
         # Filter data based on organism selection
         filtered_data <- Filter(function(x) organism_list[x] == organism_input, names(organism_list))
         
+        filteredData$currentList <- filtered_data
+        
         # Extracting assays, tissues, and cell types from filtered data
         assays_tissues_celltypes <- t(sapply(filtered_data, function(x) strsplit(x, "_")[[1]]))
         filtered_assays <- unique(assays_tissues_celltypes[, 1])
@@ -301,8 +305,10 @@ shinyServer(
         # Filter data based on assay selection, adjusted for organism
         filtered_data <- Filter(function(x) {
           parts <- strsplit(x, "_")[[1]]
-          parts[1] == assay_input
+          parts[1] == assay_input && x %in% filteredData$currentList
         }, names(organism_list))
+        
+        filteredData$currentList <- filtered_data
         
         # Extract tissues and cell types from filtered data, adjust for organism
         filtered_tissues <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][2]))
@@ -323,8 +329,10 @@ shinyServer(
         # Filter data based on tissue selection, adjusted for organism
         filtered_data <- Filter(function(x) {
           parts <- strsplit(x, "_")[[1]]
-          parts[2] == tissue_input
+          parts[2] == tissue_input && x %in% filteredData$currentList
         }, names(organism_list))
+        
+        filteredData$currentList <- filtered_data
         
         # Extract assays and cell types from filtered data, adjust for organism
         filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
