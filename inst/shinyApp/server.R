@@ -260,9 +260,9 @@ shinyServer(
 
     # initializing each of the dropdown menu items
     observe({
-      data(gammaUmiFits)
-      celltypes<-as.character(unique(gamma.mixed.fits$ct))
-      celltypes<-append(celltypes, idToName)
+      #data(gammaUmiFits)
+      #celltypes<-as.character(unique(gamma.mixed.fits$ct))
+      celltypes<-as.character(unique(idToName))
       choices <- celltypes
 
       labels <- sapply(seq_along(choices), function(i) encodeLabel(choices[i], i, 7))
@@ -463,8 +463,10 @@ shinyServer(
       
       if(onlineToggle){
         conn <- establishDBConnection()
-        gamma.mixed.fits <- rbind(gamma.mixed.fits, constructGammaLinearFit(conn))
-        disp.fun.param <- rbind(disp.fun.param, constructDisFunParam(conn))
+        #gamma.mixed.fits <- rbind(gamma.mixed.fits, constructGammaLinearFit(conn))
+        #disp.fun.param <- rbind(disp.fun.param, constructDisFunParam(conn))
+        gamma.mixed.fits <- constructGammaLinearFit(conn)
+        disp.fun.param <- constructDisFunParam(conn)
       }
       else{
         conn <- dbConnect(RSQLite::SQLite(), ":memory:")
