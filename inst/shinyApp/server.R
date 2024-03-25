@@ -292,32 +292,7 @@ shinyServer(
         updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(unique(filtered_celltypes))))
       }
     })
-
-
-    # Update assays and cell types when tissue is selected
-    observeEvent(input$tissue, {
-      if (!(input$tissue == "")) {
-        tissue_input <- input$tissue
-        
-        # Filter data based on tissue selection, adjusted for organism
-        filtered_data <- Filter(function(x) {
-          parts <- strsplit(x, "_")[[1]]
-          parts[2] == tissue_input
-        }, names(organism_list))
-        
-        # Extract assays and cell types from filtered data, adjust for organism
-        filtered_assays <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][1]))
-        filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
-        filtered_organisms <- unique(sapply(filtered_data, function(x) organism_list[x]))
-        
-        # Update UI elements
-        updateSelectInput(session, "assay", choices = c("Select an assay..." = "", sort(unique(filtered_assays))))
-        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(unique(filtered_celltypes))))
-        updateSelectInput(session, "organism", choices = c("Select an organism..." = "", sort(unique(filtered_organisms))))
-      }
-    })
-
-
+    
     # Update tissues and cell types when assay is selected
     observeEvent(input$assay, {
       if (!(input$assay == "")) {
@@ -332,12 +307,30 @@ shinyServer(
         # Extract tissues and cell types from filtered data, adjust for organism
         filtered_tissues <- unique(sapply(filtered_data, function(x) strsplit(x, "_")[[1]][2]))
         filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
-        filtered_organisms <- unique(sapply(filtered_data, function(x) organism_list[x]))
-        
+
         # Update UI elements
         updateSelectInput(session, "tissue", choices = c("Select a tissue..." = "", sort(unique(filtered_tissues))))
         updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(unique(filtered_celltypes))))
-        updateSelectInput(session, "organism", choices = c("Select an organism..." = "", sort(unique(filtered_organisms))))
+      }
+    })
+
+
+    # Update assays and cell types when tissue is selected
+    observeEvent(input$tissue, {
+      if (!(input$tissue == "")) {
+        tissue_input <- input$tissue
+        
+        # Filter data based on tissue selection, adjusted for organism
+        filtered_data <- Filter(function(x) {
+          parts <- strsplit(x, "_")[[1]]
+          parts[2] == tissue_input
+        }, names(organism_list))
+        
+        # Extract assays and cell types from filtered data, adjust for organism
+        filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
+
+        # Update UI elements
+        updateSelectInput(session, "celltype", choices = c("Select a cell type..." = "", sort(unique(filtered_celltypes))))
       }
     })
 
