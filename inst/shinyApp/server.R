@@ -269,10 +269,10 @@ shinyServer(
       choices <- setNames(choices, labels)
 
       updateSelectInput(session, "celltype", label = "Cell type",
-                        choices = c("B cells", choices))
-      updateSelectInput(session, "tissue", choices = c("Select a tissue..." = "", sort(uniqueTissues)))
-      updateSelectInput(session, "assay", choices = c("Select an assay..." = "", sort(uniqueAssays)))
-      updateSelectInput(session, "organism", choices = c("Select an organism..." = "", "Homo sapiens", "Mus musculus"))
+                        choices = c("B cells (Assay:10x 3' v2, Tissue: PBMC)", choices))
+      updateSelectInput(session, "tissue", choices = c("PBMC" = "", sort(uniqueTissues)))
+      updateSelectInput(session, "assay", choices = c("10x 3' v2" = "", sort(uniqueAssays)))
+      updateSelectInput(session, "organism", choices = c("Homo sapiens" = "", "Homo sapiens", "Mus musculus"))
     })
 
     observeEvent(input$organism, {
@@ -458,8 +458,8 @@ shinyServer(
 
       #Load required data sets
       data(readDepthUmiFit) #Relation between reads and UMI
-      data(gammaUmiFits) #Relation between UMI and gamma parameters
-      data(dispFunParam) #Parameters of mean-dispersion curve
+      #data(gammaUmiFits) #Relation between UMI and gamma parameters
+      #data(dispFunParam) #Parameters of mean-dispersion curve
       
       if(onlineToggle){
         conn <- establishDBConnection()
