@@ -536,12 +536,12 @@ shinyServer(
         }
       },
       content = function(file) {
-        power_results_df <- selectedData()
+        power_results_dataset <- powerFrame()[[1]]
         
         if (input$fileType == "CSV") {
-          write.csv(power_results_df, file, row.names = FALSE)
+          write.csv(power_results_dataset, file, row.names = FALSE)
         } else {
-          write.table(power_results_df, file, sep = "\t", row.names = FALSE)
+          write.table(power_results_dataset, file, sep = "\t", row.names = FALSE)
         }
       }
     )
