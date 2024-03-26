@@ -116,22 +116,26 @@ body <- ## Body content
                     status="orange",
 
                     div(style = "display: flex; align-items: center; justify-content: space-between;",
+                      div(style = "width: 66.66%; display: flex; justify-content: space-between; margin-right: 2%;",
                         actionButton("recalc", "Calculate optimal study", icon("paper-plane"),
-                                    style = "color: #fff; background-color: #337ab7; border-color: #2e6da4; margin-right: 5px;"),
+                                    style = "color: #fff; background-color: #337ab7; border-color: #2e6da4; flex-grow: 1;"),
                         bsPopover("recalc", title = "Calculate optimal study", placement = "top", options = list(container = "body"),
                                   content = "Computes the optimal study design for the given parameter combinations. Can take 1-2 minutes for big grids."),
-                        downloadButton("downloadData", "", style = "width: 15%;"),
+                      ),
+                      div(style = "width: 33.33%;",  
+                        downloadButton("downloadData", "", style = "width: 100%;"),
                         bsPopover("downloadData", title = "Download", placement = "top", options = list(container = "body"),
                                   content = "Download the data of the current plot as a CSV or TSV file."),
-                        div(style = "padding-top: 12px; margin-left: 10px;",  
-                            prettySwitch(
-                              inputId = "online",
-                              label = "",
-                              fill = TRUE,
-                              value = TRUE,
-                              status = "primary"
-                            )
-                        )
+                        # div(style = "padding-top: 12px; margin-left: 10px;",  
+                        #     prettySwitch(
+                        #       inputId = "online",
+                        #       label = "",
+                        #       fill = TRUE,
+                        #       value = TRUE,
+                        #       status = "primary"
+                        #     )
+                        # )
+                      )
                     ),
 
                     
