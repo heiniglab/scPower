@@ -268,11 +268,11 @@ shinyServer(
       labels <- sapply(seq_along(choices), function(i) encodeLabel(choices[i], i, 7))
       choices <- setNames(choices, labels)
 
-      updateSelectInput(session, "celltype", label = "Cell type",
-                        choices = c("B cells (Assay:10x 3' v2, Tissue: PBMC)", choices))
-      updateSelectInput(session, "tissue", choices = c("PBMC" = "", sort(uniqueTissues)))
-      updateSelectInput(session, "assay", choices = c("10x 3' v2" = "", sort(uniqueAssays)))
       updateSelectInput(session, "organism", choices = c("Homo sapiens" = "", "Homo sapiens", "Mus musculus"))
+      updateSelectInput(session, "assay", choices = c("10x 3' v2" = "", sort(uniqueAssays)))
+      updateSelectInput(session, "tissue", choices = c("PBMC" = "", sort(uniqueTissues)))
+      updateSelectInput(session, "celltype", label = "Cell type",
+                        choices = c("B cells (Assay:10x 3' v2, Tissue: PBMC)" = "10x 3' v2_PBMC_B cells", choices))
     })
 
     observeEvent(input$organism, {
@@ -433,6 +433,12 @@ shinyServer(
       ref.study.name<-input$refstudy
       ct.freq<-input$ctfreq
       ct<-decodeLabel(input$celltype)
+      
+      # For the initial case: check if ct is "NA_NA_NA"
+      if(ct == "NA_NA_NA") {
+        ct <- "10x 3' v2_PBMC_B cells"
+        ref.study.name <- "Blueprint (CLL) iCLL-mCLL"
+      }
 
       costKit<-input$costKit
       costFlowCell<-input$costFlowCell
