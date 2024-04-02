@@ -308,6 +308,14 @@ shinyServer(
           parts[1] == assay_input && x %in% filteredData$currentList
         }, names(organism_list))
         
+        # if there is consecutive selection of assay, reset selections retrieving from all
+        if (length(filtered_data) == 0){
+          filtered_data <- Filter(function(x) {
+            parts <- strsplit(x, "_")[[1]]
+            parts[1] == assay_input 
+          }, names(organism_list))
+        }
+        
         filteredData$currentList <- filtered_data
         
         # Extract tissues and cell types from filtered data, adjust for organism
@@ -331,9 +339,7 @@ shinyServer(
           parts <- strsplit(x, "_")[[1]]
           parts[2] == tissue_input && x %in% filteredData$currentList
         }, names(organism_list))
-        
-        filteredData$currentList <- filtered_data
-        
+                
         # Extract assays and cell types from filtered data, adjust for organism
         filtered_celltypes <- sapply(seq_along(filtered_data), function(i) encodeLabel(filtered_data[i], i, 0))
 
