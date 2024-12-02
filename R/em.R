@@ -461,8 +461,28 @@ BIC <- function(emfit) {
 }
 
 
-# iteratively estimate a mixture
-# also accept preinitialized models
+#' Fit mixture distributions using the expectation maximization (EM) algorithm
+#' 
+#'
+#' @param x numeric vector or matrix with observations
+#' @param ncomp number of mixture components to be fitted
+#' @param prop numeric vector of length ncomp with the initial mixture proportions (between 0-1).
+#' Default is NULL, which means that proportions will be initialized uniformly.
+#' @param maxit maximal number of iterations. Default is 100.
+#' @param model.constructor character vector either of length 1 or ncomp. The values specify the class of
+#' distributions for each component. If length is 1 all compoments will be of the same class of distributions.
+#' Values can be 'Zinba', 'Negbinom', 'Gamma', 'LeftCensoredGamma', 'Zero' and some others. These distributions
+#' are represented as classes and the respective constructors are called.
+#' @param models list of ncomp instances of distribution classes. This can be used to pre-initialize the
+#' starting values of the distributions of the components.
+#'
+#' @return an object of class \code{EMResult}. It has the following slots:
+#' 'models': a list of ncomp distribution instances,
+#' 'logLikelihood': a matrix n observations x ncomp with log likelihoods for each observation and component,
+#' 'dataLogLikelihood': numeric value of the overall likelihood of the data,
+#' 'proportions': the ncomp mixture proportions
+#'
+#' @export
 em <- function(x, ncomp, prop=NULL, maxit=100, eps=1e-4, model.constructor="Zinba", models=NULL) {
   n = length(x)
   if (is.matrix(x) || is.data.frame(x)) {
