@@ -2,7 +2,7 @@
 
 scPower is a R package for design and power analysis of cell type specific interindividual DE and eQTL studies using single cell RNA-seq. It enables the user to calculate the power for a given experimental setup and to choose for a restricted budget the optimal combination of experimental parameters which maximizes the power. Necessary experimental priors, e.g. effect sizes and expression distributions, can be taken from example data sets, saved in the package, or estimated from new data sets. The tool was evaluated with data from different tissues and single cell technologies, based on UMI counts and read counts. 
 
-The calculation can also performed using a graphical interface of a shiny app or at our webpage [scpower](http://scpower.helmholtz-muenchen.de), which is however temporarily not available ([see section below](#update-web-server-for-scpower-temporarily-down)).
+The calculation can also performed using a graphical interface of a shiny app or at our webpage [scpower](http://scpower.helmholtz-muenchen.de).
 
 A short tutorial is given in the vignette [introduction-scPower](vignettes/introduction-scPower.pdf).
 
